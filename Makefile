@@ -8,8 +8,7 @@ all:$(TARGET)
 	as $< -o $@
 
 $(TARGET):	ipl.o ipl.ls
-	ld -T ipl.ls ipl.o -o out.elf
-	objcopy -O binary out.elf $@
+	ld -T ipl.ls --oformat binary -o $@ ipl.o
 
 clean:
-	rm -f *.o $(TARGET) out.elf
+	rm -f *.o *.bin $(TARGET)
