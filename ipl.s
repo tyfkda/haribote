@@ -1,12 +1,13 @@
 .globl start
 .code16
 
-	.set CYLS, 10
+	.equ	CYLS, 10
 
 start:
 	jmp	entry
 	.byte	0x90
-# Boot Parameter Block.
+
+	# Boot Parameter Block.
 	.ascii "TEST IPL"	# Boot sector name (8 bytes)
 	.word	512		# Size of sector (must be 512)
 	.byte	1		# Size of cluster (must be 1)
