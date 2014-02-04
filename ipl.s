@@ -10,14 +10,14 @@ start:
 	.byte	1		# Size of cluster (must be 1)
 	.word	1		# FAT start
 	.byte	2		# FAT count
-	.word	244		# Size of root dir
+	.word	224		# Size of root dir
 	.word	2880		# Size of this media (must be 2880)
 	.byte	0xf0		# Media type (must be 0xf0)
 	.word	9		# FAT length
 	.word	18		# Number of sector in a track
 	.word	2		# Number of head
 	.long	0		# No partition
-	.long	2880		# Drive size
+	.long	0		# Drive size
 	.byte	0,0,0x29	# Magic
 	.long	0xffffffff	# Volume serial number
 	.ascii	"HELLO-OS   "	# Disk name (11 bytes)
@@ -30,8 +30,23 @@ entry:
 	movw	$0x7c00, %sp
 	movw    %ax, %ds
 	movw	%ax, %es
-	movw	$msg, %si
 
+	# Read disk
+	movw	$0x0820, %ax
+	movw	%ax, %es
+	movb	$0, %ch		# Cylinder 0
+	movb	$0, %dh		# Head 0
+	movb	$2, %cl		# Sector 2
+
+	movb	$0x02, %ah	# Read disk
+	movb	$1, %al		# 1 sector
+	movw	$0, %bx
+	movb	$0x00, %dl	# A drive
+	int	$0x13		# Call BIOS
+	jc	error
+
+	# Put message
+	movw	$msg, %si
 putloop:
 	movb	0(%si),	%al
 	add	$1, %si
@@ -42,6 +57,7 @@ putloop:
 	int	$0x10           # call video bios
 	jmp	putloop
 
+error:
 fin:
 	hlt
 	jmp		fin
