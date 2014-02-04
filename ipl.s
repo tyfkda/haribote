@@ -1,6 +1,8 @@
 .globl start
 .code16
 
+	.set CYLS, 10
+
 start:
 	jmp	entry
 	.byte	0x90
@@ -37,13 +39,37 @@ entry:
 	movb	$0, %ch		# Cylinder 0
 	movb	$0, %dh		# Head 0
 	movb	$2, %cl		# Sector 2
-
+readloop:
+	mov	$0, %si		# Retry counter
+retry:
 	movb	$0x02, %ah	# Read disk
 	movb	$1, %al		# 1 sector
 	movw	$0, %bx
 	movb	$0x00, %dl	# A drive
 	int	$0x13		# Call BIOS
-	jc	error
+	jnc	next
+	add	$1, %si
+	cmp	$5, %si
+	jae	error
+	mov	$0x00, %ah
+	mov	$0x00, %dl
+	int	$0x13
+	jmp	retry
+next:
+	mov	%es, %ax	# Forward address 0x200
+	add	$0x0020, %ax
+	mov	%ax, %es
+	add	$1, %cl
+	cmp	$18, %cl	# Read until 18 sector
+	jbe	readloop
+	mov	$1, %cl
+	add	$1, %dh
+	cmp	$2, %dh		# Read 2 heads
+	jb	readloop
+	mov	$0, %dh
+	add	$1, %ch
+	cmp	$CYLS, %ch
+	jb	readloop	# Read until CYLS
 
 	# Put message
 	movw	$msg, %si
