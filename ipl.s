@@ -71,7 +71,10 @@ next:
 	cmp	$CYLS, %ch
 	jb	readloop	# Read until CYLS
 
-	# Put message
+	# Jump to loaded program
+	jmp	0xc200
+
+error:
 	movw	$msg, %si
 putloop:
 	movb	0(%si),	%al
@@ -83,14 +86,13 @@ putloop:
 	int	$0x10           # call video bios
 	jmp	putloop
 
-error:
 fin:
 	hlt
 	jmp		fin
 	
 msg:
-	.ascii	"hello, world"
-	.byte	0x0d, 0x0a, 0x00
+	.ascii	"Disk read error"
+	.byte	0x00
 
 .org 510
 	.byte	0x55, 0xaa
