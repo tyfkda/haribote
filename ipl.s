@@ -32,7 +32,6 @@ entry:
 	movw	%ax, %ss
 	movw	$0x7c00, %sp
 	movw    %ax, %ds
-	movw	%ax, %es
 
 	# Read disk
 	movw	$0x0820, %ax
