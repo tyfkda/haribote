@@ -1,6 +1,6 @@
 TARGET=boot.img
 
-CFLAGS=-O2 --std=c99
+CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror
 
 all:	$(TARGET)
 
