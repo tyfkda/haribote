@@ -1,15 +1,15 @@
 TARGET=boot.img
 
-CFLAGS=-c -O2 --std=c99
+CFLAGS=-O2 --std=c99
 
-all:$(TARGET)
+all:	$(TARGET)
 
-.SUFFIXS:	.s .o
+.SUFFIXS:	.c .s .o
 
 .s.o:
 	as $< -o $@
 .c.o:
-	gcc $(CFLAGS) -o $@ $<
+	gcc -c -o $@ $(CFLAGS) $<
 
 $(TARGET):	ipl.bin haribote.bin bootpack.bin
 	cp ipl.bin $@
