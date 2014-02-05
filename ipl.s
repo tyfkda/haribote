@@ -72,9 +72,12 @@ next:
 	jb	readloop	# Read until CYLS
 
 	# Jump to loaded program
+	mov	%ch, (0x0ff0)
 	jmp	0xc200
 
 error:
+	mov	$0, %ax
+	mov	%ax, %es
 	movw	$msg, %si
 putloop:
 	movb	0(%si),	%al
