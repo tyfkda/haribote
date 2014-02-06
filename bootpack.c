@@ -86,6 +86,51 @@ void putfonts8_asc(unsigned char* vram, int xsize, int x, int y, unsigned char c
   }
 }
 
+static char* int2num(char *s, int x, int base, const char* table) {
+  *(--s) = '\0';
+  do {
+    *(--s) = table[x % base];
+    x /= base;
+  } while (x > 0);
+  return s;
+}
+
+char* strcpy(char* dst, char* src) {
+  char* orgDst = dst;
+  for (;;) {
+    if ((*dst++ = *src++) == '\0')
+      break;
+  }
+  return orgDst;
+}
+
+int sprintf(char *str, const char *fmt, ...) {
+  static const char hextable[] = "0123456789abcdef";
+  int* arg = (int*)(&(&fmt)[1]);  // Get va_arg
+  char* dst = str;
+  while (*fmt != '\0') {
+    if (*fmt != '%') {
+      *dst++ = *fmt++;
+      continue;
+    }
+
+    char buf[sizeof(int) * 3 + 1], *last = &buf[sizeof(buf)];
+    char* q;
+    switch (*(++fmt)) {
+    default:
+      *dst++ = *fmt++;
+      continue;
+    case 'd': q = int2num(last, *arg++, 10, hextable); break;
+    case 'x': q = int2num(last, *arg++, 16, hextable); break;
+    }
+    strcpy(dst, q);
+    dst += (last - q) - 1;
+    ++fmt;
+  }
+  *dst = '\0';
+  return dst - str;
+}
+
 struct BOOTINFO {
   char cyls, leds, vmode, reserve;
   short scrnx, scrny;
@@ -101,6 +146,10 @@ void HariMain(void) {
   putfonts8_asc(binfo->vram, binfo->scrnx, 8, 8, COL8_WHITE, "ABC 123");
   putfonts8_asc(binfo->vram, binfo->scrnx, 31, 31, COL8_BLACK, "Haribote OS");
   putfonts8_asc(binfo->vram, binfo->scrnx, 30, 30, COL8_WHITE, "Haribote OS");
+
+  char s[40];
+  sprintf(s, "scrnx = %d", binfo->scrnx);
+  putfonts8_asc(binfo->vram, binfo->scrnx, 16, 64, COL8_WHITE, s);
 
   for (;;)
     io_hlt();

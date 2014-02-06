@@ -1,6 +1,7 @@
 TARGET=boot.img
 
 CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror
+CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
 all:	$(TARGET)
 
