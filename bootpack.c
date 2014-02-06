@@ -10,6 +10,8 @@ const int COL8_GRAY = 8;
 const int COL8_DARK_CYAN = 14;
 const int COL8_DARK_GRAY = 15;
 
+extern const unsigned char fontdata[][16];
+
 void set_palette(int start, int end, unsigned char* rgb) {
   int eflags = io_load_eflags();  // Save interrupt flag.
   io_cli();  // Prevent interrupt.
@@ -70,6 +72,20 @@ void init_screen(unsigned char* vram, int x, int y) {
   boxfill8(vram, x, COL8_WHITE,     x -  3, y - 24, x -  2, y - 2);
 }
 
+void putfont8(unsigned char* vram, int xsize, int x, int y, unsigned char c, const unsigned char* font) {
+  for (int i = 0; i < 16; ++i)
+    for (int j = 0; j < 8; ++j)
+      if (font[i] & (0x80 >> j))
+	vram[(y + i) * xsize + x + j] = c;
+}
+
+void putfonts8_asc(unsigned char* vram, int xsize, int x, int y, unsigned char c, const char* s) {
+  while (*s != '\0') {
+    putfont8(vram, xsize, x, y, c, fontdata[(unsigned char)*s++]);
+    x += 8;
+  }
+}
+
 struct BOOTINFO {
   char cyls, leds, vmode, reserve;
   short scrnx, scrny;
@@ -81,6 +97,10 @@ void HariMain(void) {
 
   struct BOOTINFO* binfo = (struct BOOTINFO*)0x0ff0;
   init_screen(binfo->vram, binfo->scrnx, binfo->scrny);
+
+  putfonts8_asc(binfo->vram, binfo->scrnx, 8, 8, COL8_WHITE, "ABC 123");
+  putfonts8_asc(binfo->vram, binfo->scrnx, 31, 31, COL8_BLACK, "Haribote OS");
+  putfonts8_asc(binfo->vram, binfo->scrnx, 30, 30, COL8_WHITE, "Haribote OS");
 
   for (;;)
     io_hlt();
