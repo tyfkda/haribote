@@ -4,6 +4,12 @@ void io_out8(int port, int data);
 int io_load_eflags(void);
 void io_store_eflags(int eflags);
 
+const int COL8_BLACK = 0;
+const int COL8_WHITE = 7;
+const int COL8_GRAY = 8;
+const int COL8_DARK_CYAN = 14;
+const int COL8_DARK_GRAY = 15;
+
 void set_palette(int start, int end, unsigned char* rgb) {
   int eflags = io_load_eflags();  // Save interrupt flag.
   io_cli();  // Prevent interrupt.
@@ -39,12 +45,35 @@ void init_palette(void) {
   set_palette(0, 15, table_rgb);
 }
 
+void boxfill8(unsigned char* vram, int xsize, unsigned char c, int x0, int y0, int x1, int y1) {
+  for (int y = y0; y < y1; ++y)
+    for (int x = x0; x < x1; ++x)
+      vram[y * xsize + x] = c;
+}
+
 void HariMain(void) {
   init_palette();
 
-  unsigned char* p = (unsigned char*)0xa0000;
-  for (int i = 0x0000; i <= 0xffff; ++i)
-    p[i] = i & 0x0f;
+  unsigned char* vram = (unsigned char*)0xa0000;
+  int xsize = 320;
+  int ysize = 200;
+
+  boxfill8(vram, xsize, COL8_DARK_CYAN,  0,          0, xsize, ysize - 28);
+  boxfill8(vram, xsize, COL8_GRAY,       0, ysize - 28, xsize, ysize - 27);
+  boxfill8(vram, xsize, COL8_WHITE,      0, ysize - 27, xsize, ysize - 26);
+  boxfill8(vram, xsize, COL8_GRAY,       0, ysize - 26, xsize, ysize);
+
+  boxfill8(vram, xsize, COL8_WHITE,      3, ysize - 24,    60, ysize - 23);
+  boxfill8(vram, xsize, COL8_WHITE,      2, ysize - 24,     3, ysize - 3);
+  boxfill8(vram, xsize, COL8_DARK_GRAY,  3, ysize -  4,    60, ysize - 3);
+  boxfill8(vram, xsize, COL8_DARK_GRAY, 59, ysize - 23,    60, ysize - 4);
+  boxfill8(vram, xsize, COL8_BLACK,      2, ysize -  3,    60, ysize - 2);
+  boxfill8(vram, xsize, COL8_BLACK,     60, ysize - 24,    61, ysize - 2);
+
+  boxfill8(vram, xsize, COL8_DARK_GRAY, xsize - 47, ysize - 24, xsize -  3, ysize - 23);
+  boxfill8(vram, xsize, COL8_DARK_GRAY, xsize - 47, ysize - 23, xsize - 46, ysize - 3);
+  boxfill8(vram, xsize, COL8_WHITE,     xsize - 47, ysize -  3, xsize -  3, ysize - 2);
+  boxfill8(vram, xsize, COL8_WHITE,     xsize -  3, ysize - 24, xsize -  2, ysize - 2);
 
   for (;;)
     io_hlt();
