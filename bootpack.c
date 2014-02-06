@@ -51,29 +51,36 @@ void boxfill8(unsigned char* vram, int xsize, unsigned char c, int x0, int y0, i
       vram[y * xsize + x] = c;
 }
 
+void init_screen(unsigned char* vram, int x, int y) {
+  boxfill8(vram, x, COL8_DARK_CYAN,  0,          0, x, y - 28);
+  boxfill8(vram, x, COL8_GRAY,       0, y - 28, x, y - 27);
+  boxfill8(vram, x, COL8_WHITE,      0, y - 27, x, y - 26);
+  boxfill8(vram, x, COL8_GRAY,       0, y - 26, x, y);
+
+  boxfill8(vram, x, COL8_WHITE,      3, y - 24,    60, y - 23);
+  boxfill8(vram, x, COL8_WHITE,      2, y - 24,     3, y - 3);
+  boxfill8(vram, x, COL8_DARK_GRAY,  3, y -  4,    60, y - 3);
+  boxfill8(vram, x, COL8_DARK_GRAY, 59, y - 23,    60, y - 4);
+  boxfill8(vram, x, COL8_BLACK,      2, y -  3,    60, y - 2);
+  boxfill8(vram, x, COL8_BLACK,     60, y - 24,    61, y - 2);
+
+  boxfill8(vram, x, COL8_DARK_GRAY, x - 47, y - 24, x -  3, y - 23);
+  boxfill8(vram, x, COL8_DARK_GRAY, x - 47, y - 23, x - 46, y - 3);
+  boxfill8(vram, x, COL8_WHITE,     x - 47, y -  3, x -  3, y - 2);
+  boxfill8(vram, x, COL8_WHITE,     x -  3, y - 24, x -  2, y - 2);
+}
+
+struct BOOTINFO {
+  char cyls, leds, vmode, reserve;
+  short scrnx, scrny;
+  unsigned char* vram;
+};
+
 void HariMain(void) {
   init_palette();
 
-  unsigned char* vram = (unsigned char*)0xa0000;
-  int xsize = 320;
-  int ysize = 200;
-
-  boxfill8(vram, xsize, COL8_DARK_CYAN,  0,          0, xsize, ysize - 28);
-  boxfill8(vram, xsize, COL8_GRAY,       0, ysize - 28, xsize, ysize - 27);
-  boxfill8(vram, xsize, COL8_WHITE,      0, ysize - 27, xsize, ysize - 26);
-  boxfill8(vram, xsize, COL8_GRAY,       0, ysize - 26, xsize, ysize);
-
-  boxfill8(vram, xsize, COL8_WHITE,      3, ysize - 24,    60, ysize - 23);
-  boxfill8(vram, xsize, COL8_WHITE,      2, ysize - 24,     3, ysize - 3);
-  boxfill8(vram, xsize, COL8_DARK_GRAY,  3, ysize -  4,    60, ysize - 3);
-  boxfill8(vram, xsize, COL8_DARK_GRAY, 59, ysize - 23,    60, ysize - 4);
-  boxfill8(vram, xsize, COL8_BLACK,      2, ysize -  3,    60, ysize - 2);
-  boxfill8(vram, xsize, COL8_BLACK,     60, ysize - 24,    61, ysize - 2);
-
-  boxfill8(vram, xsize, COL8_DARK_GRAY, xsize - 47, ysize - 24, xsize -  3, ysize - 23);
-  boxfill8(vram, xsize, COL8_DARK_GRAY, xsize - 47, ysize - 23, xsize - 46, ysize - 3);
-  boxfill8(vram, xsize, COL8_WHITE,     xsize - 47, ysize -  3, xsize -  3, ysize - 2);
-  boxfill8(vram, xsize, COL8_WHITE,     xsize -  3, ysize - 24, xsize -  2, ysize - 2);
+  struct BOOTINFO* binfo = (struct BOOTINFO*)0x0ff0;
+  init_screen(binfo->vram, binfo->scrnx, binfo->scrny);
 
   for (;;)
     io_hlt();
