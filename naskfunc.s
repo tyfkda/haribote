@@ -2,6 +2,7 @@
 .globl	io_in8, io_in16, io_in32
 .globl	io_out8, io_out16, io_out32
 .globl	io_load_eflags, io_store_eflags
+.globl	load_gdtr, load_idtr
 
 # void io_hlt(void)
 io_hlt:
@@ -77,3 +78,17 @@ io_store_eflags:
 	push	%eax
 	popfl			# pop eflags
 	ret
+
+# void load_gdtr(int limit, int addr)
+load_gdtr:
+        mov     4(%esp), %ax
+        mov     %ax, 6(%esp)
+        lgdt    6(%esp)
+        ret
+
+# void load_idtr(int limit, int addr)
+load_idtr:
+        mov     4(%esp), %ax
+        mov     %ax, 6(%esp)
+        lidt    6(%esp)
+        ret
