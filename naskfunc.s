@@ -3,6 +3,8 @@
 .globl	io_out8, io_out16, io_out32
 .globl	io_load_eflags, io_store_eflags
 .globl	load_gdtr, load_idtr
+.globl	asm_inthandler21, asm_inthandler2c
+.extern inthandler21, inthandler2c
 
 # void io_hlt(void)
 io_hlt:
@@ -92,3 +94,35 @@ load_idtr:
         mov     %ax, 6(%esp)
         lidt    6(%esp)
         ret
+
+asm_inthandler21:
+        push    %es
+        push    %ds
+        pushal
+        mov     %esp, %eax
+        push    %eax
+        mov     %ss, %ax
+        mov     %ax, %ds
+        mov     %ax, %es
+        call    inthandler21
+        pop     %eax
+        popal
+        pop     %ds
+        pop     %es
+        iretl
+
+asm_inthandler2c:
+        push    %es
+        push    %ds
+        pushal
+        mov     %esp, %eax
+        push    %eax
+        mov     %ss, %ax
+        mov     %ax, %ds
+        mov     %ax, %es
+        call    inthandler2c
+        pop     %eax
+        popal
+        pop     %ds
+        pop     %es
+        iretl
