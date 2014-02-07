@@ -131,6 +131,44 @@ int sprintf(char *str, const char *fmt, ...) {
   return dst - str;
 }
 
+void init_mouse_cursor8(unsigned char* mouse, char bc) {
+  static const char cursor[16][16] = {
+    "**************..",
+    "*ooooooooooo*...",
+    "*oooooooooo*....",
+    "*ooooooooo*.....",
+    "*oooooooo*......",
+    "*ooooooo*.......",
+    "*ooooooo*.......",
+    "*oooooooo*......",
+    "*oooo**ooo*.....",
+    "*ooo*..*ooo*....",
+    "*oo*....*ooo*...",
+    "*o*......*ooo*..",
+    "**........*ooo*.",
+    "*..........*ooo*",
+    "............*oo*",
+    ".............***",
+  };
+  for (int y = 0; y < 16; ++y) {
+    for (int x = 0; x < 16; ++x) {
+      unsigned char c = bc;
+      switch (cursor[y][x]) {
+      case '*':  c = COL8_BLACK; break;
+      case 'o':  c = COL8_WHITE; break;
+      }
+      mouse[y * 16 + x] = c;
+    }
+  }
+}
+
+void putblock8_8(unsigned char* vram, int xsize, int pxsize, int pysize,
+                 int px0, int py0, const unsigned char* buf, int bxsize) {
+  for (int y = 0; y < pysize; ++y)
+    for (int x = 0; x < pxsize; ++x)
+      vram[(py0 + y) * xsize + (px0 + x)] = buf[y * bxsize + x];
+}
+
 struct BOOTINFO {
   char cyls, leds, vmode, reserve;
   short scrnx, scrny;
@@ -143,13 +181,15 @@ void HariMain(void) {
   struct BOOTINFO* binfo = (struct BOOTINFO*)0x0ff0;
   init_screen(binfo->vram, binfo->scrnx, binfo->scrny);
 
-  putfonts8_asc(binfo->vram, binfo->scrnx, 8, 8, COL8_WHITE, "ABC 123");
-  putfonts8_asc(binfo->vram, binfo->scrnx, 31, 31, COL8_BLACK, "Haribote OS");
-  putfonts8_asc(binfo->vram, binfo->scrnx, 30, 30, COL8_WHITE, "Haribote OS");
+  unsigned char mcursor[256];
+  init_mouse_cursor8(mcursor, COL8_DARK_CYAN);
+  int mx = (binfo->scrnx - 16) / 2;
+  int my = (binfo->scrny - 28 - 16) / 2;
+  putblock8_8(binfo->vram, binfo->scrnx, 16, 16, mx, my, mcursor, 16);
 
   char s[40];
-  sprintf(s, "scrnx = %d", binfo->scrnx);
-  putfonts8_asc(binfo->vram, binfo->scrnx, 16, 64, COL8_WHITE, s);
+  sprintf(s, "(%d, %d)", mx, my);
+  putfonts8_asc(binfo->vram, binfo->scrnx, 0, 0, COL8_WHITE, s);
 
   for (;;)
     io_hlt();
