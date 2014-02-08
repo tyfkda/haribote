@@ -32,7 +32,8 @@ char* strcpy(char* dst, char* src) {
 }
 
 int sprintf(char *str, const char *fmt, ...) {
-  static const char hextable[] = "0123456789abcdef";
+  static const char hextableLower[] = "0123456789abcdef";
+  static const char hextableUpper[] = "0123456789ABCDEF";
   int* arg = (int*)(&(&fmt)[1]);  // Get va_arg
   char* dst = str;
   while (*fmt != '\0') {
@@ -57,8 +58,9 @@ int sprintf(char *str, const char *fmt, ...) {
     case '6': case '7': case '8': case '9':
       keta = *fmt - '0';
       goto again;
-    case 'd': q = int2num(last, *arg++, 10, hextable, padding, keta); break;
-    case 'x': q = int2num(last, *arg++, 16, hextable, padding, keta); break;
+    case 'd': q = int2num(last, *arg++, 10, hextableLower, padding, keta); break;
+    case 'x': q = int2num(last, *arg++, 16, hextableLower, padding, keta); break;
+    case 'X': q = int2num(last, *arg++, 16, hextableUpper, padding, keta); break;
     }
     strcpy(dst, q);
     dst += (last - q) - 1;

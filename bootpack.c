@@ -71,7 +71,7 @@ void HariMain(void) {
       io_sti();
 
       char s[4];
-      sprintf(s, "%02x", i);
+      sprintf(s, "%02X", i);
       boxfill8(binfo->vram, binfo->scrnx, COL8_DARK_CYAN, 0, 16, 16, 32);
       putfonts8_asc(binfo->vram, binfo->scrnx, 0, 16, COL8_WHITE, s);
       continue;
@@ -81,7 +81,7 @@ void HariMain(void) {
       io_sti();
 
       char s[4];
-      sprintf(s, "%02x", i);
+      sprintf(s, "%02X", i);
       boxfill8(binfo->vram, binfo->scrnx, COL8_DARK_CYAN, 32, 16, 48, 32);
       putfonts8_asc(binfo->vram, binfo->scrnx, 32, 16, COL8_WHITE, s);
       continue;
