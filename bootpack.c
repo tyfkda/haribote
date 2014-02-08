@@ -10,6 +10,12 @@
 #include "stdio.h"
 #include "timer.h"
 
+void putfonts8_asc_sht(SHTCTL* shtctl, SHEET* sht, int x, int y, int c, int b, const char* s, int l) {
+  boxfill8(sht->buf, sht->bxsize, b, x, y, x + l * 8, y + 16);
+  putfonts8_asc(sht->buf, sht->bxsize, x, y, c, s);
+  sheet_refresh(shtctl, sht, x, y, x + l * 8, y + 16);
+}
+
 void make_window8(unsigned char* buf, int xsize, int ysize, char* title) {
   static const char closebtn[14][16] = {
     "OOOOOOOOOOOOOOO@",
@@ -126,9 +132,7 @@ void HariMain(void) {
   for (;;) {
     io_cli();
     sprintf(s, "%09d", timerctl.count);
-    boxfill8(buf_win, 160, COL8_GRAY, 40, 28, 120, 44);
-    putfonts8_asc(buf_win, 160, 40, 28, COL8_BLACK, s);
-    sheet_refresh(shtctl, sht_win, 40, 28, 120, 44);
+    putfonts8_asc_sht(shtctl, sht_win, 40, 28, COL8_BLACK, COL8_GRAY, s, 10);
 
     if (fifo8_status(&keyfifo) != 0) {
       int i = fifo8_get(&keyfifo);
@@ -136,9 +140,7 @@ void HariMain(void) {
 
       char s[4];
       sprintf(s, "%02X", i);
-      boxfill8(buf_back, binfo->scrnx, COL8_DARK_CYAN, 0, 16, 16, 32);
-      putfonts8_asc(buf_back, binfo->scrnx, 0, 16, COL8_WHITE, s);
-      sheet_refresh(shtctl, sht_back, 0, 16, 16, 32);
+      putfonts8_asc_sht(shtctl, sht_back, 0, 16, COL8_WHITE, COL8_DARK_CYAN, s, 2);
       continue;
     }
     if (fifo8_status(&mousefifo) != 0) {
@@ -153,9 +155,7 @@ void HariMain(void) {
           s[1] = 'R';
         if ((mdec.btn & 0x04) != 0)
           s[1] = 'C';
-        boxfill8(buf_back, binfo->scrnx, COL8_DARK_CYAN, 32, 16, 32 + 15 * 8, 32);
-        putfonts8_asc(buf_back, binfo->scrnx, 32, 16, COL8_WHITE, s);
-        sheet_refresh(shtctl, sht_back, 32, 16, 32 + 15 * 8, 32);
+        putfonts8_asc_sht(shtctl, sht_back, 32, 16, COL8_WHITE, COL8_DARK_CYAN, s, 15);
 
         // Move mouse cursor.
         mx += mdec.x;
@@ -165,9 +165,7 @@ void HariMain(void) {
         if (mx >= binfo->scrnx - 1)  mx = binfo->scrnx - 1;
         if (my >= binfo->scrny - 1)  my = binfo->scrny - 1;
         sprintf(s, "(%3d, %3d)", mx, my);
-        boxfill8(buf_back, binfo->scrnx, COL8_DARK_CYAN, 0, 0, 80, 16);
-        putfonts8_asc(buf_back, binfo->scrnx, 0, 0, COL8_WHITE, s);
-        sheet_refresh(shtctl, sht_back, 0, 0, 80, 16);
+        putfonts8_asc_sht(shtctl, sht_back, 0, 0, COL8_WHITE, COL8_DARK_CYAN, s, 10);
         sheet_slide(shtctl, sht_mouse, mx, my);
       }
       continue;
@@ -177,12 +175,10 @@ void HariMain(void) {
       io_sti();
       switch (tid) {
       case 1:  // 10sec
-        putfonts8_asc(buf_back, binfo->scrnx, 0, 64, COL8_WHITE, "10[sec]");
-        sheet_refresh(shtctl, sht_back, 0, 64, 56, 80);
+        putfonts8_asc_sht(shtctl, sht_back, 0, 64, COL8_WHITE, COL8_DARK_CYAN, "10[sec]", 7);
         break;
       case 2:  // 3sec
-        putfonts8_asc(buf_back, binfo->scrnx, 0, 80, COL8_WHITE, "3[sec]");
-        sheet_refresh(shtctl, sht_back, 0, 80, 48, 96);
+        putfonts8_asc_sht(shtctl, sht_back, 0, 80, COL8_WHITE, COL8_DARK_CYAN, " 3[sec]", 7);
         break;
       case 3:  // 0.5sec
       case 4:  // 0.5sec
