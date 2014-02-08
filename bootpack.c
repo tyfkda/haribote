@@ -14,7 +14,7 @@ void HariMain(void) {
   io_sti();  // Enable CPU interrupt after IDT/PIC initialization.
 
   unsigned char keybuf[32], mousebuf[128];
-  struct MOUSE_DEC mdec;
+  MOUSE_DEC mdec;
   fifo8_init(&keyfifo, 32, keybuf);
   fifo8_init(&mousefifo, 128, mousebuf);
   io_out8(PIC0_IMR, 0xf9);  // Enable PIC1 and keyboard.
@@ -24,12 +24,12 @@ void HariMain(void) {
   enable_mouse(&mdec);
 
   unsigned int memtotal = memtest(0x00400000, 0xbfffffff);
-  struct MEMMAN *memman = (struct MEMMAN*)MEMMAN_ADDR;
+  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
   memman_init(memman);
   memman_free(memman, 0x00001000, 0x0009e000); /* 0x00001000 - 0x0009efff */
   memman_free(memman, 0x00400000, memtotal - 0x00400000);
 
-  struct BOOTINFO* binfo = (struct BOOTINFO*)ADR_BOOTINFO;
+  BOOTINFO* binfo = (BOOTINFO*)ADR_BOOTINFO;
   init_palette();
   init_screen8(binfo->vram, binfo->scrnx, binfo->scrny);
 

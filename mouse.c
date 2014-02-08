@@ -19,7 +19,7 @@ void inthandler2c(int* esp) {
   fifo8_put(&mousefifo, data);
 }
 
-void enable_mouse(struct MOUSE_DEC* mdec) {
+void enable_mouse(MOUSE_DEC* mdec) {
   wait_KBC_sendready();
   io_out8(PORT_KEYCMD, KEYCMD_SENDTO_MOUSE);
   wait_KBC_sendready();
@@ -28,7 +28,7 @@ void enable_mouse(struct MOUSE_DEC* mdec) {
   mdec->phase = 0;
 }
 
-int mouse_decode(struct MOUSE_DEC* mdec, unsigned dat) {
+int mouse_decode(MOUSE_DEC* mdec, unsigned dat) {
   switch (mdec->phase) {
   case 0:  // Waiting 0xfa.
     if (dat == 0xfa)

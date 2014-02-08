@@ -1,14 +1,15 @@
 #ifndef __BOOTPACK_H__
 #define __BOOTPACK_H__
 
-struct BOOTINFO {
+typedef struct {
   char cyls;
   char leds;  // Keyboard LED status
   char vmode;  // Video mode
   char reserve;
   short scrnx, scrny;  // Screen resolution
   unsigned char* vram;
-};
+} BOOTINFO;
+
 #define ADR_BOOTINFO  0x00000ff0;
 
 void io_hlt(void);
