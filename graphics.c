@@ -1,4 +1,4 @@
-#include "graphic.h"
+#include "graphics.h"
 #include "bootpack.h"
 
 extern const unsigned char fontdata[][16];

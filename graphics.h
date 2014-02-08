@@ -1,5 +1,5 @@
-#ifndef __GRAPHIC_H__
-#define __GRAPHIC_H__
+#ifndef __GRAPHICS_H__
+#define __GRAPHICS_H__
 
 static const int COL8_BLACK = 0;
 static const int COL8_RED = 1;
@@ -20,10 +20,13 @@ static const int COL8_DARK_GRAY = 15;
 
 void init_palette(void);
 void set_palette(int start, int end, unsigned char* rgb);
-void boxfill8(unsigned char* vram, int xsize, unsigned char c, int x0, int y0, int x1, int y1);
+void boxfill8(unsigned char* vram, int xsize, unsigned char c,
+              int x0, int y0, int x1, int y1);
 void init_screen8(unsigned char* vram, int x, int y);
-void putfont8(unsigned char* vram, int xsize, int x, int y, unsigned char c, const unsigned char* font);
-void putfonts8_asc(unsigned char* vram, int xsize, int x, int y, unsigned char c, const char* s);
+void putfont8(unsigned char* vram, int xsize, int x, int y, unsigned char c,
+              const unsigned char* font);
+void putfonts8_asc(unsigned char* vram, int xsize, int x, int y,
+                   unsigned char c, const char* s);
 void init_mouse_cursor8(unsigned char* mouse);
 void putblock8_8(unsigned char* vram, int xsize, int pxsize, int pysize,
                  int px0, int py0, const unsigned char* buf, int bxsize);

@@ -2,14 +2,9 @@
 
 #include "int.h"
 #include "bootpack.h"
-#include "fifo.h"
-#include "graphic.h"
-#include "stdio.h"
-
-static const int PORT_KEYDAT = 0x0060;
 
 void init_pic(void) {
-  io_out8(PIC0_IMR, 0xff);  // Prevent all interrupt.
+  io_out8(PIC0_IMR, 0xff);     // Prevent all interrupt.
   io_out8(PIC1_IMR, 0xff);
 
   io_out8(PIC0_ICW1, 0x11);    // Edge trigger mode.

@@ -1,7 +1,7 @@
 #include "bootpack.h"
 #include "dsctbl.h"
 #include "fifo.h"
-#include "graphic.h"
+#include "graphics.h"
 #include "int.h"
 #include "keyboard.h"
 #include "memory.h"

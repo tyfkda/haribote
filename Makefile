@@ -28,7 +28,7 @@ $(OBJDIR)/ipl.bin:	$(OBJDIR)/ipl.o
 $(OBJDIR)/asmhead.bin:	$(OBJDIR)/asmhead.o
 	ld -N -e start -Ttext 0xc200 -S --oformat binary -o $@ $<
 
-$(OBJDIR)/bootpack.bin:	$(OBJDIR)/bootpack.o $(OBJDIR)/graphic.o $(OBJDIR)/dsctbl.o $(OBJDIR)/stdio.o $(OBJDIR)/int.o $(OBJDIR)/fifo.o $(OBJDIR)/keyboard.o $(OBJDIR)/mouse.o $(OBJDIR)/memory.o $(OBJDIR)/naskfunc.o $(OBJDIR)/fontdata.o
+$(OBJDIR)/bootpack.bin:	$(OBJDIR)/bootpack.o $(OBJDIR)/graphics.o $(OBJDIR)/dsctbl.o $(OBJDIR)/stdio.o $(OBJDIR)/int.o $(OBJDIR)/fifo.o $(OBJDIR)/keyboard.o $(OBJDIR)/mouse.o $(OBJDIR)/memory.o $(OBJDIR)/naskfunc.o $(OBJDIR)/fontdata.o
 	ld -T harimain.ls --oformat binary -o $@ $^
 
 clean:
