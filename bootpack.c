@@ -65,6 +65,20 @@ void HariMain(void) {
   io_out8(PIC0_IMR, 0xf8);  // Enable PIT, PIC1 and keyboard.
   io_out8(PIC1_IMR, 0xef);  // Enable mouse.
 
+  FIFO8 timerfifo;
+  unsigned char timerbuf[8];
+  fifo8_init(&timerfifo, 8, timerbuf);
+  TIMER* timer[3];
+  timer[0] = timer_alloc();
+  timer_init(timer[0], &timerfifo, 1);
+  timer_settime(timer[0], 1000);  // 10 sec
+  timer[1] = timer_alloc();
+  timer_init(timer[1], &timerfifo, 2);
+  timer_settime(timer[1], 300);  // 3 sec
+  timer[2] = timer_alloc();
+  timer_init(timer[2], &timerfifo, 3);
+  timer_settime(timer[2], 50);  // 0.5 sec
+
   init_keyboard();
   enable_mouse(&mdec);
 
@@ -155,6 +169,31 @@ void HariMain(void) {
         putfonts8_asc(buf_back, binfo->scrnx, 0, 0, COL8_WHITE, s);
         sheet_refresh(shtctl, sht_back, 0, 0, 80, 16);
         sheet_slide(shtctl, sht_mouse, mx, my);
+      }
+      continue;
+    }
+    if (fifo8_status(&timerfifo) != 0) {
+      int tid = fifo8_get(&timerfifo);
+      io_sti();
+      switch (tid) {
+      case 1:  // 10sec
+        putfonts8_asc(buf_back, binfo->scrnx, 0, 64, COL8_WHITE, "10[sec]");
+        sheet_refresh(shtctl, sht_back, 0, 64, 56, 80);
+        break;
+      case 2:  // 3sec
+        putfonts8_asc(buf_back, binfo->scrnx, 0, 80, COL8_WHITE, "3[sec]");
+        sheet_refresh(shtctl, sht_back, 0, 80, 48, 96);
+        break;
+      case 3:  // 0.5sec
+      case 4:  // 0.5sec
+        {
+          unsigned char col = tid == 3 ? COL8_WHITE : COL8_DARK_GRAY;
+          boxfill8(buf_back, binfo->scrnx, col, 8, 96, 16, 112);
+          sheet_refresh(shtctl, sht_back, 8, 96, 16, 112);
+          timer_init(timer[2], &timerfifo, (3 + 4) - tid);
+          timer_settime(timer[2], 50);
+        }
+        break;
       }
       continue;
     }
