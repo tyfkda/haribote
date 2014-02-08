@@ -11,13 +11,6 @@
 #include "stdio.h"
 #include "timer.h"
 
-typedef struct {
-  int backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
-  int eip, eflags, eax, ecx, edx, ebx, esp, ebp, esi, edi;
-  int es, cs, ss, ds, fs, gs;
-  int ldtr, iomap;
-} TSS32;
-
 void putfonts8_asc_sht(SHTCTL* shtctl, SHEET* sht, int x, int y, int c, int b, const char* s, int l) {
   boxfill8(sht->buf, sht->bxsize, b, x, y, x + l * 8, y + 16);
   putfonts8_asc(sht->buf, sht->bxsize, x, y, c, s);
@@ -183,26 +176,15 @@ void HariMain(void) {
 
   sheet_refresh(shtctl, sht_back, 0, 0, binfo->scrnx, 48);
 
-  TSS32 tss_a, tss_b;
-  SEGMENT_DESCRIPTOR *gdt = (SEGMENT_DESCRIPTOR *) ADR_GDT;
-  tss_a.ldtr = 0;
-  tss_a.iomap = 0x40000000;
-  tss_b.ldtr = 0;
-  tss_b.iomap = 0x40000000;
-  set_segmdesc(gdt + 3, 103, (int) &tss_a, AR_TSS32);  // 103 = sizeof(TSS) - 1?
-  set_segmdesc(gdt + 4, 103, (int) &tss_b, AR_TSS32);
-  load_tr(3 * 8);
-  int task_b_esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 2;
-  tss_b.eip = (int) &task_b_main;
-  tss_b.eflags = 0x00000202; /* IF = 1; */
-  tss_b.eax = tss_b.ecx = tss_b.edx = tss_b.ebx = 0;
-  tss_b.esp = task_b_esp;
-  tss_b.ebp = tss_b.esi = tss_b.edi = 0;
-  tss_b.cs = 2 * 8;
-  tss_b.es = tss_b.ss = tss_b.ds = tss_b.fs = tss_b.gs = 1 * 8;
-  *((int*)(task_b_esp + 4)) = (int)shtctl;
-  *((int*)(task_b_esp + 8)) = (int)sht_back;
-  mt_init();
+  task_init(memman);
+  TASK* task_b = task_alloc();
+  task_b->tss.esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 2;
+  task_b->tss.eip = (int) &task_b_main;
+  task_b->tss.cs = 2 * 8;
+  task_b->tss.es = task_b->tss.ss = task_b->tss.ds = task_b->tss.fs = task_b->tss.gs = 1 * 8;
+  *((int*)(task_b->tss.esp + 4)) = (int)shtctl;
+  *((int*)(task_b->tss.esp + 8)) = (int)sht_back;
+  task_run(task_b);
 
   for (;;) {
     io_cli();
