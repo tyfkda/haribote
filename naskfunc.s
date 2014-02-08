@@ -7,6 +7,24 @@
 .globl	asm_inthandler20, asm_inthandler21, asm_inthandler2c
 .extern inthandler20, inthandler21, inthandler2c
 
+
+.macro asm_inthandler	c_inthandler
+	push	%es
+	push	%ds
+	pushal
+	mov	%esp, %eax
+	push	%eax
+	mov	%ss, %ax
+	mov	%ax, %ds
+	mov	%ax, %es
+	call	\c_inthandler
+	pop	%eax
+	popal
+	pop	%ds
+	pop	%es
+	iret
+.endm
+
 # void io_hlt(void)
 io_hlt:
 	hlt
@@ -108,49 +126,10 @@ store_cr0:
         ret
 
 asm_inthandler20:
-        push    %es
-        push    %ds
-        pushal
-        mov     %esp, %eax
-        push    %eax
-        mov     %ss, %ax
-        mov     %ax, %ds
-        mov     %ax, %es
-        call    inthandler20
-        pop     %eax
-        popal
-        pop     %ds
-        pop     %es
-        iretl
+	asm_inthandler inthandler20
 
 asm_inthandler21:
-        push    %es
-        push    %ds
-        pushal
-        mov     %esp, %eax
-        push    %eax
-        mov     %ss, %ax
-        mov     %ax, %ds
-        mov     %ax, %es
-        call    inthandler21
-        pop     %eax
-        popal
-        pop     %ds
-        pop     %es
-        iretl
+	asm_inthandler inthandler21
 
 asm_inthandler2c:
-        push    %es
-        push    %ds
-        pushal
-        mov     %esp, %eax
-        push    %eax
-        mov     %ss, %ax
-        mov     %ax, %ds
-        mov     %ax, %es
-        call    inthandler2c
-        pop     %eax
-        popal
-        pop     %ds
-        pop     %es
-        iretl
+	asm_inthandler inthandler2c
