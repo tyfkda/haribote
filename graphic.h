@@ -24,7 +24,7 @@ void boxfill8(unsigned char* vram, int xsize, unsigned char c, int x0, int y0, i
 void init_screen8(unsigned char* vram, int x, int y);
 void putfont8(unsigned char* vram, int xsize, int x, int y, unsigned char c, const unsigned char* font);
 void putfonts8_asc(unsigned char* vram, int xsize, int x, int y, unsigned char c, const char* s);
-void init_mouse_cursor8(unsigned char* mouse, char bc);
+void init_mouse_cursor8(unsigned char* mouse);
 void putblock8_8(unsigned char* vram, int xsize, int pxsize, int pysize,
                  int px0, int py0, const unsigned char* buf, int bxsize);
 

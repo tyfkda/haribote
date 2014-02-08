@@ -2,23 +2,23 @@
 
 static char* int2num(char *s, int x, int base, const char* table,
                      char padding, int keta) {
-  int first = TRUE, negative = FALSE;
+  int negative = FALSE;
   if (x < 0) {
     x = -x;
     negative = TRUE;
   }
   *(--s) = '\0';
   do {
-    if (first || x != 0)
-      *(--s) = table[x % base];
-    else
-      *(--s) = padding;
+    *(--s) = table[x % base];
     x /= base;
     --keta;
-    first = FALSE;
-  } while (x > 0 || keta > 0);
-  if (negative)
+  } while (x > 0);
+  if (negative) {
     *(--s) = '-';
+    --keta;
+  }
+  for (; keta > 0; --keta)
+    *(--s) = padding;
   return s;
 }
 

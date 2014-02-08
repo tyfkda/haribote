@@ -77,7 +77,7 @@ void putfonts8_asc(unsigned char* vram, int xsize, int x, int y, unsigned char c
   }
 }
 
-void init_mouse_cursor8(unsigned char* mouse, char bc) {
+void init_mouse_cursor8(unsigned char* mouse) {
   static const char cursor[16][16] = {
     "**************..",
     "*ooooooooooo*...",
@@ -98,7 +98,7 @@ void init_mouse_cursor8(unsigned char* mouse, char bc) {
   };
   for (int y = 0; y < 16; ++y) {
     for (int x = 0; x < 16; ++x) {
-      unsigned char c = bc;
+      unsigned char c = 0xff;
       switch (cursor[y][x]) {
       case '*':  c = COL8_BLACK; break;
       case 'o':  c = COL8_WHITE; break;
@@ -110,7 +110,11 @@ void init_mouse_cursor8(unsigned char* mouse, char bc) {
 
 void putblock8_8(unsigned char* vram, int xsize, int pxsize, int pysize,
                  int px0, int py0, const unsigned char* buf, int bxsize) {
-  for (int y = 0; y < pysize; ++y)
-    for (int x = 0; x < pxsize; ++x)
-      vram[(py0 + y) * xsize + (px0 + x)] = buf[y * bxsize + x];
+  for (int y = 0; y < pysize; ++y) {
+    for (int x = 0; x < pxsize; ++x) {
+      unsigned char c = buf[y * bxsize + x];
+      if (c != 0xff)
+        vram[(py0 + y) * xsize + (px0 + x)] = c;
+    }
+  }
 }
