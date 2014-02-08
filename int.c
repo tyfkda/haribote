@@ -6,9 +6,10 @@
 #include "graphic.h"
 #include "stdio.h"
 
-const int PORT_KEYDAT = 0x0060;
+static const int PORT_KEYDAT = 0x0060;
 
 struct FIFO8 keyfifo;
+struct FIFO8 mousefifo;
 
 void init_pic(void) {
   io_out8(PIC0_IMR, 0xff);  // Prevent all interrupt.
@@ -37,9 +38,8 @@ void inthandler21(int* esp) {
 
 void inthandler2c(int* esp) {
   (void)esp;
-  struct BOOTINFO* binfo = (struct BOOTINFO*)ADR_BOOTINFO;
-  boxfill8(binfo->vram, binfo->scrnx, COL8_BLACK, 0, 0, 32 * 8, 16);
-  putfonts8_asc(binfo->vram, binfo->scrnx, 0, 0, COL8_WHITE, "INT 2C (IRQ-12) : PS/2 mouse");
-  for (;;)
-    io_hlt();
+  io_out8(PIC1_OCW2, 0x64);  // Notify IRQ-12 recv finish to PIC1
+  io_out8(PIC0_OCW2, 0x62);  // Notify IRQ-02 recv finish to PIC0
+  unsigned char data = io_in8(PORT_KEYDAT);
+  fifo8_put(&mousefifo, data);
 }
