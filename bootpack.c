@@ -106,7 +106,7 @@ void HariMain(void) {
   init_screen8(buf_back, binfo->scrnx, binfo->scrny);
 
   init_mouse_cursor8(buf_mouse, 99);
-  make_window8(buf_win, 160, 52, "counter");
+  make_window8(buf_win, 160, 52, "window");
   int mx = (binfo->scrnx - 16) / 2;
   int my = (binfo->scrny - 28 - 16) / 2;
   sheet_slide(shtctl, sht_back, 0, 0);
@@ -130,8 +130,8 @@ void HariMain(void) {
   for (;;) {
     ++count;
     io_cli();
-    sprintf(s, "%09d", timerctl.count);
-    putfonts8_asc_sht(shtctl, sht_win, 40, 28, COL8_BLACK, COL8_GRAY, s, 10);
+    //sprintf(s, "%09d", timerctl.count);
+    //putfonts8_asc_sht(shtctl, sht_win, 40, 28, COL8_BLACK, COL8_GRAY, s, 10);
 
     if (fifo_status(&fifo) == 0) {
       io_stihlt();
@@ -143,6 +143,21 @@ void HariMain(void) {
       char s[4];
       sprintf(s, "%02X", i - 256);
       putfonts8_asc_sht(shtctl, sht_back, 0, 16, COL8_WHITE, COL8_DARK_CYAN, s, 2);
+      static const char keytable[0x54] = {
+        0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '^', 0, 0,
+        'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '@', '[', 0, 0, 'A', 'S',
+        'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', ':', 0, 0, ']', 'Z', 'X', 'C', 'V',
+        'B', 'N', 'M', ',', '.', '/', 0, '*', 0, ' ', 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, '7', '8', '9', '-', '4', '5', '6', '+', '1',
+        '2', '3', '0', '.',
+      };
+      if (i < 256 + 0x54) {
+        if (keytable[i - 256] != 0) {
+          s[0] = keytable[i - 256];
+          s[1] = '\0';
+          putfonts8_asc_sht(shtctl, sht_win, 40, 28, COL8_BLACK, COL8_GRAY, s, 1);
+        }
+      }
       continue;
     } else if (512 <= i && i < 768) {  // Mouse data.
       if (mouse_decode(&mdec, i - 512) != 0) {
