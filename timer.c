@@ -1,6 +1,7 @@
 #include "timer.h"
 #include "bootpack.h"
 #include "int.h"
+#include "mtask.h"
 #include "stdio.h"  // NULL
 
 #define PIT_CTRL  (0x0043)
@@ -29,6 +30,7 @@ void init_pit(void) {
 
 void inthandler20(int* esp) {
   (void)esp;
+  char ts = 0;  // Task switch?
   io_out8(PIC0_OCW2, 0x60);  // Notify IRQ-00 recv to PIC
   ++timerctl.count;
   if (timerctl.next_time > timerctl.count)
@@ -38,11 +40,19 @@ void inthandler20(int* esp) {
     if (timer->timeout > timerctl.count)
       break;
     timer->flags = TIMER_FLAGS_ALLOC;
-    fifo_put(timer->fifo, timer->data);
+    if (timer != mt_timer) {
+      fifo_put(timer->fifo, timer->data);
+    } else {
+      ts = 1;
+    }
     timer = timer->next_timer;
   }
   timerctl.t0 = timer;
   timerctl.next_time = timerctl.t0->timeout;
+
+  if (ts) {
+    mt_taskswitch();
+  }
 }
 
 TIMER* timer_alloc(void) {

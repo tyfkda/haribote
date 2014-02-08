@@ -6,6 +6,7 @@
 #include "keyboard.h"
 #include "memory.h"
 #include "mouse.h"
+#include "mtask.h"
 #include "sheet.h"
 #include "stdio.h"
 #include "timer.h"
@@ -83,9 +84,6 @@ void task_b_main(SHTCTL* shtctl, SHEET* sht_back) {
   int fifobuf[128];
   fifo_init(&fifo, 128, fifobuf);
 
-  TIMER* timer_ts = timer_alloc();
-  timer_init(timer_ts, &fifo, 2);
-  timer_settime(timer_ts, 2);
   TIMER* timer_put = timer_alloc();
   timer_init(timer_put, &fifo, 1);
   timer_settime(timer_put, 1);
@@ -109,10 +107,6 @@ void task_b_main(SHTCTL* shtctl, SHEET* sht_back) {
         putfonts8_asc_sht(shtctl, sht_back, 0, 144, COL8_WHITE, COL8_DARK_CYAN, s, 9);
         timer_settime(timer_put, 1);
       }
-      break;
-    case 2:
-      farjmp(0, 3 * 8);
-      timer_settime(timer_ts, 2);
       break;
     }
   }
@@ -141,9 +135,6 @@ void HariMain(void) {
   timer[2] = timer_alloc();
   timer_init(timer[2], &fifo, 0);
   timer_settime(timer[2], 50);  // 0.5 sec
-  TIMER* timer_ts = timer_alloc();
-  timer_init(timer_ts, &fifo, 2);
-  timer_settime(timer_ts, 2);  // 0.02 sec
 
   init_keyboard(&fifo, 256);
   enable_mouse(&fifo, 512, &mdec);
@@ -211,6 +202,7 @@ void HariMain(void) {
   tss_b.es = tss_b.ss = tss_b.ds = tss_b.fs = tss_b.gs = 1 * 8;
   *((int*)(task_b_esp + 4)) = (int)shtctl;
   *((int*)(task_b_esp + 8)) = (int)sht_back;
+  mt_init();
 
   for (;;) {
     io_cli();
@@ -278,10 +270,6 @@ void HariMain(void) {
       continue;
     }
     switch (i) {
-    case 2:  // Task switch
-      farjmp(0, 4 * 8);
-      timer_settime(timer_ts, 2);
-      break;
     case 10:  // 10sec
       putfonts8_asc_sht(shtctl, sht_back, 0, 64, COL8_WHITE, COL8_DARK_CYAN, "10[sec]", 7);
       break;
