@@ -14,17 +14,68 @@
 	.equ	SCRNY, 0x0ff6	# Resolution y (screen y)
 	.equ	VRAM, 0x0ff8	# Graphics buffer
 
+	.equ	VBEMODE, 0x101	# 1024 x 768 x 8bit color
+	# 0x100 :  640 x  400 x 8bit color
+	# 0x101 :  640 x  480 x 8bit color
+	# 0x103 :  800 x  600 x 8bit color
+	# 0x105 : 1024 x  768 x 8bit color
+	# 0x107 : 1280 x 1024 x 8bit color
+
 start:
-	mov	$0x13, %al	# VGA graphics, 320x200x8bit color
-	mov	$0x00, %ah
+	mov	$0x9000, %ax
+	mov	%ax, %es
+	mov	$0, %di
+	mov	$0x4f00, %ax
+	int	$0x10
+	cmp	$0x004f, %ax
+	jne	scrn320
+
+	# Check VBE version.
+	mov	%es:4(%di), %ax
+	cmp	$0x0200, %ax
+	jb	scrn320
+
+	# Get screen mode information.
+	mov	$VBEMODE, %cx
+	mov	$0x4f01, %ax
+	int	$0x10
+	cmp	$0x004f, %ax
+	jne	scrn320
+
+	# Check screen mode information.
+	cmpb	$8, %es:0x19(%di)
+	jne	scrn320
+	cmpb	$4, %es:0x1b(%di)
+	jne	scrn320
+	mov	%es:0(%di), %ax
+	and	$0x0080, %ax
+	jz	scrn320
+
+	# Switch screen mode.
+	mov	$VBEMODE+0x4000, %bx
+	mov	$0x4f02, %ax
 	int	$0x10
 
+	movb	$8, (VMODE)
+	mov	%es:0x12(%di), %ax
+	mov	%ax, (SCRNX)
+	mov	%es:0x14(%di), %ax
+	mov	%ax, (SCRNY)
+	mov	%es:0x28(%di), %eax
+	mov	%eax, (VRAM)
+	jmp	keystatus
+
+scrn320:
+	mov	$0x13, %al	# VGA 320x200x8bit color
+	mov	$0x00, %ah
+	int	$0x10
 	movb	$8, (VMODE)
 	movw	$320, (SCRNX)
 	movw	$200, (SCRNY)
 	movl	$0x000a0000, (VRAM)
 
 	# Get keyboard LED state from BIOS
+keystatus:
 	mov	$0x02, %ah
 	int	$0x16
 	movb	%al, (LEDS)
