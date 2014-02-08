@@ -38,7 +38,11 @@ void sheet_setbuf(SHEET* sht, unsigned char* buf, int xsize, int ysize, int col_
 
 static void sheet_refreshsub(SHTCTL* ctl, int vx0, int vy0, int vx1, int vy1) {
   unsigned char* vram = ctl->vram;
-  int xsize = ctl->xsize;
+  int xsize = ctl->xsize, ysize = ctl->ysize;
+  if (vx0 < 0)  vx0 = 0;
+  if (vy0 < 0)  vy0 = 0;
+  if (vx1 > xsize)  vx1 = xsize;
+  if (vx1 > ysize)  vy1 = ysize;
   for (int h = 0; h <= ctl->top; ++h) {
     SHEET* sht = ctl->sheets[h];
     unsigned char* buf = sht->buf;
