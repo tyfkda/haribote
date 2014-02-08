@@ -6,14 +6,14 @@
 #define MAX_TIMER  (16)
 
 typedef struct TIMER {
-  struct TIMER* next;
+  struct TIMER* next_timer;
   unsigned int timeout, flags;
   FIFO* fifo;
   int data;
 } TIMER;
 
 typedef struct {
-  unsigned int count, next;
+  unsigned int count, next_time;
   TIMER* t0;
   TIMER timers0[MAX_TIMER];
 } TIMERCTL;

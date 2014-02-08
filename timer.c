@@ -16,22 +16,22 @@ void init_pit(void) {
   io_out8(PIT_CNT0, 0x9c);
   io_out8(PIT_CNT0, 0x2e);
   timerctl.count = 0;
-  timerctl.next = (unsigned int)-1;
+  timerctl.next_time = (unsigned int)-1;
   for (int i = 0; i < MAX_TIMER; ++i)
     timerctl.timers0[i].flags = 0;
   TIMER* t = timer_alloc();
   t->timeout = (unsigned int)-1;
   t->flags = TIMER_FLAGS_USING;
-  t->next = NULL;
+  t->next_timer = NULL;
   timerctl.t0 = t;
-  timerctl.next = (unsigned int)-1;
+  timerctl.next_time = (unsigned int)-1;
 }
 
 void inthandler20(int* esp) {
   (void)esp;
   io_out8(PIC0_OCW2, 0x60);  // Notify IRQ-00 recv to PIC
   ++timerctl.count;
-  if (timerctl.next > timerctl.count)
+  if (timerctl.next_time > timerctl.count)
     return;
   TIMER* timer = timerctl.t0;
   for (;;) {
@@ -39,10 +39,10 @@ void inthandler20(int* esp) {
       break;
     timer->flags = TIMER_FLAGS_ALLOC;
     fifo_put(timer->fifo, timer->data);
-    timer = timer->next;
+    timer = timer->next_timer;
   }
   timerctl.t0 = timer;
-  timerctl.next = timerctl.t0->timeout;
+  timerctl.next_time = timerctl.t0->timeout;
 }
 
 TIMER* timer_alloc(void) {
@@ -72,15 +72,15 @@ void timer_settime(TIMER* timer, unsigned int timeout) {
   TIMER* t = timerctl.t0, *s = NULL;
   if (timer->timeout <= t->timeout) {  // Earliest timer.
     timerctl.t0 = timer;
-    timer->next = t;
-    timerctl.next = timer->timeout;
+    timer->next_timer = t;
+    timerctl.next_time = timer->timeout;
   } else {
     for (;;) {
       s = t;
-      t = t->next;
+      t = t->next_timer;
       if (timer->timeout <= t->timeout) {
-        s->next = timer;
-        timer->next = t;
+        s->next_timer = timer;
+        timer->next_timer = t;
         break;
       }
     }
