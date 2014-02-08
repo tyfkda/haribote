@@ -77,7 +77,7 @@ void putfonts8_asc(unsigned char* vram, int xsize, int x, int y, unsigned char c
   }
 }
 
-void init_mouse_cursor8(unsigned char* mouse) {
+void init_mouse_cursor8(unsigned char* mouse, unsigned char bc) {
   static const char cursor[16][16] = {
     "**************..",
     "*ooooooooooo*...",
@@ -98,7 +98,7 @@ void init_mouse_cursor8(unsigned char* mouse) {
   };
   for (int y = 0; y < 16; ++y) {
     for (int x = 0; x < 16; ++x) {
-      unsigned char c = 0xff;
+      unsigned char c = bc;
       switch (cursor[y][x]) {
       case '*':  c = COL8_BLACK; break;
       case 'o':  c = COL8_WHITE; break;
