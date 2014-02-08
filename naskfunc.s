@@ -4,7 +4,9 @@
 .globl	io_load_eflags, io_store_eflags
 .globl	load_gdtr, load_idtr
 .globl  load_cr0, store_cr0
+.globl	load_tr
 .globl	asm_inthandler20, asm_inthandler21, asm_inthandler2c
+.globl	farjmp
 .extern inthandler20, inthandler21, inthandler2c
 
 
@@ -125,6 +127,11 @@ store_cr0:
         mov     %eax, %cr0
         ret
 
+# void load_tr(int tr)
+load_tr:
+	LTR	4(%esp)		# tr
+	ret
+
 asm_inthandler20:
 	asm_inthandler inthandler20
 
@@ -133,3 +140,8 @@ asm_inthandler21:
 
 asm_inthandler2c:
 	asm_inthandler inthandler2c
+
+# void farjmp(int eip, int cs)
+farjmp:
+	ljmp	4(%esp)		# eip, cs
+	ret

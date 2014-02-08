@@ -4,19 +4,7 @@
 #include "bootpack.h"
 #include "int.h"
 
-struct SEGMENT_DESCRIPTOR {
-  short limit_low, base_low;
-  char base_mid, access_right;
-  char limit_high, base_high;
-};
-
-struct GATE_DESCRIPTOR {
-  short offset_low, selector;
-  char dw_count, access_right;
-  short offset_high;
-};
-
-void set_segmdesc(struct SEGMENT_DESCRIPTOR* sd, unsigned int limit, int base, int ar) {
+void set_segmdesc(SEGMENT_DESCRIPTOR* sd, unsigned int limit, int base, int ar) {
   if (limit > 0xfffff) {
     ar |= 0x8000;  // G_bit = 1
     limit /= 0x1000;
@@ -29,7 +17,7 @@ void set_segmdesc(struct SEGMENT_DESCRIPTOR* sd, unsigned int limit, int base, i
   sd->base_high = (base >> 24) & 0xff;
 }
 
-void set_gatedesc(struct GATE_DESCRIPTOR* gd, int offset, int selector, int ar) {
+void set_gatedesc(GATE_DESCRIPTOR* gd, int offset, int selector, int ar) {
   gd->offset_low = offset & 0xffff;
   gd->selector = selector;
   gd->dw_count = (ar >> 8) & 0xff;
@@ -38,8 +26,8 @@ void set_gatedesc(struct GATE_DESCRIPTOR* gd, int offset, int selector, int ar) 
 }
 
 void init_gdtidt(void) {
-  struct SEGMENT_DESCRIPTOR* gdt = (struct SEGMENT_DESCRIPTOR*)ADR_GDT;
-  struct GATE_DESCRIPTOR* idt = (struct GATE_DESCRIPTOR*)ADR_IDT;
+  SEGMENT_DESCRIPTOR* gdt = (SEGMENT_DESCRIPTOR*)ADR_GDT;
+  GATE_DESCRIPTOR* idt = (GATE_DESCRIPTOR*)ADR_IDT;
 
   // Init GDT.
   for (int i = 0; i < LIMIT_GDT / 8; ++i)

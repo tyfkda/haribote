@@ -10,6 +10,13 @@
 #include "stdio.h"
 #include "timer.h"
 
+typedef struct {
+  int backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
+  int eip, eflags, eax, ecx, edx, ebx, esp, ebp, esi, edi;
+  int es, cs, ss, ds, fs, gs;
+  int ldtr, iomap;
+} TSS32;
+
 void putfonts8_asc_sht(SHTCTL* shtctl, SHEET* sht, int x, int y, int c, int b, const char* s, int l) {
   boxfill8(sht->buf, sht->bxsize, b, x, y, x + l * 8, y + 16);
   putfonts8_asc(sht->buf, sht->bxsize, x, y, c, s);
@@ -71,6 +78,46 @@ void make_textbox8(SHEET* sht, int x0, int y0, int sx, int sy, int c) {
   boxfill8(sht->buf, sht->bxsize, c, x0 - 1, y0 - 1, x1 + 1, y1 + 1);
 }
 
+void task_b_main(SHTCTL* shtctl, SHEET* sht_back) {
+  FIFO fifo;
+  int fifobuf[128];
+  fifo_init(&fifo, 128, fifobuf);
+
+  TIMER* timer_ts = timer_alloc();
+  timer_init(timer_ts, &fifo, 2);
+  timer_settime(timer_ts, 2);
+  TIMER* timer_put = timer_alloc();
+  timer_init(timer_put, &fifo, 1);
+  timer_settime(timer_put, 1);
+
+  int count = 0;
+  for (;;) {
+    ++count;
+    io_cli();
+    if (fifo_status(&fifo) == 0) {
+      io_stihlt();
+      //io_sti();
+      continue;
+    }
+    int i = fifo_get(&fifo);
+    io_sti();
+    switch (i) {
+    case 1:
+      {
+        char s[16];
+        sprintf(s, "%9d", count);
+        putfonts8_asc_sht(shtctl, sht_back, 0, 144, COL8_WHITE, COL8_DARK_CYAN, s, 9);
+        timer_settime(timer_put, 1);
+      }
+      break;
+    case 2:
+      farjmp(0, 3 * 8);
+      timer_settime(timer_ts, 2);
+      break;
+    }
+  }
+}
+
 void HariMain(void) {
   init_gdtidt();
   init_pic();
@@ -94,6 +141,9 @@ void HariMain(void) {
   timer[2] = timer_alloc();
   timer_init(timer[2], &fifo, 0);
   timer_settime(timer[2], 50);  // 0.5 sec
+  TIMER* timer_ts = timer_alloc();
+  timer_init(timer_ts, &fifo, 2);
+  timer_settime(timer_ts, 2);  // 0.02 sec
 
   init_keyboard(&fifo, 256);
   enable_mouse(&fifo, 512, &mdec);
@@ -141,6 +191,26 @@ void HariMain(void) {
   putfonts8_asc(buf_back, binfo->scrnx, 0, 32, COL8_WHITE, s);
 
   sheet_refresh(shtctl, sht_back, 0, 0, binfo->scrnx, 48);
+
+  TSS32 tss_a, tss_b;
+  SEGMENT_DESCRIPTOR *gdt = (SEGMENT_DESCRIPTOR *) ADR_GDT;
+  tss_a.ldtr = 0;
+  tss_a.iomap = 0x40000000;
+  tss_b.ldtr = 0;
+  tss_b.iomap = 0x40000000;
+  set_segmdesc(gdt + 3, 103, (int) &tss_a, AR_TSS32);  // 103 = sizeof(TSS) - 1?
+  set_segmdesc(gdt + 4, 103, (int) &tss_b, AR_TSS32);
+  load_tr(3 * 8);
+  int task_b_esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 2;
+  tss_b.eip = (int) &task_b_main;
+  tss_b.eflags = 0x00000202; /* IF = 1; */
+  tss_b.eax = tss_b.ecx = tss_b.edx = tss_b.ebx = 0;
+  tss_b.esp = task_b_esp;
+  tss_b.ebp = tss_b.esi = tss_b.edi = 0;
+  tss_b.cs = 2 * 8;
+  tss_b.es = tss_b.ss = tss_b.ds = tss_b.fs = tss_b.gs = 1 * 8;
+  *((int*)(task_b_esp + 4)) = (int)shtctl;
+  *((int*)(task_b_esp + 8)) = (int)sht_back;
 
   for (;;) {
     io_cli();
@@ -208,6 +278,10 @@ void HariMain(void) {
       continue;
     }
     switch (i) {
+    case 2:  // Task switch
+      farjmp(0, 4 * 8);
+      timer_settime(timer_ts, 2);
+      break;
     case 10:  // 10sec
       putfonts8_asc_sht(shtctl, sht_back, 0, 64, COL8_WHITE, COL8_DARK_CYAN, "10[sec]", 7);
       break;
