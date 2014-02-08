@@ -87,10 +87,10 @@ void HariMain(void) {
   TIMER* timer[3];
   timer[0] = timer_alloc();
   timer_init(timer[0], &fifo, 10);
-  timer_settime(timer[0], 500);  // 5 sec
+  timer_settime(timer[0], 1000);  // 5 sec
   timer[1] = timer_alloc();
   timer_init(timer[1], &fifo, 3);
-  timer_settime(timer[1], 100);  // 1 sec
+  timer_settime(timer[1], 300);  // 1 sec
   timer[2] = timer_alloc();
   timer_init(timer[2], &fifo, 0);
   timer_settime(timer[2], 50);  // 0.5 sec
@@ -147,6 +147,7 @@ void HariMain(void) {
 
     if (fifo_status(&fifo) == 0) {
       io_stihlt();
+      continue;
     }
 
     int i = fifo_get(&fifo);
