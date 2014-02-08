@@ -25,7 +25,7 @@ ipl.bin:	ipl.o
 haribote.bin:	haribote.o
 	ld -N -e start -Ttext 0xc200 -S --oformat binary -o $@ $<
 
-bootpack.bin:	bootpack.o graphic.o dsctbl.o stdio.o int.o fifo.o naskfunc.o fontdata.o
+bootpack.bin:	bootpack.o graphic.o dsctbl.o stdio.o int.o fifo.o keyboard.o mouse.o naskfunc.o fontdata.o
 	ld -T harimain.ls --oformat binary -o $@ $^
 
 clean:
