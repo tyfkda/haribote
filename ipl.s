@@ -8,7 +8,7 @@ start:
 	.byte	0x90
 
 	# Boot Parameter Block.
-	.ascii "TEST IPL"	# Boot sector name (8 bytes)
+	.ascii "HARIBOTE"	# Boot sector name (8 bytes)
 	.word	512		# Size of sector (must be 512)
 	.byte	1		# Size of cluster (must be 1)
 	.word	1		# FAT start
@@ -23,7 +23,7 @@ start:
 	.long	0		# Drive size
 	.byte	0,0,0x29	# Magic
 	.long	0xffffffff	# Volume serial number
-	.ascii	"HELLO-OS   "	# Disk name (11 bytes)
+	.ascii	"HARIBOTE-OS"	# Disk name (11 bytes)
 	.ascii	"FAT12   "	# Format name (8 bytes)
 	.space	18,0
 
@@ -91,7 +91,7 @@ putloop:
 
 fin:
 	hlt
-	jmp		fin
+	jmp	fin
 	
 msg:
 	.ascii	"Disk read error"
