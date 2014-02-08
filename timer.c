@@ -17,9 +17,14 @@ void init_pit(void) {
   io_out8(PIT_CNT0, 0x2e);
   timerctl.count = 0;
   timerctl.next = (unsigned int)-1;
-  timerctl.using = 0;
   for (int i = 0; i < MAX_TIMER; ++i)
     timerctl.timers0[i].flags = 0;
+  TIMER* t = timer_alloc();
+  t->timeout = (unsigned int)-1;
+  t->flags = TIMER_FLAGS_USING;
+  t->next = NULL;
+  timerctl.t0 = t;
+  timerctl.next = (unsigned int)-1;
 }
 
 void inthandler20(int* esp) {
@@ -28,21 +33,16 @@ void inthandler20(int* esp) {
   ++timerctl.count;
   if (timerctl.next > timerctl.count)
     return;
-  unsigned int i;
-  for (i = 0; i < timerctl.using; ++i) {
-    TIMER* timer = timerctl.timers[i];
+  TIMER* timer = timerctl.t0;
+  for (;;) {
     if (timer->timeout > timerctl.count)
       break;
     timer->flags = TIMER_FLAGS_ALLOC;
     fifo_put(timer->fifo, timer->data);
+    timer = timer->next;
   }
-  timerctl.using -= i;
-  for (unsigned int j = 0; j < timerctl.using; ++j)
-    timerctl.timers[j] = timerctl.timers[j + i];
-  if (timerctl.using > 0)
-    timerctl.next = timerctl.timers[0]->timeout;
-  else
-    timerctl.next = (unsigned int)-1;
+  timerctl.t0 = timer;
+  timerctl.next = timerctl.t0->timeout;
 }
 
 TIMER* timer_alloc(void) {
@@ -69,15 +69,21 @@ void timer_settime(TIMER* timer, unsigned int timeout) {
   timer->flags = TIMER_FLAGS_USING;
   int e = io_load_eflags();
   io_cli();
-  unsigned int i;
-  for (i = 0; i < timerctl.using; ++i) {
-    if (timerctl.timers[i]->timeout >= timer->timeout)
-      break;
+  TIMER* t = timerctl.t0, *s = NULL;
+  if (timer->timeout <= t->timeout) {  // Earliest timer.
+    timerctl.t0 = timer;
+    timer->next = t;
+    timerctl.next = timer->timeout;
+  } else {
+    for (;;) {
+      s = t;
+      t = t->next;
+      if (timer->timeout <= t->timeout) {
+        s->next = timer;
+        timer->next = t;
+        break;
+      }
+    }
   }
-  ++timerctl.using;
-  for (unsigned int j = timerctl.using; j > i; --j)
-    timerctl.timers[j] = timerctl.timers[j - 1];
-  timerctl.timers[i] = timer;
-  timerctl.next = timerctl.timers[0]->timeout;
   io_store_eflags(e);
 }

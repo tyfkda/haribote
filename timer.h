@@ -5,15 +5,16 @@
 
 #define MAX_TIMER  (16)
 
-typedef struct {
+typedef struct TIMER {
+  struct TIMER* next;
   unsigned int timeout, flags;
   FIFO* fifo;
   int data;
 } TIMER;
 
 typedef struct {
-  unsigned int count, next, using;
-  TIMER* timers[MAX_TIMER];
+  unsigned int count, next;
+  TIMER* t0;
   TIMER timers0[MAX_TIMER];
 } TIMERCTL;
 
