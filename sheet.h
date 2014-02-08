@@ -14,6 +14,7 @@ typedef struct {
 
 typedef struct {
   unsigned char* vram;
+  unsigned char* map;
   int xsize, ysize, top;
   SHEET* sheets[MAX_SHEETS];
   SHEET sheets0[MAX_SHEETS];
