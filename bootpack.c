@@ -4,59 +4,9 @@
 #include "graphic.h"
 #include "int.h"
 #include "keyboard.h"
+#include "memory.h"
 #include "mouse.h"
 #include "stdio.h"
-
-#define EFLAGS_AC_BIT      0x00040000
-#define CR0_CACHE_DISABLE  0x60000000
-
-extern unsigned int memtest_sub(unsigned int start, unsigned int end) {
-  const unsigned int pat0 = 0xaa55aa55, pat1 = ~pat0;
-  unsigned int i;
-  for (i = start; i <= end; i += 0x1000) {
-    volatile unsigned int* p = (unsigned int*)(i + 0xffc);
-    unsigned int old = *p;
-    *p = pat0;
-    *p ^= 0xffffffff;
-    if (*p != pat1) {
-    not_memory:
-      *p = old;
-      break;
-    }
-    *p ^= 0xffffffff;
-    if (*p != pat0)
-      goto not_memory;
-    *p = old;
-  }
-  return i;
-}
-
-unsigned int memtest(unsigned int start, unsigned int end) {
-  char flg486 = 0;
-
-  unsigned int eflg = io_load_eflags();
-  eflg |= EFLAGS_AC_BIT;  // AC-bit = 1
-  io_store_eflags(eflg);
-  eflg = io_load_eflags();
-  if ((eflg & EFLAGS_AC_BIT) != 0)  // AC becomes 0 on 386.
-    flg486 = 1;
-  eflg &= ~EFLAGS_AC_BIT;  // AC-bit = 0
-  io_store_eflags(eflg);
-
-  if (flg486) {
-    unsigned int cr0 = load_cr0();
-    cr0 |= CR0_CACHE_DISABLE;  // Disable cache.
-    store_cr0(cr0);
-  }
-
-  unsigned int i = memtest_sub(start, end);
-  if (flg486) {
-    unsigned int cr0 = load_cr0();
-    cr0 &= ~CR0_CACHE_DISABLE;  // Enable cache.
-    store_cr0(cr0);
-  }
-  return i;
-}
 
 void HariMain(void) {
   init_gdtidt();
@@ -73,6 +23,12 @@ void HariMain(void) {
   init_keyboard();
   enable_mouse(&mdec);
 
+  unsigned int memtotal = memtest(0x00400000, 0xbfffffff);
+  struct MEMMAN *memman = (struct MEMMAN*)MEMMAN_ADDR;
+  memman_init(memman);
+  memman_free(memman, 0x00001000, 0x0009e000); /* 0x00001000 - 0x0009efff */
+  memman_free(memman, 0x00400000, memtotal - 0x00400000);
+
   struct BOOTINFO* binfo = (struct BOOTINFO*)ADR_BOOTINFO;
   init_palette();
   init_screen8(binfo->vram, binfo->scrnx, binfo->scrny);
@@ -87,8 +43,8 @@ void HariMain(void) {
   sprintf(s, "(%3d, %3d)", mx, my);
   putfonts8_asc(binfo->vram, binfo->scrnx, 0, 0, COL8_WHITE, s);
 
-  int i = memtest(0x00400000, 0xbfffffff) / (1024 * 1024);
-  sprintf(s, "memory %dMB", i);
+  sprintf(s, "memory %dMB   free : %dKB",
+          memtotal / (1024 * 1024), memman_total(memman) / 1024);
   putfonts8_asc(binfo->vram, binfo->scrnx, 0, 32, COL8_WHITE, s);
 
   for (;;) {
