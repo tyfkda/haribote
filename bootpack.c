@@ -8,6 +8,7 @@
 #include "mouse.h"
 #include "sheet.h"
 #include "stdio.h"
+#include "timer.h"
 
 void make_window8(unsigned char* buf, int xsize, int ysize, char* title) {
   static const char closebtn[14][16] = {
@@ -60,7 +61,8 @@ void HariMain(void) {
   MOUSE_DEC mdec;
   fifo8_init(&keyfifo, 32, keybuf);
   fifo8_init(&mousefifo, 128, mousebuf);
-  io_out8(PIC0_IMR, 0xf9);  // Enable PIC1 and keyboard.
+  init_pit();
+  io_out8(PIC0_IMR, 0xf8);  // Enable PIT, PIC1 and keyboard.
   io_out8(PIC1_IMR, 0xef);  // Enable mouse.
 
   init_keyboard();
@@ -107,11 +109,9 @@ void HariMain(void) {
 
   sheet_refresh(shtctl, sht_back, 0, 0, binfo->scrnx, 48);
 
-  int count = 0;
   for (;;) {
     io_cli();
-    ++count;
-    sprintf(s, "%09d", count);
+    sprintf(s, "%09d", timerctl.count);
     boxfill8(buf_win, 160, COL8_GRAY, 40, 28, 120, 44);
     putfonts8_asc(buf_win, 160, 40, 28, COL8_BLACK, s);
     sheet_refresh(shtctl, sht_win, 40, 28, 120, 44);
