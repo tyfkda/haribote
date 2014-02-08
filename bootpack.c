@@ -63,30 +63,27 @@ void HariMain(void) {
   init_pic();
   io_sti();  // Enable CPU interrupt after IDT/PIC initialization.
 
-  unsigned char keybuf[32], mousebuf[128];
+  FIFO fifo;
+  int fifobuf[128];
   MOUSE_DEC mdec;
-  fifo8_init(&keyfifo, 32, keybuf);
-  fifo8_init(&mousefifo, 128, mousebuf);
+  fifo_init(&fifo, 128, fifobuf);
   init_pit();
   io_out8(PIC0_IMR, 0xf8);  // Enable PIT, PIC1 and keyboard.
   io_out8(PIC1_IMR, 0xef);  // Enable mouse.
 
-  FIFO8 timerfifo;
-  unsigned char timerbuf[8];
-  fifo8_init(&timerfifo, 8, timerbuf);
   TIMER* timer[3];
   timer[0] = timer_alloc();
-  timer_init(timer[0], &timerfifo, 1);
-  timer_settime(timer[0], 1000);  // 10 sec
+  timer_init(timer[0], &fifo, 10);
+  timer_settime(timer[0], 500);  // 5 sec
   timer[1] = timer_alloc();
-  timer_init(timer[1], &timerfifo, 2);
-  timer_settime(timer[1], 300);  // 3 sec
+  timer_init(timer[1], &fifo, 3);
+  timer_settime(timer[1], 100);  // 1 sec
   timer[2] = timer_alloc();
-  timer_init(timer[2], &timerfifo, 3);
+  timer_init(timer[2], &fifo, 0);
   timer_settime(timer[2], 50);  // 0.5 sec
 
-  init_keyboard();
-  enable_mouse(&mdec);
+  init_keyboard(&fifo, 256);
+  enable_mouse(&fifo, 512, &mdec);
 
   unsigned int memtotal = memtest(0x00400000, 0xbfffffff);
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
@@ -129,24 +126,26 @@ void HariMain(void) {
 
   sheet_refresh(shtctl, sht_back, 0, 0, binfo->scrnx, 48);
 
+  int count = 0;
   for (;;) {
+    ++count;
     io_cli();
     sprintf(s, "%09d", timerctl.count);
     putfonts8_asc_sht(shtctl, sht_win, 40, 28, COL8_BLACK, COL8_GRAY, s, 10);
 
-    if (fifo8_status(&keyfifo) != 0) {
-      int i = fifo8_get(&keyfifo);
-      io_sti();
+    if (fifo_status(&fifo) == 0) {
+      io_stihlt();
+    }
 
+    int i = fifo_get(&fifo);
+    io_sti();
+    if (256 <= i && i < 512) {  // Keyboard data.
       char s[4];
-      sprintf(s, "%02X", i);
+      sprintf(s, "%02X", i - 256);
       putfonts8_asc_sht(shtctl, sht_back, 0, 16, COL8_WHITE, COL8_DARK_CYAN, s, 2);
       continue;
-    }
-    if (fifo8_status(&mousefifo) != 0) {
-      int i = fifo8_get(&mousefifo);
-      io_sti();
-      if (mouse_decode(&mdec, i) != 0) {
+    } else if (512 <= i && i < 768) {  // Mouse data.
+      if (mouse_decode(&mdec, i - 512) != 0) {
         // Erase mouse cursor.
         sprintf(s, "[lcr %4d %4d]", mdec.x, mdec.y);
         if ((mdec.btn & 0x01) != 0)
@@ -170,30 +169,25 @@ void HariMain(void) {
       }
       continue;
     }
-    if (fifo8_status(&timerfifo) != 0) {
-      int tid = fifo8_get(&timerfifo);
-      io_sti();
-      switch (tid) {
-      case 1:  // 10sec
-        putfonts8_asc_sht(shtctl, sht_back, 0, 64, COL8_WHITE, COL8_DARK_CYAN, "10[sec]", 7);
-        break;
-      case 2:  // 3sec
-        putfonts8_asc_sht(shtctl, sht_back, 0, 80, COL8_WHITE, COL8_DARK_CYAN, " 3[sec]", 7);
-        break;
-      case 3:  // 0.5sec
-      case 4:  // 0.5sec
-        {
-          unsigned char col = tid == 3 ? COL8_WHITE : COL8_DARK_GRAY;
-          boxfill8(buf_back, binfo->scrnx, col, 8, 96, 16, 112);
-          sheet_refresh(shtctl, sht_back, 8, 96, 16, 112);
-          timer_init(timer[2], &timerfifo, (3 + 4) - tid);
-          timer_settime(timer[2], 50);
-        }
-        break;
+    switch (i) {
+    case 10:  // 10sec
+      putfonts8_asc_sht(shtctl, sht_back, 0, 64, COL8_WHITE, COL8_DARK_CYAN, "10[sec]", 7);
+      break;
+    case 3:  // 3sec
+      putfonts8_asc_sht(shtctl, sht_back, 0, 80, COL8_WHITE, COL8_DARK_CYAN, " 3[sec]", 7);
+      count = 0;
+      break;
+    case 0:  // 0.5sec
+    case 1:  // 0.5sec
+      {
+        unsigned char col = i == 0 ? COL8_WHITE : COL8_DARK_GRAY;
+        boxfill8(buf_back, binfo->scrnx, col, 8, 96, 16, 112);
+        sheet_refresh(shtctl, sht_back, 8, 96, 16, 112);
+        timer_init(timer[2], &fifo, 1 - i);
+        timer_settime(timer[2], 50);
       }
-      continue;
+      break;
     }
-
-    io_stihlt();
+    continue;
   }
 }

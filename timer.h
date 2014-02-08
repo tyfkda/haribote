@@ -7,8 +7,8 @@
 
 typedef struct {
   unsigned int timeout, flags;
-  FIFO8* fifo;
-  unsigned char data;
+  FIFO* fifo;
+  int data;
 } TIMER;
 
 typedef struct {
@@ -22,7 +22,7 @@ extern TIMERCTL timerctl;
 void init_pit(void);
 TIMER* timer_alloc(void);
 void timer_free(TIMER* timer);
-void timer_init(TIMER* timer, FIFO8* fifo, unsigned char data);
+void timer_init(TIMER* timer, FIFO* fifo, int data);
 void timer_settime(TIMER* timer, unsigned int timeout);
 
 #endif

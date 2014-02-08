@@ -9,17 +9,21 @@
 static const int KEYCMD_SENDTO_MOUSE = 0xd4;
 static const int MOUSECMD_ENABLE = 0xf4;
 
-struct FIFO8 mousefifo;
+static FIFO* mousefifo;
+static int mousedata0;
 
 void inthandler2c(int* esp) {
   (void)esp;
   io_out8(PIC1_OCW2, 0x64);  // Notify IRQ-12 recv finish to PIC1
   io_out8(PIC0_OCW2, 0x62);  // Notify IRQ-02 recv finish to PIC0
   unsigned char data = io_in8(PORT_KEYDAT);
-  fifo8_put(&mousefifo, data);
+  fifo_put(mousefifo, data + mousedata0);
 }
 
-void enable_mouse(MOUSE_DEC* mdec) {
+void enable_mouse(FIFO* fifo, int data0, MOUSE_DEC* mdec) {
+  mousefifo = fifo;
+  mousedata0 = data0;
+
   wait_KBC_sendready();
   io_out8(PORT_KEYCMD, KEYCMD_SENDTO_MOUSE);
   wait_KBC_sendready();

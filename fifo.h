@@ -3,14 +3,14 @@
 #ifndef __FIFO_H__
 #define __FIFO_H__
 
-typedef struct FIFO8 {
-  unsigned char* buf;
+typedef struct FIFO {
+  int* buf;
   int p, q, size, free, flags;
-} FIFO8;
+} FIFO;
 
-void fifo8_init(FIFO8* fifo, int size, unsigned char* buf);
-int fifo8_put(FIFO8* fifo, unsigned char data);
-int fifo8_get(FIFO8* fifo);
-int fifo8_status(FIFO8* fifo);
+void fifo_init(FIFO* fifo, int size, int* buf);
+int fifo_put(FIFO* fifo, int data);
+int fifo_get(FIFO* fifo);
+int fifo_status(FIFO* fifo);
 
 #endif

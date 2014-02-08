@@ -2,14 +2,14 @@
 
 const int FLAGS_OVERRUN = 1 << 0;
 
-void fifo8_init(FIFO8* fifo, int size, unsigned char* buf) {
+void fifo_init(FIFO* fifo, int size, int* buf) {
   fifo->buf = buf;
   fifo->size = fifo->free = size;
   fifo->p = fifo->q = 0;
   fifo->flags = 0;
 }
 
-int fifo8_put(FIFO8* fifo, unsigned char data) {
+int fifo_put(FIFO* fifo, int data) {
   if (fifo->free == 0) {
     fifo->flags |= FLAGS_OVERRUN;
     return -1;
@@ -21,7 +21,7 @@ int fifo8_put(FIFO8* fifo, unsigned char data) {
   return 0;
 }
 
-int fifo8_get(FIFO8* fifo) {
+int fifo_get(FIFO* fifo) {
   if (fifo->free == fifo->size)  // Empty.
     return -1;
   int data = fifo->buf[fifo->q];
@@ -31,6 +31,6 @@ int fifo8_get(FIFO8* fifo) {
   return data;
 }
 
-int fifo8_status(FIFO8* fifo) {
+int fifo_status(FIFO* fifo) {
   return fifo->size - fifo->free;
 }

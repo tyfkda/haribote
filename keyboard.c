@@ -10,13 +10,14 @@ static const int KEYSTA_SEND_NOTREADY = 0x02;
 static const int KEYCMD_WRITE_MODE = 0x60;
 static const int KBC_MODE = 0x47;
 
-struct FIFO8 keyfifo;
+static FIFO* keyfifo;
+static int keydata0;
 
 void inthandler21(int* esp) {
   (void)esp;
   io_out8(PIC0_OCW2, 0x61);  // Notify IRQ-01 recv finish to PIC
   unsigned char data = io_in8(PORT_KEYDAT);
-  fifo8_put(&keyfifo, data);
+  fifo_put(keyfifo, data + keydata0);
 }
 
 void wait_KBC_sendready(void) {
@@ -25,7 +26,10 @@ void wait_KBC_sendready(void) {
       break;
 }
 
-void init_keyboard(void) {
+void init_keyboard(FIFO* fifo, int data0) {
+  keyfifo = fifo;
+  keydata0 = data0;
+
   wait_KBC_sendready();
   io_out8(PORT_KEYCMD, KEYCMD_WRITE_MODE);
   wait_KBC_sendready();

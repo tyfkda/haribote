@@ -34,7 +34,7 @@ void inthandler20(int* esp) {
     if (timer->timeout > timerctl.count)
       break;
     timer->flags = TIMER_FLAGS_ALLOC;
-    fifo8_put(timer->fifo, timer->data);
+    fifo_put(timer->fifo, timer->data);
   }
   timerctl.using -= i;
   for (unsigned int j = 0; j < timerctl.using; ++j)
@@ -59,7 +59,7 @@ void timer_free(TIMER* timer) {
   timer->flags = 0;
 }
 
-void timer_init(TIMER* timer, FIFO8* fifo, unsigned char data) {
+void timer_init(TIMER* timer, FIFO* fifo, int data) {
   timer->fifo = fifo;
   timer->data = data;
 }
