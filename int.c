@@ -2,12 +2,13 @@
 
 #include "int.h"
 #include "bootpack.h"
+#include "fifo.h"
 #include "graphic.h"
 #include "stdio.h"
 
 const int PORT_KEYDAT = 0x0060;
 
-struct KEYBUF keybuf;
+struct FIFO8 keyfifo;
 
 void init_pic(void) {
   io_out8(PIC0_IMR, 0xff);  // Prevent all interrupt.
@@ -31,10 +32,7 @@ void inthandler21(int* esp) {
   (void)esp;
   io_out8(PIC0_OCW2, 0x61);  // Notify IRQ-01 recv finish to PIC
   unsigned char data = io_in8(PORT_KEYDAT);
-  if (keybuf.flag == 0) {
-    keybuf.data = data;
-    keybuf.flag = 1;
-  }
+  fifo8_put(&keyfifo, data);
 }
 
 void inthandler2c(int* esp) {

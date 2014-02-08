@@ -16,10 +16,7 @@
 #define PIC1_ICW3  0x00a1
 #define PIC1_ICW4  0x00a1
 
-struct KEYBUF {
-  unsigned char data, flag;
-};
-extern struct KEYBUF keybuf;
+extern struct FIFO8 keyfifo;
 
 void init_pic(void);
 

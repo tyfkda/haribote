@@ -1,5 +1,6 @@
 #include "bootpack.h"
 #include "dsctbl.h"
+#include "fifo.h"
 #include "graphic.h"
 #include "int.h"
 #include "stdio.h"
@@ -9,6 +10,8 @@ void HariMain(void) {
   init_pic();
   io_sti();  // Enable CPU interrupt after IDT/PIC initialization.
 
+  unsigned char keybuf[32];
+  fifo8_init(&keyfifo, 32, keybuf);
   io_out8(PIC0_IMR, 0xf9);  // Enable PIC1 and keyboard.
   io_out8(PIC1_IMR, 0xef);  // Enable mouse.
 
@@ -28,11 +31,10 @@ void HariMain(void) {
 
   for (;;) {
     io_cli();
-    if (keybuf.flag == 0) {
+    if (fifo8_status(&keyfifo) == 0) {
       io_stihlt();
     } else {
-      int i = keybuf.data;
-      keybuf.flag = 0;
+      int i = fifo8_get(&keyfifo);
       io_sti();
 
       char s[4];
