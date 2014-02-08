@@ -64,12 +64,14 @@ void HariMain(void) {
   io_sti();  // Enable CPU interrupt after IDT/PIC initialization.
 
   unsigned char keybuf[32], mousebuf[128];
+  struct MOUSE_DEC mdec;
   fifo8_init(&keyfifo, 32, keybuf);
   fifo8_init(&mousefifo, 128, mousebuf);
   io_out8(PIC0_IMR, 0xf9);  // Enable PIC1 and keyboard.
   io_out8(PIC1_IMR, 0xef);  // Enable mouse.
 
   init_keyboard();
+  enable_mouse(&mdec);
 
   struct BOOTINFO* binfo = (struct BOOTINFO*)ADR_BOOTINFO;
   init_palette();
@@ -84,9 +86,6 @@ void HariMain(void) {
   char s[40];
   sprintf(s, "(%3d, %3d)", mx, my);
   putfonts8_asc(binfo->vram, binfo->scrnx, 0, 0, COL8_WHITE, s);
-
-  struct MOUSE_DEC mdec;
-  enable_mouse(&mdec);
 
   int i = memtest(0x00400000, 0xbfffffff) / (1024 * 1024);
   sprintf(s, "memory %dMB", i);
