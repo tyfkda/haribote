@@ -58,6 +58,19 @@ void make_window8(unsigned char* buf, int xsize, int ysize, char* title) {
   }
 }
 
+void make_textbox8(SHEET* sht, int x0, int y0, int sx, int sy, int c) {
+  int x1 = x0 + sx, y1 = y0 + sy;
+  boxfill8(sht->buf, sht->bxsize, COL8_GRAY, x0 - 2, y0 - 3, x1 + 2, y0 - 2);
+  boxfill8(sht->buf, sht->bxsize, COL8_GRAY, x0 - 3, y0 - 3, x0 - 2, y1 + 2);
+  boxfill8(sht->buf, sht->bxsize, COL8_WHITE, x0 - 3, y1 + 2, x1 + 2, y1 + 3);
+  boxfill8(sht->buf, sht->bxsize, COL8_WHITE, x1 + 2, y0 - 3, x1 + 3, y1 + 3);
+  boxfill8(sht->buf, sht->bxsize, COL8_BLACK, x0 - 1, y0 - 2, x1 + 1, y0 - 1);
+  boxfill8(sht->buf, sht->bxsize, COL8_BLACK, x0 - 2, y0 - 2, x0 - 1, y1 + 1);
+  boxfill8(sht->buf, sht->bxsize, COL8_GRAY, x0 - 2, y1 + 1, x1 + 1, y1 + 2);
+  boxfill8(sht->buf, sht->bxsize, COL8_GRAY, x1 + 1, y0 - 2, x1 + 2, y1 + 2);
+  boxfill8(sht->buf, sht->bxsize, c, x0 - 1, y0 - 1, x1 + 1, y1 + 1);
+}
+
 void HariMain(void) {
   init_gdtidt();
   init_pic();
@@ -107,6 +120,9 @@ void HariMain(void) {
 
   init_mouse_cursor8(buf_mouse, 99);
   make_window8(buf_win, 160, 52, "window");
+  make_textbox8(sht_win, 8, 28, 144, 16, COL8_WHITE);
+  int cursor_x = 8;
+  int cursor_c = COL8_WHITE;
   int mx = (binfo->scrnx - 16) / 2;
   int my = (binfo->scrny - 28 - 16) / 2;
   sheet_slide(shtctl, sht_back, 0, 0);
@@ -126,12 +142,8 @@ void HariMain(void) {
 
   sheet_refresh(shtctl, sht_back, 0, 0, binfo->scrnx, 48);
 
-  int count = 0;
   for (;;) {
-    ++count;
     io_cli();
-    //sprintf(s, "%09d", timerctl.count);
-    //putfonts8_asc_sht(shtctl, sht_win, 40, 28, COL8_BLACK, COL8_GRAY, s, 10);
 
     if (fifo_status(&fifo) == 0) {
       io_stihlt();
@@ -155,9 +167,16 @@ void HariMain(void) {
         if (keytable[i - 256] != 0) {
           s[0] = keytable[i - 256];
           s[1] = '\0';
-          putfonts8_asc_sht(shtctl, sht_win, 40, 28, COL8_BLACK, COL8_GRAY, s, 1);
+          putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, s, 1);
+          cursor_x += 8;
         }
       }
+      if (i == 256 + 0x0e && cursor_x > 8) {
+        putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, " ", 1);
+        cursor_x -= 8;
+      }
+      boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
+      sheet_refresh(shtctl, sht_win, cursor_x, 28, cursor_x + 8, 44);
       continue;
     } else if (512 <= i && i < 768) {  // Mouse data.
       if (mouse_decode(&mdec, i - 512) != 0) {
@@ -181,6 +200,9 @@ void HariMain(void) {
         sprintf(s, "(%3d, %3d)", mx, my);
         putfonts8_asc_sht(shtctl, sht_back, 0, 0, COL8_WHITE, COL8_DARK_CYAN, s, 10);
         sheet_slide(shtctl, sht_mouse, mx, my);
+
+        if ((mdec.btn & 0x01) != 0)
+          sheet_slide(shtctl, sht_win, mx - 80, my - 8);
       }
       continue;
     }
@@ -190,14 +212,13 @@ void HariMain(void) {
       break;
     case 3:  // 3sec
       putfonts8_asc_sht(shtctl, sht_back, 0, 80, COL8_WHITE, COL8_DARK_CYAN, " 3[sec]", 7);
-      count = 0;
       break;
     case 0:  // 0.5sec
     case 1:  // 0.5sec
       {
-        unsigned char col = i == 0 ? COL8_WHITE : COL8_DARK_GRAY;
-        boxfill8(buf_back, binfo->scrnx, col, 8, 96, 16, 112);
-        sheet_refresh(shtctl, sht_back, 8, 96, 16, 112);
+        cursor_c = i == 0 ? COL8_WHITE : COL8_BLACK;
+        boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
+        sheet_refresh(shtctl, sht_win, cursor_x, 28, cursor_x + 8, 44);
         timer_init(timer[2], &fifo, 1 - i);
         timer_settime(timer[2], 50);
       }
