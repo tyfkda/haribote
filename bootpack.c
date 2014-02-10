@@ -95,9 +95,9 @@ void task_b_main(SHTCTL* shtctl, SHEET* sht_back) {
     switch (i) {
     case 1:
       {
-        char s[16];
-        sprintf(s, "%9d", count);
-        putfonts8_asc_sht(shtctl, sht_back, 0, 144, COL8_WHITE, COL8_DARK_CYAN, s, 9);
+        char s[32];
+        sprintf(s, "Task B: %9d", count);
+        putfonts8_asc_sht(shtctl, sht_back, 0, 144, COL8_WHITE, COL8_DARK_CYAN, s, 17);
         timer_settime(timer_put, 1);
       }
       break;
