@@ -22,6 +22,12 @@ static char* int2num(char *s, int x, int base, const char* table,
   return s;
 }
 
+int strlen(const char* str) {
+  int len = 0;
+  for (; *str != '\0'; ++str, ++len);
+  return len;
+}
+
 char* strcpy(char* dst, char* src) {
   char* orgDst = dst;
   for (;;) {
