@@ -14,7 +14,7 @@ typedef struct {
   int ldtr, iomap;
 } TSS32;
 
-typedef struct {
+typedef struct TASK {
   int sel, flags;  // sel = GDT number.
   TSS32 tss;
 } TASK;
@@ -32,5 +32,7 @@ TASK* task_init(MEMMAN* memman);
 TASK* task_alloc();
 void task_run(TASK* task);
 void task_switch(void);
+void task_sleep(TASK* task);
+void task_wake(TASK* task);
 
 #endif

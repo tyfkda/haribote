@@ -15,6 +15,7 @@ TASK* task_init(MEMMAN* memman) {
     task->sel = (TASK_GDT0 + i) * 8;
     set_segmdesc(gdt + TASK_GDT0 + i, 103, (int)&task->tss, AR_TSS32);
   }
+
   TASK* task = task_alloc();  // Main task.
   task->flags = 2;  // Running.
   taskctl->running = 1;
@@ -59,4 +60,37 @@ void task_switch(void) {
       taskctl->now = 0;
     farjmp(0, taskctl->tasks[taskctl->now]->sel);
   }
+}
+
+void task_sleep(TASK* task) {
+  if (task->flags != 2)
+    return;
+
+  // TODO: Need to prevent interrupt?
+
+  char ts = 0;  // Need task switch?
+  if (task == taskctl->tasks[taskctl->now])
+    ts = 1;
+  // Find task.
+  int i;
+  for (i = 0; i < taskctl->running; ++i)
+    if (taskctl->tasks[i] == task)
+      break;
+  --taskctl->running;
+  if (i < taskctl->now)
+    --taskctl->now;
+  for (; i < taskctl->running; ++i)
+    taskctl->tasks[i] = taskctl->tasks[i + 1];
+  task->flags = 1;  // Not running.
+  if (!ts)
+    return;
+
+  if (taskctl->now >= taskctl->running)
+    taskctl->now = 0;
+  farjmp(0, taskctl->tasks[taskctl->now]->sel);
+}
+
+void task_wake(TASK* task) {
+  if (task->flags == 1)
+    task_run(task);
 }

@@ -1,12 +1,15 @@
 #include "fifo.h"
+#include "mtask.h"
+#include "stdio.h"  // NULL
 
 const int FLAGS_OVERRUN = 1 << 0;
 
-void fifo_init(FIFO* fifo, int size, int* buf) {
+void fifo_init(FIFO* fifo, int size, int* buf, TASK* task) {
   fifo->buf = buf;
   fifo->size = fifo->free = size;
   fifo->p = fifo->q = 0;
   fifo->flags = 0;
+  fifo->task = task;
 }
 
 int fifo_put(FIFO* fifo, int data) {
@@ -18,6 +21,8 @@ int fifo_put(FIFO* fifo, int data) {
   if (++fifo->p >= fifo->size)
     fifo->p = 0;
   --fifo->free;
+  if (fifo->task != NULL)
+    task_wake(fifo->task);
   return 0;
 }
 

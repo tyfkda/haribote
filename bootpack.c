@@ -75,7 +75,7 @@ void make_textbox8(SHEET* sht, int x0, int y0, int sx, int sy, int c) {
 void task_b_main(SHTCTL* shtctl, SHEET* sht_back) {
   FIFO fifo;
   int fifobuf[128];
-  fifo_init(&fifo, 128, fifobuf);
+  fifo_init(&fifo, 128, fifobuf, NULL);
 
   TIMER* timer_put = timer_alloc();
   timer_init(timer_put, &fifo, 1);
@@ -113,7 +113,7 @@ void HariMain(void) {
   FIFO fifo;
   int fifobuf[128];
   MOUSE_DEC mdec;
-  fifo_init(&fifo, 128, fifobuf);
+  fifo_init(&fifo, 128, fifobuf, NULL);
   init_pit();
   init_keyboard(&fifo, 256);
   enable_mouse(&fifo, 512, &mdec);
@@ -175,7 +175,8 @@ void HariMain(void) {
 
   sheet_refresh(shtctl, sht_back, 0, 0, binfo->scrnx, 48);
 
-  task_init(memman);
+  TASK* task_a = task_init(memman);
+  fifo.task = task_a;
   TASK* task_b = task_alloc();
   task_b->tss.esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 2;
   task_b->tss.eip = (int) &task_b_main;
@@ -189,7 +190,8 @@ void HariMain(void) {
     io_cli();
 
     if (fifo_status(&fifo) == 0) {
-      io_stihlt();
+      task_sleep(task_a);
+      io_sti();
       continue;
     }
 
