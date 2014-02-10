@@ -115,6 +115,8 @@ void HariMain(void) {
   MOUSE_DEC mdec;
   fifo_init(&fifo, 128, fifobuf);
   init_pit();
+  init_keyboard(&fifo, 256);
+  enable_mouse(&fifo, 512, &mdec);
   io_out8(PIC0_IMR, 0xf8);  // Enable PIT, PIC1 and keyboard.
   io_out8(PIC1_IMR, 0xef);  // Enable mouse.
 
@@ -128,9 +130,6 @@ void HariMain(void) {
   timer[2] = timer_alloc();
   timer_init(timer[2], &fifo, 0);
   timer_settime(timer[2], 50);  // 0.5 sec
-
-  init_keyboard(&fifo, 256);
-  enable_mouse(&fifo, 512, &mdec);
 
   unsigned int memtotal = memtest(0x00400000, 0xbfffffff);
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
