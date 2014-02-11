@@ -93,7 +93,7 @@ void console_task(SHTCTL* shtctl, SHEET* sheet) {
   timer_init(timer, &task->fifo, 1);
   timer_settime(timer, 50);
 
-  int cursor_x = 16, cursor_c = COL8_BLACK;
+  int cursor_x = 16, cursor_c = -1;
   // Show prompt.
   putfonts8_asc_sht(shtctl, sheet, 8, 28, COL8_WHITE, COL8_BLACK, ">", 1);
 
@@ -122,15 +122,23 @@ void console_task(SHTCTL* shtctl, SHEET* sheet) {
       switch (i) {
       case 0:
       case 1:
-        cursor_c = i == 0 ? COL8_WHITE : COL8_BLACK;
+        if (cursor_c >= 0)
+          cursor_c = i == 0 ? COL8_WHITE : COL8_BLACK;
         timer_init(timer, &task->fifo, 1 - i);
         timer_settime(timer, 50);
+        break;
+      case 2:  cursor_c = COL8_WHITE; break;
+      case 3:
+        boxfill8(sheet->buf, sheet->bxsize, COL8_BLACK, cursor_x, 28, cursor_x + 8, 44);
+        cursor_c = -1;
         break;
       }
     }
     // Redraw cursor.
-    boxfill8(sheet->buf, sheet->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
-    sheet_refresh(shtctl, sheet, cursor_x, 28, cursor_x + 8, 44);
+    if (cursor_c >= 0) {
+      boxfill8(sheet->buf, sheet->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
+      sheet_refresh(shtctl, sheet, cursor_x, 28, cursor_x + 8, 44);
+    }
   }
 }
 
@@ -278,10 +286,15 @@ void HariMain(void) {
           key_to = 1;
           make_wtitle8(buf_win, sht_win->bxsize, "task_a", FALSE);
           make_wtitle8(buf_cons, sht_cons->bxsize, "console", TRUE);
+          cursor_c = -1;  // Hide cursor.
+          boxfill8(sht_win->buf, sht_win->bxsize, COL8_WHITE, cursor_x, 28, cursor_x + 8, 44);
+          fifo_put(&task_cons->fifo, 2);  // Show console cursor.
         } else {
           key_to = 0;
           make_wtitle8(buf_win, sht_win->bxsize, "task_a", TRUE);
           make_wtitle8(buf_cons, sht_cons->bxsize, "console", FALSE);
+          cursor_c = COL8_BLACK;  // Show cursor.
+          fifo_put(&task_cons->fifo, 3);  // Hide console cursor.
         }
         sheet_refresh(shtctl, sht_win, 0, 0, sht_win->bxsize, 21);
         sheet_refresh(shtctl, sht_cons, 0, 0, sht_cons->bxsize, 21);
@@ -317,7 +330,9 @@ void HariMain(void) {
         }
         break;
       }
-      boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
+      if (cursor_c >= 0) {
+        boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
+      }
       sheet_refresh(shtctl, sht_win, cursor_x, 28, cursor_x + 8, 44);
       continue;
     } else if (512 <= i && i < 768) {  // Mouse data.
@@ -351,9 +366,11 @@ void HariMain(void) {
     switch (i) {
     case 0:  // 0.5sec
     case 1:  // 0.5sec
-      cursor_c = i == 0 ? COL8_WHITE : COL8_BLACK;
-      boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
-      sheet_refresh(shtctl, sht_win, cursor_x, 28, cursor_x + 8, 44);
+      if (cursor_c >= 0) {
+        cursor_c = i == 0 ? COL8_WHITE : COL8_BLACK;
+        boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
+        sheet_refresh(shtctl, sht_win, cursor_x, 28, cursor_x + 8, 44);
+      }
       timer_init(timer, &fifo, 1 - i);
       timer_settime(timer, 50);
       break;
