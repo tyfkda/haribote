@@ -165,9 +165,9 @@ void HariMain(void) {
     task->tss.eip = (int) &task_b_main;
     task->tss.cs = 2 * 8;
     task->tss.es = task->tss.ss = task->tss.ds = task->tss.fs = task->tss.gs = 1 * 8;
-    *((int*)(task->tss.esp + 4)) = (int)shtctl;
-    *((int*)(task->tss.esp + 8)) = (int)sht_win_b[i];
-    task_run(task, 2, i + 1);
+    //*((int*)(task->tss.esp + 4)) = (int)shtctl;
+    //*((int*)(task->tss.esp + 8)) = (int)sht_win_b[i];
+    //task_run(task, 2, i + 1);
   }
 
   // sht_win

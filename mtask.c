@@ -6,6 +6,11 @@
 TIMER* task_timer;
 static TASKCTL* taskctl;
 
+static void task_idle(void) {
+  for (;;)
+    io_hlt();
+}
+
 static TASK* task_now(void) {
   TASKLEVEL *tl = &taskctl->level[taskctl->now_lv];
   return tl->tasks[tl->now];
@@ -70,6 +75,14 @@ TASK* task_init(MEMMAN* memman) {
   load_tr(task->sel);
   task_timer = timer_alloc();
   timer_settime(task_timer, task->priority);
+
+  TASK* idle = task_alloc();
+  idle->tss.esp = memman_alloc_4k(memman, 256) + 256;
+  idle->tss.eip = (int)&task_idle;
+  idle->tss.es = idle->tss.ss = idle->tss.ds = idle->tss.fs = idle->tss.gs = 1 * 8;
+  idle->tss.cs = 2 * 8;
+  task_run(idle, MAX_TASKLEVELS - 1, 1);
+
   return task;
 }
 

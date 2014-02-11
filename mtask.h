@@ -5,8 +5,8 @@
 #include "timer.h"
 
 #define MAX_TASKS       (20)
-#define MAX_TASKS_LV    (10)
-#define MAX_TASKLEVELS  (3)
+#define MAX_TASKS_LV    (8)
+#define MAX_TASKLEVELS  (5)
 #define TASK_GDT0  (3)
 
 typedef struct {
