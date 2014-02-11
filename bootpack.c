@@ -170,6 +170,70 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
               cursor_y = cons_newline(cursor_y, shtctl, sheet);
             }
           }
+        } else if (strncmp(cmdline, "type ", 5) == 0) {
+          char s[12];
+          for (int y = 0; y < 11; ++y)
+            s[y] = ' ';
+          int y = 0;
+          for (int x = 5; y < 11 && cmdline[x] != '\0'; ++x) {
+            if (cmdline[x] == '.') {
+              y = 8;
+            } else {
+              unsigned char c = cmdline[x];
+              if ('a' <= c && c <= 'z')
+                c -= 'a' - 'A';
+              s[y++] = c;
+            }
+          }
+          int x;
+          for (x = 0; x < 224; ++x) {
+            FILEINFO* p = &finfo[x];
+            if (p->name[0] == 0x00)  // End of table.
+              break;
+            if ((p->type & 0x18) == 0) {
+              if (strncmp((char*)p->name, s, 11) == 0)
+                break;
+            }
+          }
+          if (x < 224 && finfo[x].name[0] != 0x00) {  // File found.
+            int size = finfo[x].size;
+            char* p = (char*)(finfo[x].clustno * 512 + 0x003e00 + ADR_DISKIMG);
+            cursor_x = 8;
+            for (int i = 0; i < size; ++i) {
+              switch (p[i]) {
+              case 0x09:  // Tab.
+                for (;;) {
+                  putfonts8_asc_sht(shtctl, sheet, cursor_x, cursor_y, COL8_WHITE, COL8_BLACK, " ", 1);
+                  cursor_x += 8;
+                  if (cursor_x >= 8 + 240) {
+                    cursor_x = 8;
+                    cursor_y = cons_newline(cursor_y, shtctl, sheet);
+                  }
+                  if (((cursor_x - 8) & 0x1f) == 0)
+                    break;
+                }
+                break;
+              case 0x0a:  // Line feed.
+                cursor_x = 8;
+                cursor_y = cons_newline(cursor_y, shtctl, sheet);
+                break;
+              case 0x0d:  // Carrige return.
+                break;
+              default:
+                s[0] = p[i];
+                s[1] = '\0';
+                putfonts8_asc_sht(shtctl, sheet, cursor_x, cursor_y, COL8_WHITE, COL8_BLACK, s, 1);
+                cursor_x += 8;
+                if (cursor_x == 8 + 240) {
+                  cursor_x = 8;
+                  cursor_y = cons_newline(cursor_y, shtctl, sheet);
+                }
+                break;
+              }
+            }
+            if (cursor_x != 8)
+              cursor_y = cons_newline(cursor_y, shtctl, sheet);
+          }
         } else if (cmdline[0] != '\0') {
           putfonts8_asc_sht(shtctl, sheet, 8, cursor_y, COL8_WHITE, COL8_BLACK, "Bad command.", 12);
           cursor_y = cons_newline(cursor_y, shtctl, sheet);
