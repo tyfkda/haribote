@@ -8,11 +8,10 @@ CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
 all:	$(TARGET)
 
-$(TARGET):	$(OBJDIR)/ipl.bin $(OBJDIR)/asmhead.bin $(OBJDIR)/bootpack.bin
+$(TARGET):	$(OBJDIR)/ipl.bin $(OBJDIR)/haribote.sys
 	cp $(OBJDIR)/ipl.bin $@
 	ruby -e 'print "\0" * (0x4200-0x200)' >> $@
-	cat $(OBJDIR)/asmhead.bin >> $@
-	cat $(OBJDIR)/bootpack.bin >> $@
+	cat $(OBJDIR)/haribote.sys >> $@
 	ruby -e 'size = File.size("$@"); print "\0" * (0x168000-size)' >> $@
 
 .SUFFIXS:	.c .s .o
@@ -25,6 +24,9 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.c
 $(OBJDIR)/ipl.bin:	$(OBJDIR)/ipl.o
 	ld -N -e start -Ttext 0x7c00 -S --oformat binary -o $@ $<
 
+$(OBJDIR)/haribote.sys:	$(OBJDIR)/asmhead.bin $(OBJDIR)/bootpack.bin
+	cat $^ > $@
+
 $(OBJDIR)/asmhead.bin:	$(OBJDIR)/asmhead.o
 	ld -N -e start -Ttext 0xc200 -S --oformat binary -o $@ $<
 
@@ -32,4 +34,4 @@ $(OBJDIR)/bootpack.bin:	$(OBJDIR)/bootpack.o $(OBJDIR)/graphics.o $(OBJDIR)/dsct
 	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls --oformat binary -o $@ $^
 
 clean:
-	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.map $(TARGET)
+	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.map $(TARGET)
