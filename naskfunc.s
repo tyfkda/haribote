@@ -143,5 +143,5 @@ asm_inthandler2c:
 
 # void farjmp(int eip, int cs)
 farjmp:
-	ljmp	4(%esp)		# eip, cs
+	ljmp	*4(%esp)	# eip, cs
 	ret
