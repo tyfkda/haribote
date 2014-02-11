@@ -15,7 +15,7 @@ SECTIONS {
 
     .text : { *(.text) }
 
-    .data 0x400000 : AT(ADDR(.text) + SIZEOF(.text)) SUBALIGN(4) {
+    .data 0x800000 : AT(ADDR(.text) + SIZEOF(.text)) SUBALIGN(4) {
         *(.data)
         *(.rodata*)
     }

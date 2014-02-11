@@ -1,6 +1,7 @@
 #ifndef __MTASK_H__
 #define __MTASK_H__
 
+#include "fifo.h"
 #include "memory.h"
 #include "timer.h"
 
@@ -19,6 +20,7 @@ typedef struct {
 typedef struct TASK {
   int sel, flags;  // sel = GDT number.
   int level, priority;
+  FIFO fifo;
   TSS32 tss;
 } TASK;
 
@@ -39,6 +41,7 @@ extern TIMER* task_timer;
 
 TASK* task_init(MEMMAN* memman);
 TASK* task_alloc();
+TASK* task_now(void);
 void task_run(TASK* task, int level, int priority);
 void task_switch(void);
 void task_sleep(TASK* task);

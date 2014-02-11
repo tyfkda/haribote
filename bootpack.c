@@ -17,7 +17,7 @@ void putfonts8_asc_sht(SHTCTL* shtctl, SHEET* sht, int x, int y, int c, int b, c
   sheet_refresh(shtctl, sht, x, y, x + l * 8, y + 16);
 }
 
-void make_window8(unsigned char* buf, int xsize, int ysize, char* title, char act) {
+void make_wtitle8(unsigned char* buf, int xsize, char* title, char act) {
   static const char closebtn[14][16] = {
     "OOOOOOOOOOOOOOO@",
     "OQQQQQQQQQQQQQ$@",
@@ -42,16 +42,7 @@ void make_window8(unsigned char* buf, int xsize, int ysize, char* title, char ac
     tc = COL8_GRAY;
     tbc = COL8_DARK_GRAY;
   }
-  boxfill8(buf, xsize, COL8_GRAY, 0, 0, xsize, 1);
-  boxfill8(buf, xsize, COL8_WHITE, 1, 1, xsize - 1, 2);
-  boxfill8(buf, xsize, COL8_GRAY, 0, 0, 1, ysize);
-  boxfill8(buf, xsize, COL8_WHITE, 1, 1, 2, ysize - 1);
-  boxfill8(buf, xsize, COL8_DARK_GRAY, xsize - 2, 1, xsize - 1, ysize - 1);
-  boxfill8(buf, xsize, COL8_BLACK, xsize - 1, 0, xsize, ysize);
-  boxfill8(buf, xsize, COL8_GRAY, 2, 2, xsize - 2, ysize - 2);
   boxfill8(buf, xsize, tbc, 3, 3, xsize - 3, 21);
-  boxfill8(buf, xsize, COL8_DARK_GRAY, 1, ysize - 2, xsize - 1, ysize - 1);
-  boxfill8(buf, xsize, COL8_BLACK, 0, ysize - 1, xsize, ysize);
   putfonts8_asc(buf, xsize, 24, 4, tc, title);
   for (int y = 0; y < 14; ++y) {
     for (int x = 0; x < 16; ++x) {
@@ -67,6 +58,19 @@ void make_window8(unsigned char* buf, int xsize, int ysize, char* title, char ac
   }
 }
 
+void make_window8(unsigned char* buf, int xsize, int ysize, char* title, char act) {
+  boxfill8(buf, xsize, COL8_GRAY, 0, 0, xsize, 1);
+  boxfill8(buf, xsize, COL8_WHITE, 1, 1, xsize - 1, 2);
+  boxfill8(buf, xsize, COL8_GRAY, 0, 0, 1, ysize);
+  boxfill8(buf, xsize, COL8_WHITE, 1, 1, 2, ysize - 1);
+  boxfill8(buf, xsize, COL8_DARK_GRAY, xsize - 2, 1, xsize - 1, ysize - 1);
+  boxfill8(buf, xsize, COL8_BLACK, xsize - 1, 0, xsize, ysize);
+  boxfill8(buf, xsize, COL8_GRAY, 2, 2, xsize - 2, ysize - 2);
+  boxfill8(buf, xsize, COL8_DARK_GRAY, 1, ysize - 2, xsize - 1, ysize - 1);
+  boxfill8(buf, xsize, COL8_BLACK, 0, ysize - 1, xsize, ysize);
+  make_wtitle8(buf, xsize, title, act);
+}
+
 void make_textbox8(SHEET* sht, int x0, int y0, int sx, int sy, int c) {
   int x1 = x0 + sx, y1 = y0 + sy;
   boxfill8(sht->buf, sht->bxsize, COL8_GRAY, x0 - 2, y0 - 3, x1 + 2, y0 - 2);
@@ -80,37 +84,53 @@ void make_textbox8(SHEET* sht, int x0, int y0, int sx, int sy, int c) {
   boxfill8(sht->buf, sht->bxsize, c, x0 - 1, y0 - 1, x1 + 1, y1 + 1);
 }
 
-void task_b_main(SHTCTL* shtctl, SHEET* sht_win_b) {
-  FIFO fifo;
+void console_task(SHTCTL* shtctl, SHEET* sheet) {
+  TASK* task = task_now();
   int fifobuf[128];
-  fifo_init(&fifo, 128, fifobuf, NULL);
+  fifo_init(&task->fifo, 128, fifobuf, task);
 
-  TIMER* timer_put = timer_alloc();
-  timer_init(timer_put, &fifo, 100);
-  timer_settime(timer_put, 100);
+  TIMER* timer = timer_alloc();
+  timer_init(timer, &task->fifo, 1);
+  timer_settime(timer, 50);
 
-  int count = 0, count0 = 0;
+  int cursor_x = 16, cursor_c = COL8_BLACK;
+  // Show prompt.
+  putfonts8_asc_sht(shtctl, sheet, 8, 28, COL8_WHITE, COL8_BLACK, ">", 1);
+
   for (;;) {
-    ++count;
     io_cli();
-    if (fifo_status(&fifo) == 0) {
-      io_stihlt();
-      //io_sti();
+    if (fifo_status(&task->fifo) == 0) {
+      task_sleep(task);
       continue;
     }
-    int i = fifo_get(&fifo);
+    int i = fifo_get(&task->fifo);
     io_sti();
-    switch (i) {
-    case 100:
-      {
-        char s[16];
-        sprintf(s, "%9d", count - count0);
-        putfonts8_asc_sht(shtctl, sht_win_b, 24, 28, COL8_BLACK, COL8_GRAY, s, strlen(s));
-        //count0 = count;
-        timer_settime(timer_put, 100);
+    if (256 <= i && i < 512) {  // Keyboard data (from task A).
+      if (i == 8 + 256) {  // Back space.
+        if (cursor_x > 16) {
+          putfonts8_asc_sht(shtctl, sheet, cursor_x, 28, COL8_WHITE, COL8_BLACK, " ", 1);
+          cursor_x -= 8;
+        }
+      } else {  // Normal character.
+        if (cursor_x < 240) {
+          char s[] = { i - 256, '\0' };
+          putfonts8_asc_sht(shtctl, sheet, cursor_x, 28, COL8_WHITE, COL8_BLACK, s, 1);
+          cursor_x += 8;
+        }
       }
-      break;
+    } else {
+      switch (i) {
+      case 0:
+      case 1:
+        cursor_c = i == 0 ? COL8_WHITE : COL8_BLACK;
+        timer_init(timer, &task->fifo, 1 - i);
+        timer_settime(timer, 50);
+        break;
+      }
     }
+    // Redraw cursor.
+    boxfill8(sheet->buf, sheet->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
+    sheet_refresh(shtctl, sheet, cursor_x, 28, cursor_x + 8, 44);
   }
 }
 
@@ -150,25 +170,20 @@ void HariMain(void) {
   init_screen8(buf_back, binfo->scrnx, binfo->scrny);
 
   char s[40];
-  // sht_win_b
-  SHEET* sht_win_b[3];
-  TASK* task_b[3];
-  for (int i = 0; i < 3; ++i) {
-    sht_win_b[i] = sheet_alloc(shtctl);
-    unsigned char* buf_win_b = (unsigned char*)memman_alloc_4k(memman, 144 * 52);
-    sheet_setbuf(sht_win_b[i], buf_win_b, 144, 52, -1);
-    sprintf(s, "task_b%d", i);
-    make_window8(buf_win_b, 144, 52, s, FALSE);
-
-    TASK* task = task_b[i] = task_alloc();
-    task->tss.esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 2;
-    task->tss.eip = (int) &task_b_main;
-    task->tss.cs = 2 * 8;
-    task->tss.es = task->tss.ss = task->tss.ds = task->tss.fs = task->tss.gs = 1 * 8;
-    //*((int*)(task->tss.esp + 4)) = (int)shtctl;
-    //*((int*)(task->tss.esp + 8)) = (int)sht_win_b[i];
-    //task_run(task, 2, i + 1);
-  }
+  // sht_cons
+  SHEET* sht_cons = sheet_alloc(shtctl);
+  unsigned char* buf_cons = (unsigned char*)memman_alloc_4k(memman, 256 * 165);
+  sheet_setbuf(sht_cons, buf_cons, 256, 165, -1);
+  make_window8(buf_cons, 256, 165, "console", FALSE);
+  make_textbox8(sht_cons, 8, 28, 240, 128, COL8_BLACK);
+  TASK* task_cons = task_alloc();
+  task_cons->tss.esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 2;
+  task_cons->tss.eip = (int) &console_task;
+  task_cons->tss.cs = 2 * 8;
+  task_cons->tss.es = task_cons->tss.ss = task_cons->tss.ds = task_cons->tss.fs = task_cons->tss.gs = 1 * 8;
+  *((int*)(task_cons->tss.esp + 4)) = (int)shtctl;
+  *((int*)(task_cons->tss.esp + 8)) = (int)sht_cons;
+  task_run(task_cons, 2, 2);
 
   // sht_win
   SHEET* sht_win = sheet_alloc(shtctl);
@@ -192,17 +207,13 @@ void HariMain(void) {
   int my = (binfo->scrny - 28 - 16) / 2;
 
   sheet_slide(shtctl, sht_back, 0, 0);
-  sheet_slide(shtctl, sht_win_b[0], 168,  56);
-  sheet_slide(shtctl, sht_win_b[1],   8, 116);
-  sheet_slide(shtctl, sht_win_b[2], 168, 116);
+  sheet_slide(shtctl, sht_cons, 32, 4);
   sheet_slide(shtctl, sht_win, 80, 72);
   sheet_slide(shtctl, sht_mouse, mx, my);
   sheet_updown(shtctl, sht_back, 0);
-  sheet_updown(shtctl, sht_win_b[0], 1);
-  sheet_updown(shtctl, sht_win_b[1], 2);
-  sheet_updown(shtctl, sht_win_b[2], 3);
-  sheet_updown(shtctl, sht_win, 4);
-  sheet_updown(shtctl, sht_mouse, 5);
+  sheet_updown(shtctl, sht_cons, 1);
+  sheet_updown(shtctl, sht_win, 2);
+  sheet_updown(shtctl, sht_mouse, 3);
 
   sprintf(s, "(%3d, %3d)", mx, my);
   putfonts8_asc_sht(shtctl, sht_back, 0, 0, COL8_WHITE, COL8_DARK_CYAN, s, 10);
@@ -210,6 +221,8 @@ void HariMain(void) {
   sprintf(s, "memory %dMB   free : %dKB",
           memtotal / (1024 * 1024), memman_total(memman) / 1024);
   putfonts8_asc_sht(shtctl, sht_back, 0, 32, COL8_WHITE, COL8_DARK_CYAN, s, 40);
+
+  int key_to = 0;
 
   for (;;) {
     io_cli();
@@ -234,17 +247,39 @@ void HariMain(void) {
         0, 0, 0, 0, 0, 0, 0, '7', '8', '9', '-', '4', '5', '6', '+', '1',
         '2', '3', '0', '.',
       };
-      if (i < 256 + 0x54) {
-        if (keytable[i - 256] != 0) {
-          s[0] = keytable[i - 256];
-          s[1] = '\0';
-          putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, s, 1);
-          cursor_x += 8;
+      if (i < 256 + 0x54 && keytable[i - 256] != 0) {  // Normal character.
+        if (key_to == 0) {  // To task A
+          if (cursor_x < 128) {
+            s[0] = keytable[i - 256];
+            s[1] = '\0';
+            putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, s, 1);
+            cursor_x += 8;
+          }
+        } else {  // To console.
+          fifo_put(&task_cons->fifo, keytable[i - 256] + 256);
         }
       }
-      if (i == 256 + 0x0e && cursor_x > 8) {
-        putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, " ", 1);
-        cursor_x -= 8;
+      if (i == 256 + 0x0e) {  // Back space.
+        if (key_to == 0) {  // To task A
+          if (cursor_x > 8) {
+            putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, " ", 1);
+            cursor_x -= 8;
+          }
+        } else {  // To console.
+          fifo_put(&task_cons->fifo, 8 + 256);
+        }
+      } else if (i == 256 + 0x0f) {  // Tab.
+        if (key_to == 0) {
+          key_to = 1;
+          make_wtitle8(buf_win, sht_win->bxsize, "task_a", FALSE);
+          make_wtitle8(buf_cons, sht_cons->bxsize, "console", TRUE);
+        } else {
+          key_to = 0;
+          make_wtitle8(buf_win, sht_win->bxsize, "task_a", TRUE);
+          make_wtitle8(buf_cons, sht_cons->bxsize, "console", FALSE);
+        }
+        sheet_refresh(shtctl, sht_win, 0, 0, sht_win->bxsize, 21);
+        sheet_refresh(shtctl, sht_cons, 0, 0, sht_cons->bxsize, 21);
       }
       boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
       sheet_refresh(shtctl, sht_win, cursor_x, 28, cursor_x + 8, 44);
@@ -280,13 +315,11 @@ void HariMain(void) {
     switch (i) {
     case 0:  // 0.5sec
     case 1:  // 0.5sec
-      {
-        cursor_c = i == 0 ? COL8_WHITE : COL8_BLACK;
-        boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
-        sheet_refresh(shtctl, sht_win, cursor_x, 28, cursor_x + 8, 44);
-        timer_init(timer, &fifo, 1 - i);
-        timer_settime(timer, 50);
-      }
+      cursor_c = i == 0 ? COL8_WHITE : COL8_BLACK;
+      boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
+      sheet_refresh(shtctl, sht_win, cursor_x, 28, cursor_x + 8, 44);
+      timer_init(timer, &fifo, 1 - i);
+      timer_settime(timer, 50);
       break;
     }
     continue;

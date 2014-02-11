@@ -11,7 +11,7 @@ static void task_idle(void) {
     io_hlt();
 }
 
-static TASK* task_now(void) {
+TASK* task_now(void) {
   TASKLEVEL *tl = &taskctl->level[taskctl->now_lv];
   return tl->tasks[tl->now];
 }
