@@ -6,8 +6,9 @@
 #define NULL   ((void*)0)
 
 int strlen(const char* str);
+char* strcpy(char* dst, const char* src);
+char* strncpy(char* dst, const char* src, int n);
 int strcmp(const char* s1, const char* s2);
-char* strcpy(char* dst, char* src);
 int sprintf(char *str, const char *fmt, ...);
 
 #endif

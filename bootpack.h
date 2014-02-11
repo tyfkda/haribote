@@ -10,7 +10,8 @@ typedef struct {
   unsigned char* vram;
 } BOOTINFO;
 
-#define ADR_BOOTINFO  0x00000ff0;
+#define ADR_BOOTINFO  0x00000ff0
+#define ADR_DISKIMG   0x00100000
 
 void io_hlt(void);
 void io_cli(void);

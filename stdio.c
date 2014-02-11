@@ -28,9 +28,18 @@ int strlen(const char* str) {
   return len;
 }
 
-char* strcpy(char* dst, char* src) {
+char* strcpy(char* dst, const char* src) {
   char* orgDst = dst;
   for (;;) {
+    if ((*dst++ = *src++) == '\0')
+      break;
+  }
+  return orgDst;
+}
+
+char* strncpy(char* dst, const char* src, int n) {
+  char* orgDst = dst;
+  for (; n > 0; --n) {
     if ((*dst++ = *src++) == '\0')
       break;
   }

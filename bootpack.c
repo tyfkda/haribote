@@ -11,6 +11,12 @@
 #include "stdio.h"
 #include "timer.h"
 
+typedef struct {
+  unsigned char name[8], ext[3], type, reserve[10];
+  unsigned short time, date, clustno;
+  unsigned int size;
+} FILEINFO;
+
 void putfonts8_asc_sht(SHTCTL* shtctl, SHEET* sht, int x, int y, int c, int b, const char* s, int l) {
   boxfill8(sht->buf, sht->bxsize, b, x, y, x + l * 8, y + 16);
   putfonts8_asc(sht->buf, sht->bxsize, x, y, c, s);
@@ -114,6 +120,8 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   // Show prompt.
   putfonts8_asc_sht(shtctl, sheet, cursor_x - 8, cursor_y, COL8_WHITE, COL8_BLACK, ">", 1);
 
+  FILEINFO *finfo = (FILEINFO*)(ADR_DISKIMG + 0x002600);
+
   char cmdline[30];
 
   for (;;) {
@@ -140,11 +148,28 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
           sprintf(s, "free %5dKB", memman_total(memman) / 1024);
           putfonts8_asc_sht(shtctl, sheet, 8, cursor_y, COL8_WHITE, COL8_BLACK, s, strlen(s));
           cursor_y = cons_newline(cursor_y, shtctl, sheet);
-          cursor_y = cons_newline(cursor_y, shtctl, sheet);
         } else if (strcmp(cmdline, "cls") == 0) {
           boxfill8(sheet->buf, sheet->bxsize, COL8_BLACK, 8, 28, 8 + 240, 28 + 128);
           sheet_refresh(shtctl, sheet, 8, 28, 8 + 240, 28 + 128);
           cursor_y = 28;
+        } else if (strcmp(cmdline, "dir") == 0) {
+          for (int x = 0; x < 224; ++x) {
+            FILEINFO* p = &finfo[x];
+            if (p->name[0] == 0x00)  // End of table.
+              break;
+            if (p->name[0] == 0xe5)  // Deleted file.
+              continue;
+            if ((p->type & 0x18) == 0) {
+              char s[30];
+              sprintf(s, "        .      %7d", p->size);
+              strncpy(&s[0], (const char*)p->name, 8);
+              strncpy(&s[9], (const char*)p->ext, 3);
+              if (p->ext[0] == ' ')  // No file extension: remove dot.
+                s[8] = ' ';
+              putfonts8_asc_sht(shtctl, sheet, 8, cursor_y, COL8_WHITE, COL8_BLACK, s, 30);
+              cursor_y = cons_newline(cursor_y, shtctl, sheet);
+            }
+          }
         } else if (cmdline[0] != '\0') {
           putfonts8_asc_sht(shtctl, sheet, 8, cursor_y, COL8_WHITE, COL8_BLACK, "Bad command.", 12);
           cursor_y = cons_newline(cursor_y, shtctl, sheet);
