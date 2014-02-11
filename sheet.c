@@ -47,7 +47,7 @@ static void sheet_refreshmap(SHTCTL* ctl, int vx0, int vy0, int vx1, int vy1, in
   if (vx0 < 0)  vx0 = 0;
   if (vy0 < 0)  vy0 = 0;
   if (vx1 > xsize)  vx1 = xsize;
-  if (vx1 > ysize)  vy1 = ysize;
+  if (vy1 > ysize)  vy1 = ysize;
   for (int h = h0; h <= ctl->top; ++h) {
     SHEET* sht = ctl->sheets[h];
     unsigned char sid = sht - ctl->sheets0;
@@ -80,7 +80,7 @@ static void sheet_refreshsub(SHTCTL* ctl, int vx0, int vy0, int vx1, int vy1, in
   if (vx0 < 0)  vx0 = 0;
   if (vy0 < 0)  vy0 = 0;
   if (vx1 > xsize)  vx1 = xsize;
-  if (vx1 > ysize)  vy1 = ysize;
+  if (vy1 > ysize)  vy1 = ysize;
   for (int h = h0; h <= h1; ++h) {
     SHEET* sht = ctl->sheets[h];
     unsigned char sid = sht - ctl->sheets0;
