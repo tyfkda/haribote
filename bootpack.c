@@ -86,10 +86,10 @@ void task_b_main(SHTCTL* shtctl, SHEET* sht_win_b) {
   fifo_init(&fifo, 128, fifobuf, NULL);
 
   TIMER* timer_put = timer_alloc();
-  timer_init(timer_put, &fifo, 1);
-  timer_settime(timer_put, 1);
+  timer_init(timer_put, &fifo, 100);
+  timer_settime(timer_put, 100);
 
-  int count = 0;
+  int count = 0, count0 = 0;
   for (;;) {
     ++count;
     io_cli();
@@ -101,12 +101,13 @@ void task_b_main(SHTCTL* shtctl, SHEET* sht_win_b) {
     int i = fifo_get(&fifo);
     io_sti();
     switch (i) {
-    case 1:
+    case 100:
       {
         char s[16];
-        sprintf(s, "%9d", count);
-        putfonts8_asc_sht(shtctl, sht_win_b, 24, 28, COL8_BLACK, COL8_GRAY, s, 9);
-        timer_settime(timer_put, 1);
+        sprintf(s, "%9d", count - count0);
+        putfonts8_asc_sht(shtctl, sht_win_b, 24, 28, COL8_BLACK, COL8_GRAY, s, strlen(s));
+        //count0 = count;
+        timer_settime(timer_put, 100);
       }
       break;
     }
@@ -134,12 +135,13 @@ void HariMain(void) {
   memman_free(memman, 0x00001000, 0x0009e000); /* 0x00001000 - 0x0009efff */
   memman_free(memman, 0x00400000, memtotal - 0x00400000);
 
-  BOOTINFO* binfo = (BOOTINFO*)ADR_BOOTINFO;
   init_palette();
+  BOOTINFO* binfo = (BOOTINFO*)ADR_BOOTINFO;
   SHTCTL* shtctl = shtctl_init(memman, binfo->vram, binfo->scrnx, binfo->scrny);
 
   TASK* task_a = task_init(memman);
   fifo.task = task_a;
+  task_run(task_a, 1, 2);
 
   // sht_back
   SHEET* sht_back = sheet_alloc(shtctl);
@@ -165,7 +167,7 @@ void HariMain(void) {
     task->tss.es = task->tss.ss = task->tss.ds = task->tss.fs = task->tss.gs = 1 * 8;
     *((int*)(task->tss.esp + 4)) = (int)shtctl;
     *((int*)(task->tss.esp + 8)) = (int)sht_win_b[i];
-    task_run(task);
+    task_run(task, 2, i + 1);
   }
 
   // sht_win

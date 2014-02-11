@@ -6,24 +6,70 @@
 TIMER* task_timer;
 static TASKCTL* taskctl;
 
+static TASK* task_now(void) {
+  TASKLEVEL *tl = &taskctl->level[taskctl->now_lv];
+  return tl->tasks[tl->now];
+}
+
+static void task_add(TASK *task) {
+  TASKLEVEL *tl = &taskctl->level[task->level];
+  tl->tasks[tl->running++] = task;
+  task->flags = 2;  // Running.
+}
+
+static void task_remove(struct TASK *task) {
+  TASKLEVEL *tl = &taskctl->level[task->level];
+
+  // Finds task.
+  int i;
+  for (i = 0; i < tl->running; i++)
+    if (tl->tasks[i] == task)
+      break;
+
+  --tl->running;
+  if (i < tl->now)
+    --tl->now;
+  if (tl->now >= tl->running)
+    tl->now = 0;
+  task->flags = 1;  // Sleep.
+
+  // Shift
+  for (; i < tl->running; ++i)
+    tl->tasks[i] = tl->tasks[i + 1];
+}
+
+static void task_switchsub(void) {
+  int i;
+  for (i = 0; i < MAX_TASKLEVELS; ++i) {
+    if (taskctl->level[i].running > 0)
+      break;
+  }
+  taskctl->now_lv = i;
+  taskctl->lv_change = 0;
+}
+
 TASK* task_init(MEMMAN* memman) {
   SEGMENT_DESCRIPTOR* gdt = (SEGMENT_DESCRIPTOR*)ADR_GDT;
   taskctl = (TASKCTL*)memman_alloc_4k(memman, sizeof(TASKCTL));
   for (int i = 0; i < MAX_TASKS; ++i) {
-    TASK* task = &taskctl->tasks0[i];
-    task->flags = 0;
-    task->sel = (TASK_GDT0 + i) * 8;
-    set_segmdesc(gdt + TASK_GDT0 + i, 103, (int)&task->tss, AR_TSS32);
+    taskctl->tasks0[i].flags = 0;
+    taskctl->tasks0[i].sel = (TASK_GDT0 + i) * 8;
+    set_segmdesc(gdt + TASK_GDT0 + i, 103, (int)&taskctl->tasks0[i].tss, AR_TSS32);
+  }
+  for (int i = 0; i < MAX_TASKLEVELS; ++i) {
+    taskctl->level[i].running = 0;
+    taskctl->level[i].now = 0;
   }
 
   TASK* task = task_alloc();  // Main task.
   task->flags = 2;  // Running.
-  taskctl->running = 1;
-  taskctl->now = 0;
-  taskctl->tasks[0] = task;
+  task->priority = 2;  // 0.02 sec
+  task->level = 0;  // Max level.
+  task_add(task);
+  task_switchsub();
   load_tr(task->sel);
   task_timer = timer_alloc();
-  timer_settime(task_timer, 2);
+  timer_settime(task_timer, task->priority);
   return task;
 }
 
@@ -48,18 +94,19 @@ TASK* task_alloc() {
   return NULL;
 }
 
-void task_run(TASK* task) {
-  task->flags = 2;  // Running.
-  taskctl->tasks[taskctl->running++] = task;
-}
-
-void task_switch(void) {
-  timer_settime(task_timer, 2);
-  if (taskctl->running >= 2) {
-    if (++taskctl->now == taskctl->running)
-      taskctl->now = 0;
-    farjmp(0, taskctl->tasks[taskctl->now]->sel);
+void task_run(TASK* task, int level, int priority) {
+  if (level < 0)
+    level = task->level;
+  if (priority > 0)
+    task->priority = priority;
+  if (task->flags == 2 && task->level != level)  // Change running task level.
+    task_remove(task);  // This causes flags = 1.
+  if (task->flags != 2) {
+    task->level = level;
+    task_add(task);
   }
+
+  taskctl->lv_change = 1;
 }
 
 void task_sleep(TASK* task) {
@@ -68,29 +115,37 @@ void task_sleep(TASK* task) {
 
   // TODO: Need to prevent interrupt?
 
-  char ts = 0;  // Need task switch?
-  if (task == taskctl->tasks[taskctl->now])
-    ts = 1;
-  // Find task.
-  int i;
-  for (i = 0; i < taskctl->running; ++i)
-    if (taskctl->tasks[i] == task)
-      break;
-  --taskctl->running;
-  if (i < taskctl->now)
-    --taskctl->now;
-  for (; i < taskctl->running; ++i)
-    taskctl->tasks[i] = taskctl->tasks[i + 1];
-  task->flags = 1;  // Not running.
-  if (!ts)
-    return;
+  TASK* now_task = task_now();
+  task_remove(task);  // This makes flags = 1.
+  if (task == now_task) {
+    // Sleep by self => need task switch.
+    task_switchsub();
+    now_task = task_now();
+    farjmp(0, now_task->sel);
+  }
+}
 
-  if (taskctl->now >= taskctl->running)
-    taskctl->now = 0;
-  farjmp(0, taskctl->tasks[taskctl->now]->sel);
+void task_switch(void) {
+  if (taskctl->now_lv >= MAX_TASKLEVELS) {
+    io_stihlt();
+    return;
+  }
+
+  TASKLEVEL* tl = &taskctl->level[taskctl->now_lv];
+  TASK* now_task = tl->tasks[tl->now++];
+  if (tl->now >= tl->running)
+    tl->now = 0;
+  if (taskctl->lv_change) {
+    task_switchsub();
+    tl = &taskctl->level[taskctl->now_lv];
+  }
+  TASK* new_task = tl->tasks[tl->now];
+  timer_settime(task_timer, new_task->priority);
+  if (new_task != now_task)
+    farjmp(0, new_task->sel);
 }
 
 void task_wake(TASK* task) {
-  if (task->flags == 1)
-    task_run(task);
+  if (task->flags != 2)
+    task_run(task, -1, 0);
 }

@@ -4,7 +4,9 @@
 #include "memory.h"
 #include "timer.h"
 
-#define MAX_TASKS  (10)
+#define MAX_TASKS       (20)
+#define MAX_TASKS_LV    (10)
+#define MAX_TASKLEVELS  (3)
 #define TASK_GDT0  (3)
 
 typedef struct {
@@ -16,13 +18,20 @@ typedef struct {
 
 typedef struct TASK {
   int sel, flags;  // sel = GDT number.
+  int level, priority;
   TSS32 tss;
 } TASK;
 
 typedef struct {
   int running;
   int now;
-  TASK* tasks[MAX_TASKS];
+  TASK* tasks[MAX_TASKS_LV];
+} TASKLEVEL;
+
+typedef struct {
+  int now_lv;
+  char lv_change;
+  TASKLEVEL level[MAX_TASKLEVELS];
   TASK tasks0[MAX_TASKS];
 } TASKCTL;
 
@@ -30,7 +39,7 @@ extern TIMER* task_timer;
 
 TASK* task_init(MEMMAN* memman);
 TASK* task_alloc();
-void task_run(TASK* task);
+void task_run(TASK* task, int level, int priority);
 void task_switch(void);
 void task_sleep(TASK* task);
 void task_wake(TASK* task);
