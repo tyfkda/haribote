@@ -2,22 +2,25 @@ OUTPUT_FORMAT("binary");
 
 SECTIONS {
     .head 0x0 : {
-        LONG(128 * 1024)      /*  0 : stack+.data+heap の大きさ（4KBの倍数） */
-        LONG(0x69726148)      /*  4 : シグネチャ "Hari" */
-        LONG(0)               /*  8 : mmarea の大きさ（4KBの倍数） */
-        LONG(0x400000)        /* 12 : スタック初期値＆.data転送先 */
-        LONG(SIZEOF(.data))   /* 16 : .dataサイズ */
-        LONG(LOADADDR(.data)) /* 20 : .dataの初期値列のファイル位置 */
-        LONG(0xE9000000)      /* 24 : 0xE9000000 */
-        LONG(HariMain - 0x20) /* 28 : エントリアドレス - 0x20 */
-        LONG(24 * 1024)       /* 32 : heap領域（malloc領域）開始アドレス */
+        LONG((ADDR(.bss) + SIZEOF(.bss) + 0xfff) & ~ 0xfff)      /*  0 : Size of stack+.data+heap (4KB align) */
+        LONG(0x69726148)      /*  4 : Signature "Hari" */
+        LONG(0)               /*  8 : Size of mmarea (4KB align) */
+        LONG(ADDR(.data))     /* 12 : Stack address and .data destination address */
+        LONG(SIZEOF(.data))   /* 16 : Size of .data */
+        LONG(LOADADDR(.data)) /* 20 : Address of .data */
+        LONG(0xE9000000)      /* 24 : 0xE9000000 (jump) */
+        LONG(HariMain - 0x20) /* 28 : Entry address - 0x20 */
+        LONG((ADDR(.bss) + SIZEOF(.bss) + 0xf) & ~ 0xf)       /* 32 : heap space (malloc) start address */
     }
 
     .text : { *(.text) }
 
-    .data 0x400000 : AT ( ADDR(.text) + SIZEOF(.text) ) {
+    .data 0x400000 : AT(ADDR(.text) + SIZEOF(.text)) SUBALIGN(4) {
         *(.data)
         *(.rodata*)
+    }
+
+    .bss : AT(LOADADDR(.data) + SIZEOF(.data)) SUBALIGN(4) {
         *(.bss)
     }
 
