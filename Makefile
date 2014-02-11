@@ -1,5 +1,8 @@
 TARGET=haribote.img
 
+# Files included in the disk image.
+DISK_FILES=$(OBJDIR)/haribote.sys ipl.s Makefile
+
 SRCDIR=.
 OBJDIR=obj
 
@@ -8,11 +11,18 @@ CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
 all:	$(TARGET)
 
-$(TARGET):	$(OBJDIR)/ipl.bin $(OBJDIR)/haribote.sys
-	cp $(OBJDIR)/ipl.bin $@
-	ruby -e 'print "\0" * (0x4200-0x200)' >> $@
-	cat $(OBJDIR)/haribote.sys >> $@
-	ruby -e 'size = File.size("$@"); print "\0" * (0x168000-size)' >> $@
+$(TARGET):	$(OBJDIR)/ipl.bin $(OBJDIR)/haribote.sys $(DISK_FILES)
+	cat $(OBJDIR)/ipl.bin > $@
+	# Disk root directory.
+	ruby tools/padding.rb -cps 0x2600 $@ >> $@
+	ruby tools/fileinfo.rb $(DISK_FILES) >> $@
+	# Put file entities, aligned with 512 bytes.
+	ruby tools/padding.rb -cps 0x4200 $@ >> $@
+	for filename in $(DISK_FILES); do \
+	  cat $$filename >> $@; \
+	  ruby tools/padding.rb -ps 512 $$filename >> $@; \
+	done
+	ruby tools/padding.rb -cps 0x168000 $@ >> $@
 
 .SUFFIXS:	.c .s .o
 
