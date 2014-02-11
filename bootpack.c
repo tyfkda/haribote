@@ -170,7 +170,7 @@ void HariMain(void) {
 
   // sht_win
   SHEET* sht_win = sheet_alloc(shtctl);
-  unsigned char* buf_win = (unsigned char*)memman_alloc_4k(memman, 160 * 68);
+  unsigned char* buf_win = (unsigned char*)memman_alloc_4k(memman, 160 * 52);
   sheet_setbuf(sht_win, buf_win, 160, 52, -1);
   make_window8(buf_win, 160, 52, "window", TRUE);
   make_textbox8(sht_win, 8, 28, 144, 16, COL8_WHITE);
@@ -203,13 +203,11 @@ void HariMain(void) {
   sheet_updown(shtctl, sht_mouse, 5);
 
   sprintf(s, "(%3d, %3d)", mx, my);
-  putfonts8_asc(buf_back, binfo->scrnx, 0, 0, COL8_WHITE, s);
+  putfonts8_asc_sht(shtctl, sht_back, 0, 0, COL8_WHITE, COL8_DARK_CYAN, s, 10);
 
   sprintf(s, "memory %dMB   free : %dKB",
           memtotal / (1024 * 1024), memman_total(memman) / 1024);
-  putfonts8_asc(buf_back, binfo->scrnx, 0, 32, COL8_WHITE, s);
-
-  sheet_refresh(shtctl, sht_back, 0, 0, binfo->scrnx, 48);
+  putfonts8_asc_sht(shtctl, sht_back, 0, 32, COL8_WHITE, COL8_DARK_CYAN, s, 40);
 
   for (;;) {
     io_cli();
