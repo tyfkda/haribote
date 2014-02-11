@@ -84,7 +84,24 @@ void make_textbox8(SHEET* sht, int x0, int y0, int sx, int sy, int c) {
   boxfill8(sht->buf, sht->bxsize, c, x0 - 1, y0 - 1, x1 + 1, y1 + 1);
 }
 
-void console_task(SHTCTL* shtctl, SHEET* sheet) {
+static int cons_newline(int cursor_y, SHTCTL* shtctl, SHEET* sheet) {
+  if (cursor_y < 28 + 112) {
+    cursor_y += 16;
+  } else {
+    unsigned char* buf = sheet->buf;
+    int bxsize = sheet->bxsize;
+    // Scroll.
+    for (int y = 28; y < 28 + 112; ++y)
+      for (int x = 8; x < 8 + 240; ++x)
+        buf[x + y * bxsize] = buf[x + (y + 16) * bxsize];
+    // Erase last line.
+    boxfill8(buf, bxsize, COL8_BLACK, 8, 28 + 112, 8 + 240, 28 + 112 + 16);
+    sheet_refresh(shtctl, sheet, 8, 28, 8 + 240, 28 + 128);
+  }
+  return cursor_y;
+}
+
+void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   TASK* task = task_now();
   int fifobuf[128];
   fifo_init(&task->fifo, 128, fifobuf, task);
@@ -96,6 +113,8 @@ void console_task(SHTCTL* shtctl, SHEET* sheet) {
   int cursor_x = 16, cursor_y = 28, cursor_c = -1;
   // Show prompt.
   putfonts8_asc_sht(shtctl, sheet, cursor_x - 8, cursor_y, COL8_WHITE, COL8_BLACK, ">", 1);
+
+  char cmdline[30];
 
   for (;;) {
     io_cli();
@@ -109,21 +128,30 @@ void console_task(SHTCTL* shtctl, SHEET* sheet) {
       switch (i) {
       case 10 + 256:  // Enter.
         putfonts8_asc_sht(shtctl, sheet, cursor_x, cursor_y, COL8_WHITE, COL8_BLACK, " ", 1);
-        if (cursor_y < 28 + 112) {
-          cursor_y += 16;
-        } else {
-          unsigned char* buf = sheet->buf;
-          int bxsize = sheet->bxsize;
-          // Scroll.
-          for (int y = 28; y < 28 + 112; ++y)
-            for (int x = 8; x < 8 + 240; ++x)
-              buf[x + y * bxsize] = buf[x + (y + 16) * bxsize];
-          // Erase last line.
-          boxfill8(buf, bxsize, COL8_BLACK, 8, 28 + 112, 8 + 240, 28 + 112 + 16);
+        cmdline[cursor_x / 8 - 2] = '\0';
+        cursor_y = cons_newline(cursor_y, shtctl, sheet);
+        // Run command.
+        if (strcmp(cmdline, "mem") == 0) {
+          MEMMAN* memman = (MEMMAN*)MEMMAN_ADDR;
+          char s[30];
+          sprintf(s, "total %4dMB", memtotal / (1024 * 1024));
+          putfonts8_asc_sht(shtctl, sheet, 8, cursor_y, COL8_WHITE, COL8_BLACK, s, strlen(s));
+          cursor_y = cons_newline(cursor_y, shtctl, sheet);
+          sprintf(s, "free %5dKB", memman_total(memman) / 1024);
+          putfonts8_asc_sht(shtctl, sheet, 8, cursor_y, COL8_WHITE, COL8_BLACK, s, strlen(s));
+          cursor_y = cons_newline(cursor_y, shtctl, sheet);
+          cursor_y = cons_newline(cursor_y, shtctl, sheet);
+        } else if (strcmp(cmdline, "cls") == 0) {
+          boxfill8(sheet->buf, sheet->bxsize, COL8_BLACK, 8, 28, 8 + 240, 28 + 128);
           sheet_refresh(shtctl, sheet, 8, 28, 8 + 240, 28 + 128);
+          cursor_y = 28;
+        } else if (cmdline[0] != '\0') {
+          putfonts8_asc_sht(shtctl, sheet, 8, cursor_y, COL8_WHITE, COL8_BLACK, "Bad command.", 12);
+          cursor_y = cons_newline(cursor_y, shtctl, sheet);
+          cursor_y = cons_newline(cursor_y, shtctl, sheet);
         }
-        cursor_x = 16;
         // Show prompt.
+        cursor_x = 16;
         putfonts8_asc_sht(shtctl, sheet, cursor_x - 8, cursor_y, COL8_WHITE, COL8_BLACK, ">", 1);
         break;
       case 8 + 256:  // Back space.
@@ -135,6 +163,7 @@ void console_task(SHTCTL* shtctl, SHEET* sheet) {
       default:  // Normal character.
         if (cursor_x < 240) {
           char s[] = { i - 256, '\0' };
+          cmdline[cursor_x / 8 - 2] = s[0];
           putfonts8_asc_sht(shtctl, sheet, cursor_x, cursor_y, COL8_WHITE, COL8_BLACK, s, 1);
           cursor_x += 8;
         }
@@ -228,12 +257,13 @@ void HariMain(void) {
   make_window8(buf_cons, 256, 165, "console", FALSE);
   make_textbox8(sht_cons, 8, 28, 240, 128, COL8_BLACK);
   TASK* task_cons = task_alloc();
-  task_cons->tss.esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 2;
+  task_cons->tss.esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 3;
   task_cons->tss.eip = (int) &console_task;
   task_cons->tss.cs = 2 * 8;
   task_cons->tss.es = task_cons->tss.ss = task_cons->tss.ds = task_cons->tss.fs = task_cons->tss.gs = 1 * 8;
   *((int*)(task_cons->tss.esp + 4)) = (int)shtctl;
   *((int*)(task_cons->tss.esp + 8)) = (int)sht_cons;
+  *((int*)(task_cons->tss.esp + 12)) = (int)memtotal;
   task_run(task_cons, 2, 2);
 
   // sht_win
