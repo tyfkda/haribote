@@ -221,7 +221,6 @@ void HariMain(void) {
   sheet_setbuf(sht_back, buf_back, binfo->scrnx, binfo->scrny, -1);
   init_screen8(buf_back, binfo->scrnx, binfo->scrny);
 
-  char s[40];
   // sht_cons
   SHEET* sht_cons = sheet_alloc(shtctl);
   unsigned char* buf_cons = (unsigned char*)memman_alloc_4k(memman, 256 * 165);
@@ -267,13 +266,6 @@ void HariMain(void) {
   sheet_updown(shtctl, sht_win, 2);
   sheet_updown(shtctl, sht_mouse, 3);
 
-  sprintf(s, "(%3d, %3d)", mx, my);
-  putfonts8_asc_sht(shtctl, sht_back, 0, 0, COL8_WHITE, COL8_DARK_CYAN, s, 10);
-
-  sprintf(s, "memory %dMB   free : %dKB",
-          memtotal / (1024 * 1024), memman_total(memman) / 1024);
-  putfonts8_asc_sht(shtctl, sht_back, 0, 32, COL8_WHITE, COL8_DARK_CYAN, s, 40);
-
   int key_to = 0, key_shift = 0;
 
   for (;;) {
@@ -288,9 +280,6 @@ void HariMain(void) {
     int i = fifo_get(&fifo);
     io_sti();
     if (256 <= i && i < 512) {  // Keyboard data.
-      char s[4];
-      sprintf(s, "%02X", i - 256);
-      putfonts8_asc_sht(shtctl, sht_back, 0, 16, COL8_WHITE, COL8_DARK_CYAN, s, 2);
       switch (i) {
       case 0x1c + 256:  // Enter.
         if (key_to != 0)  // To console.
@@ -338,6 +327,7 @@ void HariMain(void) {
         break;
       default:
         if (i < 256 + 0x80) {  // Normal character.
+          char s[2];
           s[0] = keytable[key_shift ? 1 : 0][i - 256];
           if (s[0] != 0) {  // Normal character.
             if ('A' <= s[0] && s[0] <= 'Z' && !key_shift)
@@ -362,16 +352,6 @@ void HariMain(void) {
       continue;
     } else if (512 <= i && i < 768) {  // Mouse data.
       if (mouse_decode(&mdec, i - 512) != 0) {
-        // Erase mouse cursor.
-        sprintf(s, "[lcr %4d %4d]", mdec.x, mdec.y);
-        if ((mdec.btn & 0x01) != 0)
-          s[1] = 'L';
-        if ((mdec.btn & 0x02) != 0)
-          s[1] = 'R';
-        if ((mdec.btn & 0x04) != 0)
-          s[1] = 'C';
-        putfonts8_asc_sht(shtctl, sht_back, 32, 16, COL8_WHITE, COL8_DARK_CYAN, s, 15);
-
         // Move mouse cursor.
         mx += mdec.x;
         my += mdec.y;
@@ -379,8 +359,6 @@ void HariMain(void) {
         if (my < 0)  my = 0;
         if (mx >= binfo->scrnx - 1)  mx = binfo->scrnx - 1;
         if (my >= binfo->scrny - 1)  my = binfo->scrny - 1;
-        sprintf(s, "(%3d, %3d)", mx, my);
-        putfonts8_asc_sht(shtctl, sht_back, 0, 0, COL8_WHITE, COL8_DARK_CYAN, s, 10);
         sheet_slide(shtctl, sht_mouse, mx, my);
 
         if ((mdec.btn & 0x01) != 0)
