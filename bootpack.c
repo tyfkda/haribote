@@ -134,6 +134,29 @@ void console_task(SHTCTL* shtctl, SHEET* sheet) {
   }
 }
 
+static const char keytable[2][0x80] = {
+  {  // Normal.
+      0,   0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '^',   0,   0,
+    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '@', '[',   0,   0, 'A', 'S',
+    'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', ':',   0,   0, ']', 'Z', 'X', 'C', 'V',
+    'B', 'N', 'M', ',', '.', '/',   0, '*',   0, ' ',   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0, '7', '8', '9', '-', '4', '5', '6', '+', '1',
+    '2', '3', '0', '.',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,0x5c,   0,   0,   0,   0,   0,   0,   0,   0,   0,0x5c,   0,   0,
+  },
+  {  // Shift.
+      0,   0, '!', '"', '#', '$', '%', '&', '*', '(', ')',   0, '=', '~',   0,   0,
+    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '`', '{',   0,   0, 'A', 'S',
+    'D', 'F', 'G', 'H', 'J', 'K', 'L', '+', '*',   0,   0, '}', 'Z', 'X', 'C', 'V',
+    'B', 'N', 'M', '<', '>', '?',   0, '*',   0, ' ',   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0, '7', '8', '9', '-', '4', '5', '6', '+', '1',
+    '2', '3', '0', '.',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0, '_',   0,   0,   0,   0,   0,   0,   0,   0,   0, '|',   0,   0,
+  },
+};
+
 void HariMain(void) {
   init_gdtidt();
   init_pic();
@@ -222,7 +245,7 @@ void HariMain(void) {
           memtotal / (1024 * 1024), memman_total(memman) / 1024);
   putfonts8_asc_sht(shtctl, sht_back, 0, 32, COL8_WHITE, COL8_DARK_CYAN, s, 40);
 
-  int key_to = 0;
+  int key_to = 0, key_shift = 0;
 
   for (;;) {
     io_cli();
@@ -239,27 +262,8 @@ void HariMain(void) {
       char s[4];
       sprintf(s, "%02X", i - 256);
       putfonts8_asc_sht(shtctl, sht_back, 0, 16, COL8_WHITE, COL8_DARK_CYAN, s, 2);
-      static const char keytable[0x54] = {
-        0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '^', 0, 0,
-        'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '@', '[', 0, 0, 'A', 'S',
-        'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', ':', 0, 0, ']', 'Z', 'X', 'C', 'V',
-        'B', 'N', 'M', ',', '.', '/', 0, '*', 0, ' ', 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, '7', '8', '9', '-', '4', '5', '6', '+', '1',
-        '2', '3', '0', '.',
-      };
-      if (i < 256 + 0x54 && keytable[i - 256] != 0) {  // Normal character.
-        if (key_to == 0) {  // To task A
-          if (cursor_x < 128) {
-            s[0] = keytable[i - 256];
-            s[1] = '\0';
-            putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, s, 1);
-            cursor_x += 8;
-          }
-        } else {  // To console.
-          fifo_put(&task_cons->fifo, keytable[i - 256] + 256);
-        }
-      }
-      if (i == 256 + 0x0e) {  // Back space.
+      switch (i) {
+      case 0x0e + 256:  // Back space.
         if (key_to == 0) {  // To task A
           if (cursor_x > 8) {
             putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, " ", 1);
@@ -268,7 +272,8 @@ void HariMain(void) {
         } else {  // To console.
           fifo_put(&task_cons->fifo, 8 + 256);
         }
-      } else if (i == 256 + 0x0f) {  // Tab.
+        break;
+      case 0x0f + 256:  // Tab.
         if (key_to == 0) {
           key_to = 1;
           make_wtitle8(buf_win, sht_win->bxsize, "task_a", FALSE);
@@ -280,6 +285,37 @@ void HariMain(void) {
         }
         sheet_refresh(shtctl, sht_win, 0, 0, sht_win->bxsize, 21);
         sheet_refresh(shtctl, sht_cons, 0, 0, sht_cons->bxsize, 21);
+        break;
+      case 0x2a + 256:  // Left shift on.
+        key_shift |= 1;
+        break;
+      case 0x36 + 256:  // Left shift on.
+        key_shift |= 2;
+        break;
+      case 0xaa + 256:  // Left shift on.
+        key_shift &= ~1;
+        break;
+      case 0xb6 + 256:  // Left shift on.
+        key_shift &= ~2;
+        break;
+      default:
+        if (i < 256 + 0x80) {  // Normal character.
+          s[0] = keytable[key_shift ? 1 : 0][i - 256];
+          if (s[0] != 0) {  // Normal character.
+            if ('A' <= s[0] && s[0] <= 'Z' && !key_shift)
+              s[0] += 'a' - 'A';
+            if (key_to == 0) {  // To task A
+              if (cursor_x < 128) {
+                s[1] = '\0';
+                putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, s, 1);
+                cursor_x += 8;
+              }
+            } else {  // To console.
+              fifo_put(&task_cons->fifo, s[0] + 256);
+            }
+          }
+        }
+        break;
       }
       boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
       sheet_refresh(shtctl, sht_win, cursor_x, 28, cursor_x + 8, 44);
