@@ -1,4 +1,4 @@
-TARGET=fd0.img
+TARGET=haribote.img
 
 SRCDIR=.
 OBJDIR=obj
