@@ -233,6 +233,9 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
             }
             if (cursor_x != 8)
               cursor_y = cons_newline(cursor_y, shtctl, sheet);
+          } else {
+            putfonts8_asc_sht(shtctl, sheet, 8, cursor_y, COL8_WHITE, COL8_BLACK, "File not found", 14);
+            cursor_y = cons_newline(cursor_y, shtctl, sheet);
           }
         } else if (cmdline[0] != '\0') {
           putfonts8_asc_sht(shtctl, sheet, 8, cursor_y, COL8_WHITE, COL8_BLACK, "Bad command.", 12);
