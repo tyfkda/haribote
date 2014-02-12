@@ -22,6 +22,17 @@ static char* int2num(char *s, int x, int base, const char* table,
   return s;
 }
 
+int toupper(int c) {
+  return ('a' <= c && c <= 'z') ? c - ('a' - 'A') : c;
+}
+
+void* memset(void* buf, int ch, int n) {
+  char* p = (char*)buf;
+  for (int i = 0; i < n; ++i)
+    *p++ = ch;
+  return buf;
+}
+
 void* memcpy(void* dst, const void* src, int size) {
   char* p = (char*)dst;
   const char* q = (const char*)src;

@@ -5,6 +5,8 @@
 #define TRUE   (1)
 #define NULL   ((void*)0)
 
+int toupper(int c);
+void* memset(void* buf, int ch, int n);
 void* memcpy(void* dst, const void* src, int size);
 int strlen(const char* str);
 char* strcpy(char* dst, const char* src);
