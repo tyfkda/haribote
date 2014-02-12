@@ -7,12 +7,12 @@
 
 #define MAX_SHEETS  (256)
 
-typedef struct {
+typedef struct SHEET {
   unsigned char* buf;
   int bxsize, bysize, vx0, vy0, col_inv, height, flags;
 } SHEET;
 
-typedef struct {
+typedef struct SHTCTL {
   unsigned char* vram;
   unsigned char* map;
   int xsize, ysize, top;
