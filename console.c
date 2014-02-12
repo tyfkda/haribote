@@ -55,15 +55,23 @@ void cons_putchar(CONSOLE* cons, int chr, char move) {
   }
 }
 
+void cons_putstr0(CONSOLE* cons, char* s) {
+  for (; *s != '\0'; ++s)
+    cons_putchar(cons, *s, 1);
+}
+
+void cons_putstr1(CONSOLE* cons, char* s, int l) {
+  for (int i = 0; i < l; ++i)
+    cons_putchar(cons, *s++, 1);
+}
+
 static void cmd_mem(CONSOLE* cons, int memtotal) {
   MEMMAN* memman = (MEMMAN*)MEMMAN_ADDR;
-  char s[30];
-  sprintf(s, "total %4dMB", memtotal / (1024 * 1024));
-  putfonts8_asc_sht(cons->shtctl, cons->sheet, 8, cons->cur_y, COL8_WHITE, COL8_BLACK, s, strlen(s));
-  cons_newline(cons);
-  sprintf(s, "free %5dKB", memman_total(memman) / 1024);
-  putfonts8_asc_sht(cons->shtctl, cons->sheet, 8, cons->cur_y, COL8_WHITE, COL8_BLACK, s, strlen(s));
-  cons_newline(cons);
+  char s[60];
+  sprintf(s, "total %4dMB\nfree %5dKB\n",
+          memtotal / (1024 * 1024),
+          memman_total(memman) / 1024);
+  cons_putstr0(cons, s);
 }
 
 static void cmd_cls(CONSOLE* cons) {
@@ -83,13 +91,12 @@ static void cmd_dir(CONSOLE* cons) {
       continue;
     if ((p->type & 0x18) == 0) {
       char s[30];
-      sprintf(s, "filename.ext   %7d", p->size);
+      sprintf(s, "filename.ext   %7d\n", p->size);
       memcpy(&s[0], p->name, 8);
       memcpy(&s[9], p->ext, 3);
       if (p->ext[0] == ' ')  // No file extension: remove dot.
         s[8] = ' ';
-      putfonts8_asc_sht(cons->shtctl, cons->sheet, 8, cons->cur_y, COL8_WHITE, COL8_BLACK, s, 30);
-      cons_newline(cons);
+      cons_putstr0(cons, s);
     }
   }
 }
@@ -98,18 +105,14 @@ static void cmd_type(CONSOLE* cons, const short* fat, const char* cmdline) {
   MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
   FILEINFO *finfo = file_search(cmdline + 5, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
   if (finfo == NULL) {
-    putfonts8_asc_sht(cons->shtctl, cons->sheet, 8, cons->cur_y, COL8_WHITE, COL8_BLACK, "File not found.", 15);
-    cons_newline(cons);
+    cons_putstr0(cons, "File not found.");
     return;
   }
 
   int size = finfo->size;
   char* p = (char*)memman_alloc_4k(memman, size);
   file_loadfile(finfo->clustno, size, p, fat, (char*)(ADR_DISKIMG + 0x003e00));
-  for (int i = 0; i < size; ++i)
-    cons_putchar(cons, p[i], TRUE);
-  if (cons->cur_x != 8)
-    cons_newline(cons);
+  cons_putstr1(cons, p, size);
   memman_free_4k(memman, (int)p, size);
 }
 
@@ -148,10 +151,8 @@ void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memto
   } else if (strncmp(cmdline, "type ", 5) == 0) {
     cmd_type(cons, fat, cmdline);
   } else if (cmdline[0] != '\0') {
-    if (!cmd_app(fat, cmdline)) {
-      putfonts8_asc_sht(cons->shtctl, cons->sheet, 8, cons->cur_y, COL8_WHITE, COL8_BLACK, "Bad command.", 12);
-      cons_newline(cons);
-    }
+    if (!cmd_app(fat, cmdline))
+      cons_putstr0(cons, "Bad command.\n");
   }
 }
 
