@@ -13,6 +13,10 @@ all:	$(TARGET)
 
 $(TARGET):	$(OBJDIR)/ipl.bin $(OBJDIR)/haribote.sys $(DISK_FILES)
 	cat $(OBJDIR)/ipl.bin > $@
+	# FAT x 2
+	ruby tools/fat.rb $(DISK_FILES) >> $@
+	ruby tools/padding.rb -cps 0x1400 $@ >> $@
+	ruby tools/fat.rb $(DISK_FILES) >> $@
 	# Disk root directory.
 	ruby tools/padding.rb -cps 0x2600 $@ >> $@
 	ruby tools/fileinfo.rb $(DISK_FILES) >> $@

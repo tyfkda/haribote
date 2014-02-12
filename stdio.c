@@ -22,6 +22,14 @@ static char* int2num(char *s, int x, int base, const char* table,
   return s;
 }
 
+void* memcpy(void* dst, const void* src, int size) {
+  char* p = (char*)dst;
+  const char* q = (const char*)src;
+  for (; size > 0; --size)
+    *p++ = *q++;
+  return dst;
+}
+
 int strlen(const char* str) {
   int len = 0;
   for (; *str != '\0'; ++str, ++len);

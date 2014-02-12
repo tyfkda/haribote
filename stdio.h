@@ -5,6 +5,7 @@
 #define TRUE   (1)
 #define NULL   ((void*)0)
 
+void* memcpy(void* dst, const void* src, int size);
 int strlen(const char* str);
 char* strcpy(char* dst, const char* src);
 char* strncpy(char* dst, const char* src, int n);

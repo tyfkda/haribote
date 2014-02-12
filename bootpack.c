@@ -107,6 +107,26 @@ static int cons_newline(int cursor_y, SHTCTL* shtctl, SHEET* sheet) {
   return cursor_y;
 }
 
+void file_readfat(short* fat, unsigned char* img) {
+  for (int i = 0, j = 0; i < 2880; i += 2, j += 3) {
+    fat[i + 0] = (img[j + 0]      | img[j + 1] << 8) & 0xfff;
+    fat[i + 1] = (img[j + 1] >> 4 | img[j + 2] << 4) & 0xfff;
+  }
+}
+
+void file_loadfile(short clustno, int size, char* buf, const short* fat, char* img) {
+  for (;;) {
+    if (size <= 512) {
+      memcpy(buf, &img[clustno * 512], size);
+      break;
+    }
+    memcpy(buf, &img[clustno * 512], 512);
+    size -= 512;
+    buf += 512;
+    clustno = fat[clustno];
+  }
+}
+
 void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   TASK* task = task_now();
   int fifobuf[128];
@@ -120,7 +140,10 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   // Show prompt.
   putfonts8_asc_sht(shtctl, sheet, cursor_x - 8, cursor_y, COL8_WHITE, COL8_BLACK, ">", 1);
 
+  MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
   FILEINFO *finfo = (FILEINFO*)(ADR_DISKIMG + 0x002600);
+  short* fat = (short*)memman_alloc_4k(memman, sizeof(short) * 2880);
+  file_readfat(fat, (unsigned char*)(ADR_DISKIMG + 0x000200));
 
   char cmdline[30];
 
@@ -197,7 +220,8 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
           }
           if (x < 224 && finfo[x].name[0] != 0x00) {  // File found.
             int size = finfo[x].size;
-            char* p = (char*)(finfo[x].clustno * 512 + 0x003e00 + ADR_DISKIMG);
+            char* p = (char*)memman_alloc_4k(memman, size);
+            file_loadfile(finfo[x].clustno, size, p, fat, (char*)(ADR_DISKIMG + 0x003e00));
             cursor_x = 8;
             for (int i = 0; i < size; ++i) {
               switch (p[i]) {
@@ -233,6 +257,7 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
             }
             if (cursor_x != 8)
               cursor_y = cons_newline(cursor_y, shtctl, sheet);
+            memman_free_4k(memman, (int)p, size);
           } else {
             putfonts8_asc_sht(shtctl, sheet, 8, cursor_y, COL8_WHITE, COL8_BLACK, "File not found", 14);
             cursor_y = cons_newline(cursor_y, shtctl, sheet);
