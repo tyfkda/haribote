@@ -127,7 +127,7 @@ static void cmd_hlt(CONSOLE* cons, const short* fat) {
 
   SEGMENT_DESCRIPTOR* gdt = (SEGMENT_DESCRIPTOR*)ADR_GDT;
   set_segmdesc(gdt + 1003, finfo->size - 1, (int)p, AR_CODE32_ER);
-  farjmp(0, 1003 * 8);
+  farcall(0, 1003 * 8);
   memman_free_4k(memman, (int)p, finfo->size);
 }
 
@@ -171,6 +171,7 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   cons.cur_x = 8;
   cons.cur_y = 28;
   cons.cur_c = -1;
+  *((int*)0x0fec) = (int)&cons;
   cons_putchar(&cons, '>', TRUE);
 
   for (;;) {

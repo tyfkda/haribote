@@ -6,9 +6,9 @@
 .globl  load_cr0, store_cr0
 .globl	load_tr
 .globl	asm_inthandler20, asm_inthandler21, asm_inthandler2c
-.globl	farjmp
+.globl	farjmp, farcall
+.globl	asm_cons_putchar
 .extern inthandler20, inthandler21, inthandler2c
-
 
 .macro asm_inthandler	c_inthandler
 	push	%es
@@ -145,3 +145,18 @@ asm_inthandler2c:
 farjmp:
 	ljmp	*4(%esp)	# eip, cs
 	ret
+
+# void farcall(int eip, int cs)
+farcall:
+	lcall	*4(%esp)	# eip, cs
+	ret
+
+asm_cons_putchar:
+	sti
+	push	$1
+	and	$0xff, %eax
+	push	%eax
+	pushl	(0x0fec)	# Console instance
+	call	cons_putchar
+	add	$12, %esp
+	iret

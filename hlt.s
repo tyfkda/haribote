@@ -1,7 +1,16 @@
 .globl	start
 
 start:
-	cli
-fin:
-	hlt
-	jmp	fin
+	mov	$'H', %al
+	int	$0x40
+	mov	$'e', %al
+	int	$0x40
+	mov	$'l', %al
+	int	$0x40
+	mov	$'l', %al
+	int	$0x40
+	mov	$'o', %al
+	int	$0x40
+	mov	$'\n', %al
+	int	$0x40
+	retf

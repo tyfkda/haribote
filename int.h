@@ -21,5 +21,6 @@ void init_pic(void);
 void asm_inthandler20(void);
 void asm_inthandler21(void);
 void asm_inthandler2c(void);
+void asm_cons_putchar(void);
 
 #endif
