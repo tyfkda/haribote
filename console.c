@@ -113,15 +113,21 @@ static void cmd_type(CONSOLE* cons, const short* fat, const char* cmdline) {
   memman_free_4k(memman, (int)p, size);
 }
 
-static void cmd_hlt(CONSOLE* cons, const short* fat) {
-  MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
-  FILEINFO *finfo = file_search("HLT.HRB", (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
-  if (finfo == NULL) {
-    putfonts8_asc_sht(cons->shtctl, cons->sheet, 8, cons->cur_y, COL8_WHITE, COL8_BLACK, "File not found.", 15);
-    cons_newline(cons);
-    return;
-  }
+static char cmd_app(const short* fat, const char* cmdline) {
+  char name[13];
+  strncpy(name, cmdline, 8);
+  name[8] = '\0';
 
+  FILEINFO *finfo = file_search(name, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
+  if (finfo == NULL) {
+    // Try executable extension.
+    strcpy(name + strlen(name), ".HRB");
+    finfo = file_search(name, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
+  }
+  if (finfo == NULL)
+    return FALSE;
+
+  MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
   char* p = (char*)memman_alloc_4k(memman, finfo->size);
   file_loadfile(finfo->clustno, finfo->size, p, fat, (char*)(ADR_DISKIMG + 0x003e00));
 
@@ -129,6 +135,7 @@ static void cmd_hlt(CONSOLE* cons, const short* fat) {
   set_segmdesc(gdt + 1003, finfo->size - 1, (int)p, AR_CODE32_ER);
   farcall(0, 1003 * 8);
   memman_free_4k(memman, (int)p, finfo->size);
+  return TRUE;
 }
 
 void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memtotal) {
@@ -140,12 +147,11 @@ void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memto
     cmd_dir(cons);
   } else if (strncmp(cmdline, "type ", 5) == 0) {
     cmd_type(cons, fat, cmdline);
-  } else if (strcmp(cmdline, "hlt") == 0) {
-    cmd_hlt(cons, fat);
   } else if (cmdline[0] != '\0') {
-    putfonts8_asc_sht(cons->shtctl, cons->sheet, 8, cons->cur_y, COL8_WHITE, COL8_BLACK, "Bad command.", 12);
-    cons_newline(cons);
-    cons_newline(cons);
+    if (!cmd_app(fat, cmdline)) {
+      putfonts8_asc_sht(cons->shtctl, cons->sheet, 8, cons->cur_y, COL8_WHITE, COL8_BLACK, "Bad command.", 12);
+      cons_newline(cons);
+    }
   }
 }
 
