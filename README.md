@@ -8,29 +8,32 @@ introduced in a book called "[OS自作入門](http://amzn.to/1djVjZO)"
 * Boot from floppy disk
 
 
+# Required environment
+* Linux
+* gcc, as, ld
+* make
+* Ruby
 
-= Required environment
-* Linux + gcc
-* Makefile
-* ruby (for tools)
+Originally, Windows + nask + gcc and lots of tools are used for the original development environment.
+But I changed to use Linux, and simplify required tools using Ruby.
 
 
-= How to build
+# How to build
 * Type `make` in the root directory
 * `haribote.img` is created
 * Burn image into floppy disk, or run disk image using PC emulator (e.g. VirtualBox)
 
 
-= Memo
-== Disk layout
-* 2HD : 1.4MB = 1,474,560 bytes (512 bytes x 18 sectors x 2 heads x 80 cylinders)
+# Memo
+## Floppy disk
+* 2HD : 1.4MB = 1,474,560 bytes (= 512 bytes x 18 sectors x 2 heads x 80 cylinders)
 * 0x000000 - 0x0001ff : Boot sector
 * 0x000200 - 0x0013ff : FAT
 * 0x001400 - 0x0025ff : FAT (back up)
 * 0x002600 - 0x0041ff : Root directory table
 * 0x004200 - 0x168000 : Cluster data
 
-== Memory layout
+## Memory layout
 * 0x00007c00 - 0x00007dff : Boot sector is loaded (512 bytes)
 * 0x00100000 - 0x00267fff : Floppy disk image (1440KB)
 * 0x0026f800 - 0x0026ffff : IDT (2KB)
