@@ -1,6 +1,7 @@
 .globl	start
 
 start:
+	mov	$1, %edx	# putchar
 	mov	$'H', %al
 	int	$0x40
 	mov	$'e', %al

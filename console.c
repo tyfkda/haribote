@@ -65,6 +65,16 @@ void cons_putstr1(CONSOLE* cons, char* s, int l) {
     cons_putchar(cons, *s++, 1);
 }
 
+void hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax) {
+  (void)edi; (void)esi; (void)ebp; (void)esp; (void)ebx; (void)edx; (void)ecx; (void)eax;
+  CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
+  switch (edx) {
+  case 1:  cons_putchar(cons, eax & 0xff, TRUE); break;
+  case 2:  cons_putstr0(cons, (char*)ebx); break;
+  case 3:  cons_putstr1(cons, (char*)ebx, ecx); break;
+  }
+}
+
 static void cmd_mem(CONSOLE* cons, int memtotal) {
   MEMMAN* memman = (MEMMAN*)MEMMAN_ADDR;
   char s[60];

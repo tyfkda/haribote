@@ -7,7 +7,7 @@
 .globl	load_tr
 .globl	asm_inthandler20, asm_inthandler21, asm_inthandler2c
 .globl	farjmp, farcall
-.globl	asm_cons_putchar
+.globl	asm_cons_putchar, asm_hrb_api
 .extern inthandler20, inthandler21, inthandler2c
 
 .macro asm_inthandler	c_inthandler
@@ -151,12 +151,11 @@ farcall:
 	lcall	*4(%esp)	# eip, cs
 	ret
 
-asm_cons_putchar:
+asm_hrb_api:
 	sti
-	push	$1
-	and	$0xff, %eax
-	push	%eax
-	pushl	(0x0fec)	# Console instance
-	call	cons_putchar
-	add	$12, %esp
+	pushal
+	pushal
+	call	hrb_api
+	add	$32, %esp
+	popal
 	iret
