@@ -51,4 +51,4 @@ $(OBJDIR)/hello.hrb:	$(OBJDIR)/hello.o
 	ld -N -e start -S --oformat binary -o $@ $<
 
 clean:
-	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.map $(TARGET)
+	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.hrb $(OBJDIR)/*.map $(TARGET)
