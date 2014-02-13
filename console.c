@@ -161,6 +161,12 @@ static char cmd_app(const short* fat, const char* cmdline) {
   return TRUE;
 }
 
+int inthandler0d(void) {
+  CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
+  cons_putstr0(cons, "\nINT 0D :\n General Protected Exception.\n");
+  return 1;  // Abort
+}
+
 void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memtotal) {
   if (strcmp(cmdline, "mem") == 0) {
     cmd_mem(cons, memtotal);

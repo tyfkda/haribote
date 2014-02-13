@@ -5,10 +5,10 @@
 .globl	load_gdtr, load_idtr
 .globl  load_cr0, store_cr0
 .globl	load_tr
-.globl	asm_inthandler20, asm_inthandler21, asm_inthandler2c
+.globl	asm_inthandler0d, asm_inthandler20, asm_inthandler21, asm_inthandler2c
 .globl	farjmp, farcall, start_app
 .globl	asm_cons_putchar, asm_hrb_api
-.extern inthandler20, inthandler21, inthandler2c
+.extern inthandler0d, inthandler20, inthandler21, inthandler2c
 
 .macro asm_inthandler	c_inthandler
 	push	%es
@@ -30,7 +30,7 @@
 	pop	%ds
 	pop	%es
 	iret
-1:
+1:	# Interrupt occurred while application is running
 	mov	$1 * 8, %eax
 	mov	%ax, %ds	# Set ds for OS
 	mov	(0x0fe4), %ecx
@@ -154,6 +154,65 @@ store_cr0:
 # void load_tr(int tr)
 load_tr:
 	LTR	4(%esp)		# tr
+	ret
+
+asm_inthandler0d:
+	sti
+	push	%es
+	push	%ds
+	pushal
+	mov	%ss, %ax
+	cmp	$1 * 8, %ax
+	jne	1f
+	# Interrupt occurred while OS is running
+	mov	%esp, %eax
+	push	%ss		# Save ss
+	push	%eax		# Save esp
+	mov	%ss, %ax
+	mov	%ax, %ds
+	mov	%ax, %es
+	call	inthandler0d
+	add	$8, %esp
+	popal
+	pop	%ds
+	pop	%es
+	add	$4, %esp	# Needed for int $0x0d
+	iret
+1:	# Interrupt occurred while application is running
+	cli
+	mov	$1 * 8, %eax
+	mov	%ax, %ds	# Set ds for OS
+	mov	(0x0fe4), %ecx
+	add	$-8, %ecx
+	mov	%ss, 4(%ecx)	# Save ss
+	mov	%esp, (%ecx)	# Save esp
+	mov	%ax, %ss
+	mov	%ax, %es
+	mov	%ecx, %esp
+	sti
+	call	inthandler0d
+	cli
+	cmp	$0, %eax
+	jne	2f
+	pop	%ecx
+	pop	%eax
+	mov	%ax, %ss	# Restore ss
+	mov	%ecx, %esp	# Restore esp
+	popal
+	pop	%ds
+	pop	%es
+	add	$4, %esp	# Needed for int $0x0d
+	iret
+2:	# Kill application
+	mov	$1 * 8, %eax	# ds/ss for OS
+	mov	%ax, %es
+	mov	%ax, %ss
+	mov	%ax, %ds
+	mov	%ax, %fs
+	mov	%ax, %gs
+	mov	(0x0fe4), %esp
+	sti
+	popal
 	ret
 
 asm_inthandler20:
