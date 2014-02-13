@@ -1,7 +1,7 @@
 TARGET=haribote.img
 
 # Files included in the disk image.
-DISK_FILES=$(OBJDIR)/haribote.sys ipl.s Makefile $(OBJDIR)/hello.hrb
+DISK_FILES=$(OBJDIR)/haribote.sys ipl.s Makefile $(OBJDIR)/hello.hrb $(OBJDIR)/a.hrb
 
 SRCDIR=.
 OBJDIR=obj
@@ -49,6 +49,9 @@ $(OBJDIR)/bootpack.bin:	$(OBJDIR)/bootpack.o $(OBJDIR)/graphics.o $(OBJDIR)/dsct
 
 $(OBJDIR)/hello.hrb:	$(OBJDIR)/hello.o
 	ld -N -e start -Ttext 0 -S --oformat binary -o $@ $<
+
+$(OBJDIR)/a.hrb:	$(OBJDIR)/a.o $(OBJDIR)/a_nask.o
+	ld -T harimain.ls --oformat binary -o $@ $^
 
 clean:
 	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.hrb $(OBJDIR)/*.map $(TARGET)

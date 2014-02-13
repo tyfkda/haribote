@@ -148,6 +148,11 @@ static char cmd_app(const short* fat, const char* cmdline) {
   SEGMENT_DESCRIPTOR* gdt = (SEGMENT_DESCRIPTOR*)ADR_GDT;
   set_segmdesc(gdt + 1003, finfo->size - 1, (int)p, AR_CODE32_ER);
   *((int*)0x0fe8) = (int)p;  // Store code segment address.
+  if (finfo->size >= 8 && strncmp(p + 4, "Hari", 4) == 0) {
+    // Dirty hack: Put binary code "call 0x1b; retf" to the top.
+    static const unsigned char bin[] = { 0xe8, 0x16, 0x00, 0x00, 0x00, 0xcb };
+    memcpy(p, bin, sizeof(bin));
+  }
   farcall(0, 1003 * 8);
   memman_free_4k(memman, (int)p, finfo->size);
   return TRUE;
