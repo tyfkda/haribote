@@ -1,13 +1,20 @@
 TARGET=haribote.img
 
 # Files included in the disk image.
-DISK_FILES=$(OBJDIR)/haribote.sys ipl.s Makefile $(OBJDIR)/hello.hrb $(OBJDIR)/a.hrb
+DISK_FILES=\
+	$(OBJDIR)/haribote.sys \
+	ipl.s \
+	$(OBJDIR)/hello.hrb \
+	$(OBJDIR)/a.hrb \
+	$(OBJDIR)/crack1.hrb \
 
 SRCDIR=.
 OBJDIR=obj
 
 CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
+
+LKAPP=ld -T harimain.ls --oformat binary $(OBJDIR)/a_nask.o
 
 all:	$(TARGET)
 
@@ -51,7 +58,10 @@ $(OBJDIR)/hello.hrb:	$(OBJDIR)/hello.o
 	ld -N -e start -Ttext 0 -S --oformat binary -o $@ $<
 
 $(OBJDIR)/a.hrb:	$(OBJDIR)/a.o $(OBJDIR)/a_nask.o
-	ld -T harimain.ls --oformat binary -o $@ $^
+	$(LKAPP) -o $@ $<
+
+$(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o
+	$(LKAPP) -o $@ $<
 
 clean:
 	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.hrb $(OBJDIR)/*.map $(TARGET)
