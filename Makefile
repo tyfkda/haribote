@@ -48,7 +48,7 @@ $(OBJDIR)/bootpack.bin:	$(OBJDIR)/bootpack.o $(OBJDIR)/graphics.o $(OBJDIR)/dsct
 	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls --oformat binary -o $@ $^
 
 $(OBJDIR)/hello.hrb:	$(OBJDIR)/hello.o
-	ld -N -e start -S --oformat binary -o $@ $<
+	ld -N -e start -Ttext 0 -S --oformat binary -o $@ $<
 
 clean:
 	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.hrb $(OBJDIR)/*.map $(TARGET)

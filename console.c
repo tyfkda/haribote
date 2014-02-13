@@ -67,11 +67,12 @@ void cons_putstr1(CONSOLE* cons, char* s, int l) {
 
 void hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax) {
   (void)edi; (void)esi; (void)ebp; (void)esp; (void)ebx; (void)edx; (void)ecx; (void)eax;
+  const int cs_base = *((int*)0x0fe8);  // Get code segment address.
   CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
   switch (edx) {
   case 1:  cons_putchar(cons, eax & 0xff, TRUE); break;
-  case 2:  cons_putstr0(cons, (char*)ebx); break;
-  case 3:  cons_putstr1(cons, (char*)ebx, ecx); break;
+  case 2:  cons_putstr0(cons, (char*)ebx + cs_base); break;
+  case 3:  cons_putstr1(cons, (char*)ebx + cs_base, ecx); break;
   }
 }
 
@@ -146,6 +147,7 @@ static char cmd_app(const short* fat, const char* cmdline) {
 
   SEGMENT_DESCRIPTOR* gdt = (SEGMENT_DESCRIPTOR*)ADR_GDT;
   set_segmdesc(gdt + 1003, finfo->size - 1, (int)p, AR_CODE32_ER);
+  *((int*)0x0fe8) = (int)p;  // Store code segment address.
   farcall(0, 1003 * 8);
   memman_free_4k(memman, (int)p, finfo->size);
   return TRUE;

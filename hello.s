@@ -1,17 +1,10 @@
 .globl	start
 
 start:
-	mov	$1, %edx	# putchar
-	mov	$'H', %al
-	int	$0x40
-	mov	$'e', %al
-	int	$0x40
-	mov	$'l', %al
-	int	$0x40
-	mov	$'l', %al
-	int	$0x40
-	mov	$'o', %al
-	int	$0x40
-	mov	$'\n', %al
+	mov	$2, %edx	# putstr0
+	mov	$msg, %ebx
 	int	$0x40
 	retf
+msg:
+	.ascii	"hello\n"
+	.byte	0
