@@ -6,7 +6,7 @@
 .globl  load_cr0, store_cr0
 .globl	load_tr
 .globl	asm_inthandler20, asm_inthandler21, asm_inthandler2c
-.globl	farjmp, farcall
+.globl	farjmp, farcall, start_app
 .globl	asm_cons_putchar, asm_hrb_api
 .extern inthandler20, inthandler21, inthandler2c
 
@@ -14,13 +14,37 @@
 	push	%es
 	push	%ds
 	pushal
+	mov	%ss, %ax
+	cmp	$1 * 8, %ax
+	jne	1f
+	# Interrupt occurred while OS is running
 	mov	%esp, %eax
-	push	%eax
+	push	%ss		# Save ss
+	push	%eax		# Save esp
 	mov	%ss, %ax
 	mov	%ax, %ds
 	mov	%ax, %es
 	call	\c_inthandler
+	add	$8, %esp
+	popal
+	pop	%ds
+	pop	%es
+	iret
+1:
+	mov	$1 * 8, %eax
+	mov	%ax, %ds	# Set ds for OS
+	mov	(0x0fe4), %ecx
+	add	$-8, %ecx
+	mov	%ss, 4(%ecx)	# Save ss
+	mov	%esp, (%ecx)	# Save esp
+	mov	%ax, %ss
+	mov	%ax, %es
+	mov	%ecx, %esp
+	call	\c_inthandler
+	pop	%ecx
 	pop	%eax
+	mov	%ax, %ss	# Restore ss
+	mov	%ecx, %esp	# Restore esp
 	popal
 	pop	%ds
 	pop	%es
@@ -151,11 +175,78 @@ farcall:
 	lcall	*4(%esp)	# eip, cs
 	ret
 
-asm_hrb_api:
+# void start_app(int eip, int cs, int esp, int ds)
+start_app:
+	pushal
+	mov	36(%esp), %eax	# eip
+	mov	40(%esp), %ecx	# cs
+	mov	44(%esp), %edx	# esp
+	mov	48(%esp), %ebx	# ds/ss
+	mov	%esp, (0x0fe4)	# Store esp for OS
+	cli			# Disable interrupt while switching segment.
+	mov	%bx, %es
+	mov	%bx, %ss
+	mov	%bx, %ds
+	mov	%bx, %fs
+	mov	%bx, %gs
+	mov	%edx, %esp
 	sti
-	pushal
-	pushal
-	call	hrb_api
-	add	$32, %esp
+	push	%ecx		# push cs and
+	push	%eax		#   eip
+	lcall	*(%esp)		# to call application
+	#
+	mov	$1 * 8, %eax	# ds/ss for OS
+	cli
+	mov	%ax, %es
+	mov	%ax, %ss
+	mov	%ax, %ds
+	mov	%ax, %fs
+	mov	%ax, %gs
+	mov	(0x0fe4), %esp
+	sti
 	popal
+	ret
+
+asm_hrb_api:
+	push	%ds
+	push	%es
+	pushal
+	mov	$1 * 8, %eax
+	mov	%ax, %ds	# Set ds for OS
+	mov	(0x0fe4), %ecx	# esp for OS
+	add	$-40, %ecx
+	mov	%esp, 32(%ecx)	# Save esp for application
+	mov	%ss, 36(%ecx)	# Save ss for application
+	mov	(%esp), %edx
+	mov	4(%esp), %ebx
+	mov	%edx, (%ecx)
+	mov	%ebx, 4(%ecx)
+	mov	8(%esp), %edx
+	mov	12(%esp), %ebx
+	mov	%edx, 8(%ecx)
+	mov	%ebx, 12(%ecx)
+	mov	16(%esp), %edx
+	mov	20(%esp), %ebx
+	mov	%edx, 16(%ecx)
+	mov	%ebx, 20(%ecx)
+	mov	24(%esp), %edx
+	mov	28(%esp), %ebx
+	mov	%edx, 24(%ecx)
+	mov	%ebx, 28(%ecx)
+
+	mov	%ax, %es
+	mov	%ax, %ss
+	mov	%ecx, %esp
+	sti
+
+	call	hrb_api
+
+	mov	32(%esp), %ecx	# Restore esp for application
+	mov	36(%esp), %eax	# Restore ss for application
+	cli
+	mov	%ax, %ss
+	mov	%ecx, %esp
+	popal
+	pop	%es
+	pop	%ds
 	iret

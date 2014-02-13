@@ -144,17 +144,20 @@ static char cmd_app(const short* fat, const char* cmdline) {
   MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
   char* p = (char*)memman_alloc_4k(memman, finfo->size);
   file_loadfile(finfo->clustno, finfo->size, p, fat, (char*)(ADR_DISKIMG + 0x003e00));
+  char* q = (char*)memman_alloc_4k(memman, 64 * 1024);  // Data segment.
 
   SEGMENT_DESCRIPTOR* gdt = (SEGMENT_DESCRIPTOR*)ADR_GDT;
   set_segmdesc(gdt + 1003, finfo->size - 1, (int)p, AR_CODE32_ER);
+  set_segmdesc(gdt + 1004, 64 * 1024 - 1, (int)q, AR_DATA32_RW);
   *((int*)0x0fe8) = (int)p;  // Store code segment address.
   if (finfo->size >= 8 && strncmp(p + 4, "Hari", 4) == 0) {
     // Dirty hack: Put binary code "call 0x1b; retf" to the top.
     static const unsigned char bin[] = { 0xe8, 0x16, 0x00, 0x00, 0x00, 0xcb };
     memcpy(p, bin, sizeof(bin));
   }
-  farcall(0, 1003 * 8);
+  start_app(0, 1003 * 8, 64 * 1024, 1004 * 8);
   memman_free_4k(memman, (int)p, finfo->size);
+  memman_free_4k(memman, (int)q, 64 * 1024);
   return TRUE;
 }
 
