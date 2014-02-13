@@ -30,14 +30,14 @@ void init_gdtidt(void) {
   GATE_DESCRIPTOR* idt = (GATE_DESCRIPTOR*)ADR_IDT;
 
   // Init GDT.
-  for (int i = 0; i < LIMIT_GDT / 8; ++i)
+  for (int i = 0; i <= LIMIT_GDT / 8; ++i)
     set_segmdesc(gdt + i, 0, 0, 0);
   set_segmdesc(gdt + 1, 0xffffffff, 0x00000000, AR_DATA32_RW);
   set_segmdesc(gdt + 2, LIMIT_BOTPAK, ADR_BOTPAK, AR_CODE32_ER);
   load_gdtr(LIMIT_GDT, ADR_GDT);
 
   // Init IDT.
-  for (int i = 0; i < LIMIT_IDT / 8; ++i)
+  for (int i = 0; i <= LIMIT_IDT / 8; ++i)
     set_gatedesc(idt + i, 0, 0, 0);
   load_idtr(LIMIT_IDT, ADR_IDT);
 
