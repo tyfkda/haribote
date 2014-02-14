@@ -65,15 +65,18 @@ void cons_putstr1(CONSOLE* cons, char* s, int l) {
     cons_putchar(cons, *s++, 1);
 }
 
-void hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax) {
+int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax) {
   (void)edi; (void)esi; (void)ebp; (void)esp; (void)ebx; (void)edx; (void)ecx; (void)eax;
   const int cs_base = *((int*)0x0fe8);  // Get code segment address.
+  TASK* task = task_now();
   CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
   switch (edx) {
   case 1:  cons_putchar(cons, eax & 0xff, TRUE); break;
   case 2:  cons_putstr0(cons, (char*)ebx + cs_base); break;
   case 3:  cons_putstr1(cons, (char*)ebx + cs_base, ecx); break;
+  case 4: return &task->tss.esp0;
   }
+  return NULL;
 }
 
 static void cmd_mem(CONSOLE* cons, int memtotal) {
@@ -147,24 +150,26 @@ static char cmd_app(const short* fat, const char* cmdline) {
   char* q = (char*)memman_alloc_4k(memman, 64 * 1024);  // Data segment.
 
   SEGMENT_DESCRIPTOR* gdt = (SEGMENT_DESCRIPTOR*)ADR_GDT;
-  set_segmdesc(gdt + 1003, finfo->size - 1, (int)p, AR_CODE32_ER);
-  set_segmdesc(gdt + 1004, 64 * 1024 - 1, (int)q, AR_DATA32_RW);
+  set_segmdesc(gdt + 1003, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);
+  set_segmdesc(gdt + 1004, 64 * 1024 - 1, (int)q, AR_DATA32_RW + 0x60);
   *((int*)0x0fe8) = (int)p;  // Store code segment address.
   if (finfo->size >= 8 && strncmp(p + 4, "Hari", 4) == 0) {
     // Dirty hack: Put binary code "call 0x1b; retf" to the top.
     static const unsigned char bin[] = { 0xe8, 0x16, 0x00, 0x00, 0x00, 0xcb };
     memcpy(p, bin, sizeof(bin));
   }
-  start_app(0, 1003 * 8, 64 * 1024, 1004 * 8);
+  TASK* task = task_now();
+  start_app(0, 1003 * 8, 64 * 1024, 1004 * 8, &(task->tss.esp0));
   memman_free_4k(memman, (int)p, finfo->size);
   memman_free_4k(memman, (int)q, 64 * 1024);
   return TRUE;
 }
 
-int inthandler0d(void) {
+int* inthandler0d(void) {
   CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
   cons_putstr0(cons, "\nINT 0D :\n General Protected Exception.\n");
-  return 1;  // Abort
+  TASK* task = task_now();
+  return &task->tss.esp0;  // Abort
 }
 
 void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memtotal) {

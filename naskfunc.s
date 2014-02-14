@@ -14,41 +14,17 @@
 	push	%es
 	push	%ds
 	pushal
-	mov	%ss, %ax
-	cmp	$1 * 8, %ax
-	jne	1f
-	# Interrupt occurred while OS is running
 	mov	%esp, %eax
-	push	%ss		# Save ss
-	push	%eax		# Save esp
+	push	%eax
 	mov	%ss, %ax
 	mov	%ax, %ds
 	mov	%ax, %es
 	call	\c_inthandler
-	add	$8, %esp
-	popal
-	pop	%ds
-	pop	%es
-	iret
-1:	# Interrupt occurred while application is running
-	mov	$1 * 8, %eax
-	mov	%ax, %ds	# Set ds for OS
-	mov	(0x0fe4), %ecx
-	add	$-8, %ecx
-	mov	%ss, 4(%ecx)	# Save ss
-	mov	%esp, (%ecx)	# Save esp
-	mov	%ax, %ss
-	mov	%ax, %es
-	mov	%ecx, %esp
-	call	\c_inthandler
-	pop	%ecx
 	pop	%eax
-	mov	%ax, %ss	# Restore ss
-	mov	%ecx, %esp	# Restore esp
 	popal
 	pop	%ds
 	pop	%es
-	iret
+	iretl
 .endm
 
 # void io_hlt(void)
@@ -161,58 +137,20 @@ asm_inthandler0d:
 	push	%es
 	push	%ds
 	pushal
-	mov	%ss, %ax
-	cmp	$1 * 8, %ax
-	jne	1f
-	# Interrupt occurred while OS is running
 	mov	%esp, %eax
-	push	%ss		# Save ss
-	push	%eax		# Save esp
+	push	%eax
 	mov	%ss, %ax
 	mov	%ax, %ds
 	mov	%ax, %es
 	call	inthandler0d
-	add	$8, %esp
-	popal
-	pop	%ds
-	pop	%es
-	add	$4, %esp	# Needed for int $0x0d
-	iret
-1:	# Interrupt occurred while application is running
-	cli
-	mov	$1 * 8, %eax
-	mov	%ax, %ds	# Set ds for OS
-	mov	(0x0fe4), %ecx
-	add	$-8, %ecx
-	mov	%ss, 4(%ecx)	# Save ss
-	mov	%esp, (%ecx)	# Save esp
-	mov	%ax, %ss
-	mov	%ax, %es
-	mov	%ecx, %esp
-	sti
-	call	inthandler0d
-	cli
 	cmp	$0, %eax
-	jne	2f
-	pop	%ecx
+	jne	end_app
 	pop	%eax
-	mov	%ax, %ss	# Restore ss
-	mov	%ecx, %esp	# Restore esp
 	popal
 	pop	%ds
 	pop	%es
 	add	$4, %esp	# Needed for int $0x0d
 	iret
-2:	# Kill application
-	mov	$1 * 8, %eax	# ds/ss for OS
-	mov	%ax, %es
-	mov	%ax, %ss
-	mov	%ax, %ds
-	mov	%ax, %fs
-	mov	%ax, %gs
-	mov	(0x0fe4), %esp
-	sti
-	popal
 	ret
 
 asm_inthandler20:
@@ -241,71 +179,41 @@ start_app:
 	mov	40(%esp), %ecx	# cs
 	mov	44(%esp), %edx	# esp
 	mov	48(%esp), %ebx	# ds/ss
-	mov	%esp, (0x0fe4)	# Store esp for OS
-	cli			# Disable interrupt while switching segment.
+	mov	52(%esp), %ebp	# address of tss.esp0
+	mov	%esp, (%ebp)	# Store esp for OS
+	mov	%ss, 4(%ebp)	# Store ss for OS
 	mov	%bx, %es
-	mov	%bx, %ss
 	mov	%bx, %ds
 	mov	%bx, %fs
 	mov	%bx, %gs
-	mov	%edx, %esp
-	sti
-	push	%ecx		# push cs and
-	push	%eax		#   eip
-	lcall	*(%esp)		# to call application
-	#
-	mov	$1 * 8, %eax	# ds/ss for OS
-	cli
-	mov	%ax, %es
-	mov	%ax, %ss
-	mov	%ax, %ds
-	mov	%ax, %fs
-	mov	%ax, %gs
-	mov	(0x0fe4), %esp
-	sti
-	popal
-	ret
+	# For retf
+	or	$3, %ecx
+	or	$3, %ebx
+	push	%ebx		# ss for application
+	push	%edx		# esp for application
+	push	%ecx		# cs for application
+	push	%eax		# eip for application
+	retf
 
 asm_hrb_api:
+	sti
 	push	%ds
 	push	%es
 	pushal
-	mov	$1 * 8, %eax
-	mov	%ax, %ds	# Set ds for OS
-	mov	(0x0fe4), %ecx	# esp for OS
-	add	$-40, %ecx
-	mov	%esp, 32(%ecx)	# Save esp for application
-	mov	%ss, 36(%ecx)	# Save ss for application
-	mov	(%esp), %edx
-	mov	4(%esp), %ebx
-	mov	%edx, (%ecx)
-	mov	%ebx, 4(%ecx)
-	mov	8(%esp), %edx
-	mov	12(%esp), %ebx
-	mov	%edx, 8(%ecx)
-	mov	%ebx, 12(%ecx)
-	mov	16(%esp), %edx
-	mov	20(%esp), %ebx
-	mov	%edx, 16(%ecx)
-	mov	%ebx, 20(%ecx)
-	mov	24(%esp), %edx
-	mov	28(%esp), %ebx
-	mov	%edx, 24(%ecx)
-	mov	%ebx, 28(%ecx)
-
+	pushal
+	mov	%ss, %ax
+	mov	%ax, %ds	# Set os segment to ds and es, too
 	mov	%ax, %es
-	mov	%ax, %ss
-	mov	%ecx, %esp
-	sti
-
 	call	hrb_api
-
-	mov	32(%esp), %ecx	# Restore esp for application
-	mov	36(%esp), %eax	# Restore ss for application
-	cli
-	mov	%ax, %ss
-	mov	%ecx, %esp
+	cmp	$0, %eax
+	jne	end_app
+	add	$32, %esp
 	popal
 	pop	%es
 	pop	%ds
-	iret
+	iretl
+end_app:
+	# eax is address of tss.esp0
+	mov	(%eax), %esp
+	popal
+	ret			# Return to cmd_app

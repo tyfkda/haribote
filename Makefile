@@ -7,6 +7,7 @@ DISK_FILES=\
 	$(OBJDIR)/hello.hrb \
 	$(OBJDIR)/a.hrb \
 	$(OBJDIR)/crack1.hrb \
+	$(OBJDIR)/crack2.hrb \
 
 SRCDIR=.
 OBJDIR=obj
@@ -61,6 +62,9 @@ $(OBJDIR)/a.hrb:	$(OBJDIR)/a.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $<
 
 $(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o
+	$(LKAPP) -o $@ $<
+
+$(OBJDIR)/crack2.hrb:	$(OBJDIR)/crack2.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $<
 
 clean:

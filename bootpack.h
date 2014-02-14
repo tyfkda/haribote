@@ -29,6 +29,6 @@ void store_cr0(int cr0);
 void load_tr(int tr);
 void farjmp(int eip, int cs);
 void farcall(int eip, int cs);
-void start_app(int eip, int cs, int esp, int ds);
+void start_app(int eip, int cs, int esp, int ds, int* tss_esp0);
 
 #endif

@@ -4,7 +4,8 @@ start:
 	mov	$2, %edx	# putstr0
 	mov	$msg, %ebx
 	int	$0x40
-	retf
+	mov	$4, %edx
+	int	$0x40
 msg:
 	.ascii	"hello\n"
 	.byte	0
