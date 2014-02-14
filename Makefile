@@ -3,11 +3,14 @@ TARGET=haribote.img
 # Files included in the disk image.
 DISK_FILES=\
 	$(OBJDIR)/haribote.sys \
+	$(OBJDIR)/crack1.hrb \
+	$(OBJDIR)/crack2.hrb \
+	$(OBJDIR)/crack3.hrb \
+	$(OBJDIR)/crack4.hrb \
+	$(OBJDIR)/crack5.hrb \
 	ipl.s \
 	$(OBJDIR)/hello.hrb \
 	$(OBJDIR)/a.hrb \
-	$(OBJDIR)/crack1.hrb \
-	$(OBJDIR)/crack2.hrb \
 
 SRCDIR=.
 OBJDIR=obj
@@ -65,6 +68,15 @@ $(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $<
 
 $(OBJDIR)/crack2.hrb:	$(OBJDIR)/crack2.o $(OBJDIR)/a_nask.o
+	$(LKAPP) -o $@ $<
+
+$(OBJDIR)/crack3.hrb:	$(OBJDIR)/crack3.o $(OBJDIR)/a_nask.o
+	$(LKAPP) -o $@ $<
+
+$(OBJDIR)/crack4.hrb:	$(OBJDIR)/crack4.o $(OBJDIR)/a_nask.o
+	$(LKAPP) -o $@ $<
+
+$(OBJDIR)/crack5.hrb:	$(OBJDIR)/crack5.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $<
 
 clean:

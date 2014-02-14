@@ -6,4 +6,3 @@ HariMain:
 	movb	$0, (0x102600)
 	mov	$4, %edx
 	int	$0x40
-	retf
