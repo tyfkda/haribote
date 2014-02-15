@@ -12,7 +12,7 @@ DISK_FILES=\
 	$(OBJDIR)/bug3.hrb \
 	ipl.s \
 	$(OBJDIR)/hello.hrb \
-	$(OBJDIR)/a.hrb \
+	$(OBJDIR)/hello3.hrb \
 
 SRCDIR=.
 OBJDIR=obj
@@ -63,7 +63,7 @@ $(OBJDIR)/bootpack.bin:	$(OBJDIR)/bootpack.o $(OBJDIR)/graphics.o $(OBJDIR)/dsct
 $(OBJDIR)/hello.hrb:	$(OBJDIR)/hello.o
 	ld -N -e start -Ttext 0 -S --oformat binary -o $@ $<
 
-$(OBJDIR)/a.hrb:	$(OBJDIR)/a.o $(OBJDIR)/a_nask.o
+$(OBJDIR)/hello3.hrb:	$(OBJDIR)/hello3.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $<
 
 $(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o
