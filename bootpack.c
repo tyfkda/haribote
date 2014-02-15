@@ -108,6 +108,7 @@ void HariMain(void) {
   init_mouse_cursor8(buf_mouse, 99);
   int mx = (binfo->scrnx - 16) / 2;
   int my = (binfo->scrny - 28 - 16) / 2;
+  int mmx = -1, mmy = -1;  // Mouse drag position.
 
   sheet_slide(shtctl, sht_back, 0, 0);
   sheet_slide(shtctl, sht_cons, 32, 4);
@@ -232,16 +233,31 @@ void HariMain(void) {
         sheet_slide(shtctl, sht_mouse, mx, my);
 
         if ((mdec.btn & 0x01) != 0) {  // Mouse left button pressed.
-          for (int j = shtctl->top; --j > 0; ) {
-            SHEET* sht = shtctl->sheets[j];
-            int x = mx - sht->vx0;
-            int y = my - sht->vy0;
-            if (x < 0 || x >= sht->bxsize || y < 0 || y >= sht->bysize ||
-                sht->buf[y * sht->bxsize + x] == sht->col_inv)
-              continue;
-            sheet_updown(shtctl, sht, shtctl->top - 1);
-            break;
+          if (mmx < 0) {  // Normal mode.
+            for (int j = shtctl->top; --j > 0; ) {
+              SHEET* sht = shtctl->sheets[j];
+              int x = mx - sht->vx0;
+              int y = my - sht->vy0;
+              if (x < 0 || x >= sht->bxsize || y < 0 || y >= sht->bysize ||
+                  sht->buf[y * sht->bxsize + x] == sht->col_inv)
+                continue;
+              sheet_updown(shtctl, sht, shtctl->top - 1);
+              if (3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21) {
+                mmx = mx;  // Go to drag mode.
+                mmy = my;
+              }
+              break;
+            }
+          } else {  // Drag mode.
+            SHEET* sht = shtctl->sheets[shtctl->top - 1];
+            int x = mx - mmx;
+            int y = my - mmy;
+            sheet_slide(shtctl, sht, sht->vx0 + x, sht->vy0 + y);
+            mmx = mx;
+            mmy = my;
           }
+        } else {
+          mmx = -1;  // Go to normal mode.
         }
       }
       continue;
