@@ -204,12 +204,13 @@ start_app:
 	push	%eax		# eip for application
 	retf
 
+# API for hrb application, registered to int $0x40.
 asm_hrb_api:
 	sti
 	push	%ds
 	push	%es
-	pushal
-	pushal
+	pushal			# Save registers
+	pushal			# Push resisters as arguments for hrb_api
 	mov	%ss, %ax
 	mov	%ax, %ds	# Set os segment to ds and es, too
 	mov	%ax, %es
