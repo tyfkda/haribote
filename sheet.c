@@ -28,6 +28,7 @@ SHEET* sheet_alloc(SHTCTL* ctl) {
     if (sht->flags == 0) {
       sht->flags = SHEET_USE;
       sht->height = -1;
+      sht->task = NULL;
       return sht;
     }
   }
