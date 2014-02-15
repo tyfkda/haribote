@@ -242,6 +242,18 @@ void HariMain(void) {
                   sht->buf[y * sht->bxsize + x] == sht->col_inv)
                 continue;
               sheet_updown(shtctl, sht, shtctl->top - 1);
+              if (sht->bxsize - 21 <= x && x <= sht->bxsize - 5 && 5 <= 5 && y < 19) {
+                // Close button clicked.
+                if (sht->task != NULL) {
+                  CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
+                  cons_putstr0(cons, "\nBreak(mouse) :\n");
+                  io_cli();
+                  task_cons->tss.eax = (int)&(task_cons->tss.esp0);
+                  task_cons->tss.eip = (int)asm_end_app;
+                  io_sti();
+                }
+                break;
+              }
               if (3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21) {
                 mmx = mx;  // Go to drag mode.
                 mmy = my;
