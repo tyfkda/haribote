@@ -60,6 +60,7 @@ void HariMain(void) {
   init_palette();
   BOOTINFO* binfo = (BOOTINFO*)ADR_BOOTINFO;
   SHTCTL* shtctl = shtctl_init(memman, binfo->vram, binfo->scrnx, binfo->scrny);
+  *((int*)0x0fe4) = (int)shtctl;
 
   TASK* task_a = task_init(memman);
   fifo.task = task_a;

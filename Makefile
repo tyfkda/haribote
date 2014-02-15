@@ -14,6 +14,7 @@ DISK_FILES=\
 	$(OBJDIR)/hello3.hrb \
 	$(OBJDIR)/hello4.hrb \
 	$(OBJDIR)/hello5.hrb \
+	$(OBJDIR)/winhelo.hrb \
 
 SRCDIR=.
 OBJDIR=obj
@@ -70,6 +71,9 @@ $(OBJDIR)/hello4.hrb:	$(OBJDIR)/hello4.o $(OBJDIR)/a_nask.o
 
 $(OBJDIR)/hello5.hrb:	$(OBJDIR)/hello5.o
 	$(LKAPP) -o $@ $<
+
+$(OBJDIR)/winhelo.hrb:	$(OBJDIR)/winhelo.o
+	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $< $(APPLIBS)

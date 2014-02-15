@@ -70,11 +70,45 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   const int ds_base = *((int*)0x0fe8);  // Get data segment address.
   TASK* task = task_now();
   CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
+  volatile int* reg = &eax + 1;  // Need `volatile` modifier for gcc.
+  // reg[0] = edi, reg[1] = esi, reg[2] = ebp, reg[3] = esp
+  // reg[4] = ebx, reg[5] = edx, reg[6] = ecx, reg[7] = eax
+
   switch (edx) {
   case 1:  cons_putchar(cons, eax & 0xff, TRUE); break;
   case 2:  cons_putstr0(cons, (char*)ebx + ds_base); break;
   case 3:  cons_putstr1(cons, (char*)ebx + ds_base, ecx); break;
   case 4: return &task->tss.esp0;
+  case 5:
+    {
+      unsigned char* buf = (unsigned char*)ebx + ds_base;
+      int xsize = esi, ysize = edi, col_inv = eax;
+      const char* title = (const char*)ecx + ds_base;
+      SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+      SHEET* sht = sheet_alloc(shtctl);
+      reg[7] = (int)sht;  // Set return value: SHEET* sheet == int win;
+      sheet_setbuf(sht, buf, xsize, ysize, col_inv);
+      make_window8(buf, xsize, ysize, title, FALSE);
+      sheet_slide(shtctl, sht, 100 + 200, 50);
+      sheet_updown(shtctl, sht, 2);
+    }break;
+  case 6:
+    {
+      SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
+      int x = esi, y = edi, col = eax, len = ecx;
+      const char* str = (const char*)ebp + ds_base;
+      putfonts8_asc(sht->buf, sht->bxsize, x, y, col, str);
+      SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+      sheet_refresh(shtctl, sht, x, y, x + len * 8, y + 16);
+    }break;
+  case 7:
+    {
+      SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
+      int x0 = eax, y0 = ecx, x1 = esi, y1 = edi, col = ebp;
+      boxfill8(sht->buf, sht->bxsize, col, x0, y0, x1, y1);
+      SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+      sheet_refresh(shtctl, sht, x0, y0, x1, y1);
+    }break;
   }
   return NULL;
 }
