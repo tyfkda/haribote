@@ -67,13 +67,13 @@ void cons_putstr1(CONSOLE* cons, char* s, int l) {
 
 int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax) {
   (void)edi; (void)esi; (void)ebp; (void)esp; (void)ebx; (void)edx; (void)ecx; (void)eax;
-  const int cs_base = *((int*)0x0fe8);  // Get code segment address.
+  const int ds_base = *((int*)0x0fe8);  // Get data segment address.
   TASK* task = task_now();
   CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
   switch (edx) {
   case 1:  cons_putchar(cons, eax & 0xff, TRUE); break;
-  case 2:  cons_putstr0(cons, (char*)ebx + cs_base); break;
-  case 3:  cons_putstr1(cons, (char*)ebx + cs_base, ecx); break;
+  case 2:  cons_putstr0(cons, (char*)ebx + ds_base); break;
+  case 3:  cons_putstr1(cons, (char*)ebx + ds_base, ecx); break;
   case 4: return &task->tss.esp0;
   }
   return NULL;
@@ -130,7 +130,7 @@ static void cmd_type(CONSOLE* cons, const short* fat, const char* cmdline) {
   memman_free_4k(memman, (int)p, size);
 }
 
-static char cmd_app(const short* fat, const char* cmdline) {
+static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
   char name[13];
   strncpy(name, cmdline, 8);
   name[8] = '\0';
@@ -140,30 +140,53 @@ static char cmd_app(const short* fat, const char* cmdline) {
     // Try executable extension.
     strcpy(name + strlen(name), ".HRB");
     finfo = file_search(name, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
+    if (finfo == NULL)
+      return FALSE;
   }
-  if (finfo == NULL)
-    return FALSE;
 
+  // File found.
   MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
   char* p = (char*)memman_alloc_4k(memman, finfo->size);
   file_loadfile(finfo->clustno, finfo->size, p, fat, (char*)(ADR_DISKIMG + 0x003e00));
-  char* q = (char*)memman_alloc_4k(memman, 64 * 1024);  // Data segment.
+  if (finfo->size < 36 || strncmp(p + 4, "Hari", 4) != 0 || *p != 0x00) {
+    cons_putstr0(cons, ".hrb file format error.\n");
+  } else {
+    int segsiz = *((int*)(p + 0x0000));
+    int esp    = *((int*)(p + 0x000c));
+    int datsiz = *((int*)(p + 0x0010));
+    int dathrb = *((int*)(p + 0x0014));
+    char* q = (char*)memman_alloc_4k(memman, segsiz);  // Data segment.
 
-  SEGMENT_DESCRIPTOR* gdt = (SEGMENT_DESCRIPTOR*)ADR_GDT;
-  set_segmdesc(gdt + 1003, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);
-  set_segmdesc(gdt + 1004, 64 * 1024 - 1, (int)q, AR_DATA32_RW + 0x60);
-  *((int*)0x0fe8) = (int)p;  // Store code segment address.
-  TASK* task = task_now();
-  if (finfo->size >= 8 && strncmp(p + 4, "Hari", 4) == 0)
-    start_app(0x1b, 1003 * 8, 64 * 1024, 1004 * 8, &(task->tss.esp0));
-  else
-    start_app(0, 1003 * 8, 64 * 1024, 1004 * 8, &(task->tss.esp0));
+    SEGMENT_DESCRIPTOR* gdt = (SEGMENT_DESCRIPTOR*)ADR_GDT;
+    set_segmdesc(gdt + 1003, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);
+    set_segmdesc(gdt + 1004, 64 * 1024 - 1, (int)q, AR_DATA32_RW + 0x60);
+    *((int*)0x0fe8) = (int)q;  // Store data segment address.
+    memcpy(&q[esp], &p[dathrb], datsiz);
+
+    TASK* task = task_now();
+    start_app(0x1b, 1003 * 8, esp, 1004 * 8, &(task->tss.esp0));
+    memman_free_4k(memman, (int)q, 64 * 1024);
+  }
   memman_free_4k(memman, (int)p, finfo->size);
-  memman_free_4k(memman, (int)q, 64 * 1024);
   return TRUE;
 }
 
 int* inthandler0c(int* esp) {
+  // esp[ 0] = edi  : esp[0~7] are given from asm_inthandler, pushal
+  // esp[ 1] = esi
+  // esp[ 2] = ebp
+  // esp[ 4] = ebx
+  // esp[ 5] = edx
+  // esp[ 6] = ecx
+  // esp[ 7] = eax
+  // esp[ 8] = ds   : esp[8~9] are given from asm_inthandler, push
+  // esp[ 9] = es
+  // esp[10] = error code (0)
+  // esp[11] = eip
+  // esp[12] = cs
+  // esp[13] = eflags
+  // esp[14] = esp  : esp for application
+  // esp[15] = ss   : ss for application
   CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
   cons_putstr0(cons, "\nINT 0C :\n Stack Exception.\n");
   char s[30];
@@ -190,7 +213,7 @@ void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memto
   } else if (strncmp(cmdline, "type ", 5) == 0) {
     cmd_type(cons, fat, cmdline);
   } else if (cmdline[0] != '\0') {
-    if (!cmd_app(fat, cmdline))
+    if (!cmd_app(cons, fat, cmdline))
       cons_putstr0(cons, "Bad command.\n");
   }
 }

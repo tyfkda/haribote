@@ -13,6 +13,7 @@ DISK_FILES=\
 	ipl.s \
 	$(OBJDIR)/hello.hrb \
 	$(OBJDIR)/hello3.hrb \
+	$(OBJDIR)/hello4.hrb \
 
 SRCDIR=.
 OBJDIR=obj
@@ -20,7 +21,8 @@ OBJDIR=obj
 CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
-LKAPP=ld -T harimain.ls --oformat binary $(OBJDIR)/a_nask.o
+LKAPP=ld -T hrbapp.ls --oformat binary
+APPLIBS=$(OBJDIR)/a_nask.o
 
 all:	$(TARGET)
 
@@ -64,28 +66,31 @@ $(OBJDIR)/hello.hrb:	$(OBJDIR)/hello.o
 	ld -N -e start -Ttext 0 -S --oformat binary -o $@ $<
 
 $(OBJDIR)/hello3.hrb:	$(OBJDIR)/hello3.o $(OBJDIR)/a_nask.o
-	$(LKAPP) -o $@ $<
+	$(LKAPP) -o $@ $< $(APPLIBS)
+
+$(OBJDIR)/hello4.hrb:	$(OBJDIR)/hello4.o $(OBJDIR)/a_nask.o
+	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o
-	$(LKAPP) -o $@ $<
+	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/crack2.hrb:	$(OBJDIR)/crack2.o $(OBJDIR)/a_nask.o
-	$(LKAPP) -o $@ $<
+	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/crack3.hrb:	$(OBJDIR)/crack3.o $(OBJDIR)/a_nask.o
-	$(LKAPP) -o $@ $<
+	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/crack4.hrb:	$(OBJDIR)/crack4.o $(OBJDIR)/a_nask.o
-	$(LKAPP) -o $@ $<
+	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/crack5.hrb:	$(OBJDIR)/crack5.o $(OBJDIR)/a_nask.o
-	$(LKAPP) -o $@ $<
+	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/bug1.hrb:	$(OBJDIR)/bug1.o $(OBJDIR)/a_nask.o
-	$(LKAPP) -o $@ $<
+	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/bug3.hrb:	$(OBJDIR)/bug3.o $(OBJDIR)/a_nask.o
-	$(LKAPP) -o $@ $<
+	$(LKAPP) -o $@ $< $(APPLIBS)
 
 clean:
 	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.hrb $(OBJDIR)/*.map $(TARGET)
