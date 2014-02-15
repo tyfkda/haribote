@@ -1,22 +1,22 @@
 #ifndef __GRAPHICS_H__
 #define __GRAPHICS_H__
 
-static const int COL8_BLACK = 0;
-static const int COL8_RED = 1;
-static const int COL8_GREEN = 2;
-static const int COL8_YELLOW = 3;
-static const int COL8_BLUE = 4;
-static const int COL8_PURPLE = 5;
-static const int COL8_CYAN = 6;
-static const int COL8_WHITE = 7;
-static const int COL8_GRAY = 8;
-static const int COL8_DARK_RED = 9;
-static const int COL8_DARK_GREEN = 10;
-static const int COL8_DARK_YELLOW = 11;
-static const int COL8_DARK_BLUE = 12;
-static const int COL8_DARK_PURPLE = 13;
-static const int COL8_DARK_CYAN = 14;
-static const int COL8_DARK_GRAY = 15;
+#define COL8_BLACK  (0)
+#define COL8_RED  (1)
+#define COL8_GREEN  (2)
+#define COL8_YELLOW  (3)
+#define COL8_BLUE  (4)
+#define COL8_PURPLE  (5)
+#define COL8_CYAN  (6)
+#define COL8_WHITE  (7)
+#define COL8_GRAY  (8)
+#define COL8_DARK_RED  (9)
+#define COL8_DARK_GREEN  (10)
+#define COL8_DARK_YELLOW  (11)
+#define COL8_DARK_BLUE  (12)
+#define COL8_DARK_PURPLE  (13)
+#define COL8_DARK_CYAN  (14)
+#define COL8_DARK_GRAY  (15)
 
 void init_palette(void);
 void set_palette(int start, int end, unsigned char* rgb);

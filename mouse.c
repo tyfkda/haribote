@@ -6,8 +6,8 @@
 #include "int.h"
 #include "keyboard.h"
 
-static const int KEYCMD_SENDTO_MOUSE = 0xd4;
-static const int MOUSECMD_ENABLE = 0xf4;
+#define KEYCMD_SENDTO_MOUSE  (0xd4)
+#define MOUSECMD_ENABLE  (0xf4)
 
 static FIFO* mousefifo;
 static int mousedata0;

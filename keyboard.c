@@ -5,10 +5,10 @@
 #include "fifo.h"
 #include "int.h"
 
-static const int PORT_KEYSTA = 0x0064;
-static const int KEYSTA_SEND_NOTREADY = 0x02;
-static const int KEYCMD_WRITE_MODE = 0x60;
-static const int KBC_MODE = 0x47;
+#define PORT_KEYSTA  (0x0064)
+#define KEYSTA_SEND_NOTREADY  (0x02)
+#define KEYCMD_WRITE_MODE  (0x60)
+#define KBC_MODE  (0x47)
 
 static FIFO* keyfifo;
 static int keydata0;
