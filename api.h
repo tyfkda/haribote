@@ -9,6 +9,7 @@ void api_putstrwin(int win, int x, int y, int col, int len, const char* str);
 void api_boxfilwin(int win, int x0, int y0, int x1, int y1, int col);
 void api_point(int win, int x, int y, int col);
 void api_refresh(int win, int x0, int y0, int x1, int y1);
+void api_linewin(int win, int x0, int y0, int x1, int y1, int col);
 void api_initmalloc(void);
 void* api_malloc(int size);
 void api_free(void* addr, int size);

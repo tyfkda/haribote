@@ -155,6 +155,17 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
       sheet_refresh(shtctl, sht, x0, y0, x1, y1);
     }break;
+  case 13:
+    {
+      SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      char refresh = ebx & 1;
+      int x0 = eax, y0 = ecx, x1 = esi, y1 = edi, col = ebp;
+      line8(sht->buf, sht->bxsize, x0, y0, x1, y1, col);
+      if (refresh) {
+        SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+        sheet_refresh(shtctl, sht, x0, y0, x1, y1);
+      }
+    }break;
   case 10000:  // dumphex
     {
       int val = eax;

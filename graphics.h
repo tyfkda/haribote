@@ -22,6 +22,8 @@ void init_palette(void);
 void set_palette(int start, int end, unsigned char* rgb);
 void boxfill8(unsigned char* vram, int xsize, unsigned char c,
               int x0, int y0, int x1, int y1);
+void line8(unsigned char* vram, int xsize,
+           int x0, int y0, int x1, int y1, unsigned char c);
 void init_screen8(unsigned char* vram, int x, int y);
 void putfont8(unsigned char* vram, int xsize, int x, int y, unsigned char c,
               const unsigned char* font);

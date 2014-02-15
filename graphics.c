@@ -44,6 +44,30 @@ void boxfill8(unsigned char* vram, int xsize, unsigned char c, int x0, int y0, i
       vram[y * xsize + x] = c;
 }
 
+void line8(unsigned char* vram, int xsize,
+           int x0, int y0, int x1, int y1, unsigned char c) {
+  int dx = x1 - x0;
+  int dy = y1 - y0;
+  int x = x0 << 10;
+  int y = y0 << 10;
+  if (dx < 0)
+    dx = -dx;
+  if (dy < 0)
+    dy = -dy;
+  int len;
+  if (dx >= dy) {
+    len = dx + 1;
+    dx = x0 > x1 ? -1024 : 1024;
+    dy = y0 <= y1 ? ((y1 - y0 + 1) << 10) / len : ((y1 - y0 - 1) << 10) / len;
+  } else {
+    len = dy + 1;
+    dy = y0 > y1 ? -1024 : 1024;
+    dx = x0 <= x1 ? ((x1 - x0 + 1) << 10) / len : ((x1 - x0 - 1) << 10) / len;
+  }
+  for (int i = 0; i < len; ++i, x += dx, y += dy)
+    vram[(y >> 10) * xsize + (x >> 10)] = c;
+}
+
 void init_screen8(unsigned char* vram, int x, int y) {
   boxfill8(vram, x, COL8_DARK_CYAN,  0,          0, x, y - 28);
   boxfill8(vram, x, COL8_GRAY,       0, y - 28, x, y - 27);
