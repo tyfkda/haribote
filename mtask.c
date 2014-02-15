@@ -77,7 +77,7 @@ TASK* task_init(MEMMAN* memman) {
   timer_settime(task_timer, task->priority);
 
   TASK* idle = task_alloc();
-  idle->tss.esp = memman_alloc_4k(memman, 256) + 256;
+  idle->tss.esp = (int)memman_alloc_4k(memman, 256) + 256;
   idle->tss.eip = (int)&task_idle;
   idle->tss.es = idle->tss.ss = idle->tss.ds = idle->tss.fs = idle->tss.gs = 1 * 8;
   idle->tss.cs = 2 * 8;

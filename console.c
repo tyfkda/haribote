@@ -109,6 +109,27 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
       sheet_refresh(shtctl, sht, x0, y0, x1, y1);
     }break;
+  case 8:
+    {
+      MEMMAN* memman = (MEMMAN*)(ebx + ds_base);
+      void* addr = (void*)eax;
+      int size = ecx & -16;
+      memman_init(memman);
+      memman_free(memman, addr, size);
+    }break;
+  case 9:
+    {
+      MEMMAN* memman = (MEMMAN*)(ebx + ds_base);
+      int size = (ecx + 0x0f) & -16;  // Align with 16 bytes.
+      reg[7] = (int)memman_alloc(memman, size);
+    }break;
+  case 10:
+    {
+      MEMMAN* memman = (MEMMAN*)(ebx + ds_base);
+      void* addr = (void*)eax;
+      int size = (ecx + 0x0f) & -16;  // Align with 16 bytes.
+      memman_free(memman, addr, size);
+    }break;
   }
   return NULL;
 }
@@ -161,7 +182,7 @@ static void cmd_type(CONSOLE* cons, const short* fat, const char* cmdline) {
   char* p = (char*)memman_alloc_4k(memman, size);
   file_loadfile(finfo->clustno, size, p, fat, (char*)(ADR_DISKIMG + 0x003e00));
   cons_putstr1(cons, p, size);
-  memman_free_4k(memman, (int)p, size);
+  memman_free_4k(memman, p, size);
 }
 
 static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
@@ -199,9 +220,9 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
 
     TASK* task = task_now();
     start_app(0x1b, 1003 * 8, esp, 1004 * 8, &(task->tss.esp0));
-    memman_free_4k(memman, (int)q, 64 * 1024);
+    memman_free_4k(memman, q, 64 * 1024);
   }
-  memman_free_4k(memman, (int)p, finfo->size);
+  memman_free_4k(memman, p, finfo->size);
   return TRUE;
 }
 

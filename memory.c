@@ -67,11 +67,11 @@ unsigned int memman_total(MEMMAN* man) {
   return t;
 }
 
-unsigned int memman_alloc(MEMMAN *man, unsigned int size) {
+void* memman_alloc(MEMMAN *man, unsigned int size) {
   for (int i = 0; i < man->frees; ++i) {
     if (man->free[i].size >= size) {
-      unsigned int a = man->free[i].addr;
-      man->free[i].addr += size;
+      char* a = man->free[i].addr;
+      man->free[i].addr = a + size;
       man->free[i].size -= size;
       if (man->free[i].size == 0) {
         --man->frees;
@@ -84,7 +84,7 @@ unsigned int memman_alloc(MEMMAN *man, unsigned int size) {
   return 0;
 }
 
-int memman_free(MEMMAN *man, unsigned int addr, unsigned int size) {
+int memman_free(MEMMAN *man, void* addr, unsigned int size) {
   int i;
   for (i = 0; i < man->frees; ++i)
     if (man->free[i].addr > addr)
@@ -125,12 +125,12 @@ int memman_free(MEMMAN *man, unsigned int addr, unsigned int size) {
   return -1;
 }
 
-unsigned int memman_alloc_4k(MEMMAN* man, unsigned int size) {
+void* memman_alloc_4k(MEMMAN* man, unsigned int size) {
   size = (size + 0xfff) & ~0xfff;
   return memman_alloc(man, size);
 }
 
-int memman_free_4k(MEMMAN* man, unsigned int addr, unsigned int size) {
+int memman_free_4k(MEMMAN* man, void* addr, unsigned int size) {
   size = (size + 0xfff) & ~0xfff;
   return memman_free(man, addr, size);
 }

@@ -54,8 +54,8 @@ void HariMain(void) {
   unsigned int memtotal = memtest(0x00400000, 0xbfffffff);
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
   memman_init(memman);
-  memman_free(memman, 0x00001000, 0x0009e000); /* 0x00001000 - 0x0009efff */
-  memman_free(memman, 0x00400000, memtotal - 0x00400000);
+  memman_free(memman, (void*)0x00001000, 0x0009e000); /* 0x00001000 - 0x0009efff */
+  memman_free(memman, (void*)0x00400000, memtotal - 0x00400000);
 
   init_palette();
   BOOTINFO* binfo = (BOOTINFO*)ADR_BOOTINFO;
@@ -79,7 +79,7 @@ void HariMain(void) {
   make_window8(buf_cons, 256, 165, "console", FALSE);
   make_textbox8(sht_cons, 8, 28, 240, 128, COL8_BLACK);
   TASK* task_cons = task_alloc();
-  task_cons->tss.esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 3;
+  task_cons->tss.esp = (int)memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 3;
   task_cons->tss.eip = (int) &console_task;
   task_cons->tss.cs = 2 * 8;
   task_cons->tss.es = task_cons->tss.ss = task_cons->tss.ds = task_cons->tss.fs = task_cons->tss.gs = 1 * 8;

@@ -1,5 +1,6 @@
 .globl	api_putchar, api_putstr0, api_end, api_openwin
 .globl	api_putstrwin, api_boxfilwin
+.globl	api_initmalloc, api_malloc, api_free
 
 # void api_putchar(int c)
 api_putchar:
@@ -77,4 +78,38 @@ api_boxfilwin:
 	pop	%ebp
 	pop	%esi
 	pop	%edi
+	ret
+
+# void api_initmalloc(void)
+api_initmalloc:
+	push	%ebx
+	mov	$8, %edx
+	mov	%cs:(0x20), %ebx	# Address of malloc start
+	mov	%ebx, %eax
+	add	$32 * 1024, %eax	# Add 32KB
+	mov	%cs:(0x00), %ecx	# Size of data segment
+	sub	%eax, %ecx
+	int	$0x40
+	pop	%ebx
+	ret
+
+# void* api_malloc(int size)
+api_malloc:
+	push	%ebx
+	mov	$9, %edx
+	mov	%cs:(0x20), %ebx	# Address of memman for the task
+	mov	8(%esp), %ecx		# Size
+	int	$0x40
+	pop	%ebx
+	ret
+
+# void api_free(void* addr, int size)
+api_free:
+	push	%ebx
+	mov	$10, %edx
+	mov	%cs:(0x20), %ebx	# Address of memman for the task
+	mov	8(%esp), %ecx		# addr
+	mov	12(%esp), %ecx		# Size
+	int	$0x40
+	pop	%ebx
 	ret

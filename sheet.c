@@ -10,7 +10,7 @@ SHTCTL* shtctl_init(MEMMAN* memman, unsigned char* vram, int xsize, int ysize) {
     return NULL;
   ctl->map = (unsigned char*)memman_alloc_4k(memman, xsize * ysize);
   if (ctl->map == NULL) {
-    memman_free_4k(memman, (int)ctl, sizeof(SHTCTL));
+    memman_free_4k(memman, ctl, sizeof(SHTCTL));
     return NULL;
   }
   ctl->vram = vram;
