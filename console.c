@@ -166,6 +166,47 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
         sheet_refresh(shtctl, sht, x0, y0, x1, y1);
       }
     }break;
+  case 14:
+    {
+      SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
+      SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+      sheet_free(shtctl, sht);
+    }break;
+  case 15:
+    {
+      int sleep = eax;
+      for (;;) {
+        io_cli();
+        if (fifo_status(&task->fifo) == 0) {
+          if (sleep) {
+            task_sleep(task);
+          } else {
+            io_sti();
+            reg[7] = -1;
+            return NULL;
+          }
+        }
+        int i = fifo_get(&task->fifo);
+        io_sti();
+        switch (i) {
+        case 0: case 1:  // Cursor
+          timer_init(cons->timer, &task->fifo, 1);  // Next disp.
+          timer_settime(cons->timer, 50);
+          break;
+        case 2:  // Cursor on
+          cons->cur_c = COL8_WHITE;
+          break;
+        case 3:  // Cursor off
+          cons->cur_c = -1;
+          break;
+        default:
+          if (256 <= i && i <= 511) {  // Keyboard
+            reg[7] = i - 256;
+            return NULL;
+          }
+        }
+      }
+    }break;
   case 10000:  // dumphex
     {
       int val = eax;
@@ -328,10 +369,6 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   int fifobuf[128];
   fifo_init(&task->fifo, 128, fifobuf, task);
 
-  TIMER* timer = timer_alloc();
-  timer_init(timer, &task->fifo, 1);
-  timer_settime(timer, 50);
-
   MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
   short* fat = (short*)memman_alloc_4k(memman, sizeof(short) * 2880);
   file_readfat(fat, (unsigned char*)(ADR_DISKIMG + 0x000200));
@@ -347,6 +384,10 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   cons.cur_c = -1;
   *((int*)0x0fec) = (int)&cons;
   cons_putchar(&cons, '>', TRUE);
+
+  cons.timer = timer_alloc();
+  timer_init(cons.timer, &task->fifo, 1);
+  timer_settime(cons.timer, 50);
 
   for (;;) {
     io_cli();
@@ -385,8 +426,8 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
       case 1:
         if (cons.cur_c >= 0)
           cons.cur_c = i == 0 ? COL8_WHITE : COL8_BLACK;
-        timer_init(timer, &task->fifo, 1 - i);
-        timer_settime(timer, 50);
+        timer_init(cons.timer, &task->fifo, 1 - i);
+        timer_settime(cons.timer, 50);
         break;
       case 2:  cons.cur_c = COL8_WHITE; break;
       case 3:

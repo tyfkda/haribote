@@ -8,6 +8,7 @@ typedef struct {
   struct SHTCTL* shtctl;
   struct SHEET* sheet;
   int cur_x, cur_y, cur_c;
+  struct TIMER* timer;
 } CONSOLE;
 
 void console_task(struct SHTCTL* shtctl, struct SHEET* sheet, unsigned int memtotal);

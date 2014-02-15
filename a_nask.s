@@ -1,5 +1,6 @@
-.globl	api_putchar, api_putstr0, api_end, api_openwin
+.globl	api_putchar, api_putstr0, api_end, api_openwin, api_closewin
 .globl	api_putstrwin, api_boxfilwin, api_point, api_refresh, api_linewin
+.globl	api_getkey
 .globl	api_initmalloc, api_malloc, api_free
 .globl	api_dumphex, rand
 
@@ -166,6 +167,22 @@ api_linewin:
 	pop	%ebp
 	pop	%esi
 	pop	%edi
+	ret
+
+# void api_closewin(int win)
+api_closewin:
+	push	%ebx
+	mov	$14, %edx
+	mov	8(%esp), %ebx	# win
+	int	$0x40
+	pop	%ebx
+	ret
+
+# int api_getkey(int mode)
+api_getkey:
+	mov	$15, %edx
+	mov	4(%esp), %eax	# mode
+	int	$0x40
 	ret
 
 # void api_dumphex(int val)
