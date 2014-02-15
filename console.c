@@ -95,20 +95,26 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     }break;
   case 6:
     {
-      SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
+      SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      char refresh = (ebx & 1) == 0;
       int x = esi, y = edi, col = eax, len = ecx;
       const char* str = (const char*)ebp + ds_base;
       putfonts8_asc(sht->buf, sht->bxsize, x, y, col, str);
-      SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-      sheet_refresh(shtctl, sht, x, y, x + len * 8, y + 16);
+      if (refresh) {
+        SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+        sheet_refresh(shtctl, sht, x, y, x + len * 8, y + 16);
+      }
     }break;
   case 7:
     {
-      SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
+      SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      char refresh = (ebx & 1) == 0;
       int x0 = eax, y0 = ecx, x1 = esi, y1 = edi, col = ebp;
       boxfill8(sht->buf, sht->bxsize, col, x0, y0, x1, y1);
-      SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-      sheet_refresh(shtctl, sht, x0, y0, x1, y1);
+      if (refresh) {
+        SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+        sheet_refresh(shtctl, sht, x0, y0, x1, y1);
+      }
     }break;
   case 8:
     {
@@ -133,11 +139,21 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     }break;
   case 11:
     {
-      SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
+      SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      char refresh = (ebx & 1) == 0;
       int x = esi, y = edi, col = eax;
       sht->buf[sht->bxsize * y + x] = col;
+      if (refresh) {
+        SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+        sheet_refresh(shtctl, sht, x, y, x + 1, y + 1);
+      }
+    }break;
+  case 12:
+    {
+      SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
+      int x0 = eax, y0 = ecx, x1 = esi, y1 = edi;
       SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-      sheet_refresh(shtctl, sht, x, y, x + 1, y + 1);
+      sheet_refresh(shtctl, sht, x0, y0, x1, y1);
     }break;
   case 10000:  // dumphex
     {

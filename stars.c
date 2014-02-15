@@ -8,7 +8,8 @@ void HariMain(void) {
   for (int i = 0; i < 50; ++i) {
     int x = rand() % 137 + 6;
     int y = rand() % 67 + 26;
-    api_point(win, x, y, 3);
+    api_point(win | 1, x, y, 3);
   }
+  api_refresh(win, 6, 26, 144, 94);
   api_end();
 }

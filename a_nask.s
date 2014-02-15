@@ -1,5 +1,5 @@
 .globl	api_putchar, api_putstr0, api_end, api_openwin
-.globl	api_putstrwin, api_boxfilwin, api_point
+.globl	api_putstrwin, api_boxfilwin, api_point, api_refresh
 .globl	api_initmalloc, api_malloc, api_free
 .globl	api_dumphex, rand
 
@@ -125,6 +125,23 @@ api_point:
 	mov	20(%esp), %esi	# x
 	mov	24(%esp), %edi	# y
 	mov	28(%esp), %eax	# col
+	int	$0x40
+	pop	%ebx
+	pop	%esi
+	pop	%edi
+	ret
+
+# void api_refresh(int win, int x0, int y0, int x1, int y1)
+api_refresh:
+	push	%edi
+	push	%esi
+	push	%ebx
+	mov	$12, %edx
+	mov	16(%esp), %ebx	# win
+	mov	20(%esp), %eax	# x0
+	mov	24(%esp), %ecx	# y0
+	mov	28(%esp), %esi	# x1
+	mov	32(%esp), %edi	# y1
 	int	$0x40
 	pop	%ebx
 	pop	%esi
