@@ -111,7 +111,7 @@ void HariMain(void) {
 
   sheet_slide(shtctl, sht_back, 0, 0);
   sheet_slide(shtctl, sht_cons, 32, 4);
-  sheet_slide(shtctl, sht_win, 32, 170);
+  sheet_slide(shtctl, sht_win, 250, 40);
   sheet_slide(shtctl, sht_mouse, mx, my);
   sheet_updown(shtctl, sht_back, 0);
   sheet_updown(shtctl, sht_cons, 1);
@@ -132,6 +132,10 @@ void HariMain(void) {
     int i = fifo_get(&fifo);
     io_sti();
     if (256 <= i && i < 512) {  // Keyboard data.
+      char s[30];
+      sprintf(s, "key:%02x", i - 256);
+      putfonts8_asc_sht(shtctl, sht_back, 0, sht_back->bysize - 28, COL8_RED, COL8_DARK_GRAY, s, strlen(s));
+
       switch (i) {
       case 0x1c + 256:  // Enter.
         if (key_to != 0)  // To console.
@@ -187,6 +191,10 @@ void HariMain(void) {
           io_sti();
         }
         break;
+      case 0x57 + 256:  // F11
+        // Move most bottom (except back!) sheet to the top.
+        sheet_updown(shtctl, shtctl->sheets[1], shtctl->top - 1);
+        break;
       default:
         if (i < 256 + 0x80) {  // Normal character.
           char s[2];
@@ -223,8 +231,18 @@ void HariMain(void) {
         if (my >= binfo->scrny - 1)  my = binfo->scrny - 1;
         sheet_slide(shtctl, sht_mouse, mx, my);
 
-        if ((mdec.btn & 0x01) != 0)
-          sheet_slide(shtctl, sht_win, mx - 80, my - 8);
+        if ((mdec.btn & 0x01) != 0) {  // Mouse left button pressed.
+          for (int j = shtctl->top; --j > 0; ) {
+            SHEET* sht = shtctl->sheets[j];
+            int x = mx - sht->vx0;
+            int y = my - sht->vy0;
+            if (x < 0 || x >= sht->bxsize || y < 0 || y >= sht->bysize ||
+                sht->buf[y * sht->bxsize + x] == sht->col_inv)
+              continue;
+            sheet_updown(shtctl, sht, shtctl->top - 1);
+            break;
+          }
+        }
       }
       continue;
     }
