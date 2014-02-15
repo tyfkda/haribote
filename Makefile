@@ -17,6 +17,7 @@ DISK_FILES=\
 	$(OBJDIR)/winhelo.hrb \
 	$(OBJDIR)/stars.hrb \
 	$(OBJDIR)/lines.hrb \
+	$(OBJDIR)/walk.hrb \
 
 SRCDIR=.
 OBJDIR=obj
@@ -81,6 +82,9 @@ $(OBJDIR)/stars.hrb:	$(OBJDIR)/stars.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/lines.hrb:	$(OBJDIR)/lines.o
+	$(LKAPP) -o $@ $< $(APPLIBS)
+
+$(OBJDIR)/walk.hrb:	$(OBJDIR)/walk.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o
