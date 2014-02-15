@@ -20,7 +20,7 @@ void cons_newline(CONSOLE* cons) {
   int bxsize = sheet->bxsize;
   // Scroll.
   for (int y = 28; y < 28 + 112; ++y)
-    memcpy(&buf[y * bxsize], &buf[(y + 16) * bxsize], 240);
+    memcpy(&buf[y * bxsize + 8], &buf[(y + 16) * bxsize + 8], 240);
   // Erase last line.
   boxfill8(buf, bxsize, COL8_BLACK, 8, 28 + 112, 8 + 240, 28 + 112 + 16);
   sheet_refresh(cons->shtctl, sheet, 8, 28, 8 + 240, 28 + 128);
