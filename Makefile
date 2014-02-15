@@ -18,6 +18,7 @@ DISK_FILES=\
 	$(OBJDIR)/stars.hrb \
 	$(OBJDIR)/lines.hrb \
 	$(OBJDIR)/walk.hrb \
+	$(OBJDIR)/noodle.hrb \
 
 SRCDIR=.
 OBJDIR=obj
@@ -85,6 +86,9 @@ $(OBJDIR)/lines.hrb:	$(OBJDIR)/lines.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/walk.hrb:	$(OBJDIR)/walk.o
+	$(LKAPP) -o $@ $< $(APPLIBS)
+
+$(OBJDIR)/noodle.hrb:	$(OBJDIR)/noodle.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o

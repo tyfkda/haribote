@@ -2,7 +2,8 @@
 .globl	api_putstrwin, api_boxfilwin, api_point, api_refresh, api_linewin
 .globl	api_getkey
 .globl	api_initmalloc, api_malloc, api_free
-.globl	api_dumphex, rand
+.globl	api_alloctimer, api_inittimer, api_settimer, api_freetimer
+.globl	api_dumphex, rand, sprintf
 
 # void api_putchar(int c)
 api_putchar:
@@ -185,6 +186,41 @@ api_getkey:
 	int	$0x40
 	ret
 
+# TIMER* api_alloctimer(void)
+api_alloctimer:
+	mov	$16, %edx
+	int	$0x40
+	ret
+
+# void api_inittimer(TIMER* timer, int data)
+api_inittimer:
+	push	%ebx
+	mov	$17, %edx
+	mov	8(%esp), %ebx	# timer
+	mov	12(%esp), %eax	# data
+	int	$0x40
+	pop	%ebx
+	ret
+
+# void api_settimer(TIMER* timer, int time)
+api_settimer:
+	push	%ebx
+	mov	$18, %edx
+	mov	8(%esp), %ebx	# timer
+	mov	12(%esp), %eax	# time
+	int	$0x40
+	pop	%ebx
+	ret
+
+# void api_freetimer(TIMER* timer)
+api_freetimer:
+	push	%ebx
+	mov	$19, %edx
+	mov	8(%esp), %ebx	# timer
+	int	$0x40
+	pop	%ebx
+	ret
+
 # void api_dumphex(int val)
 api_dumphex:
 	push	%edi
@@ -206,4 +242,19 @@ rand:
 	int	$0x40
 	pop	%esi
 	pop	%edi
+	ret
+
+# int sprintf(char* buf, const char* format, ...)
+sprintf:
+	push	%ebx
+	push	%ecx
+	push	%edi
+	mov	16(%esp), %ebx	# buf
+	mov	20(%esp), %ecx	# format
+	lea	24(%esp), %edi	# va_list
+	mov	$10002, %edx
+	int	$0x40
+	pop	%edi
+	pop	%ecx
+	pop	%ebx
 	ret

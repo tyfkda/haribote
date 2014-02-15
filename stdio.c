@@ -88,10 +88,9 @@ int strncmp(const char* s1, const char* s2, int n) {
   return 0;
 }
 
-int sprintf(char *str, const char *fmt, ...) {
+int vsprintf(char *str, const char *fmt, int* arg) {
   static const char hextableLower[] = "0123456789abcdef";
   static const char hextableUpper[] = "0123456789ABCDEF";
-  int* arg = (int*)(&(&fmt)[1]);  // Get va_arg
   char* dst = str;
   while (*fmt != '\0') {
     if (*fmt != '%') {
@@ -125,4 +124,9 @@ int sprintf(char *str, const char *fmt, ...) {
   }
   *dst = '\0';
   return dst - str;
+}
+
+int sprintf(char *str, const char *fmt, ...) {
+  int* arg = (int*)(&(&fmt)[1]);  // Get va_arg
+  return vsprintf(str, fmt, arg);
 }

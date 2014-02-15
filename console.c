@@ -1,5 +1,4 @@
 #include "console.h"
-#include "api.h"
 #include "bootpack.h"
 #include "dsctbl.h"
 #include "fifo.h"
@@ -202,13 +201,36 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
           cons->cur_c = -1;
           break;
         default:
-          if (256 <= i && i <= 511) {  // Keyboard
+          if (i >= 256) {  // Keyboard, etc.
             reg[7] = i - 256;
             return NULL;
           }
         }
       }
     }break;
+  case 16:
+    reg[7] = (int)timer_alloc();
+    break;
+  case 17:
+    {
+      TIMER* timer = (TIMER*)ebx;
+      int data = eax;
+      timer_init(timer, &task->fifo, data + 256);
+    }
+    break;
+  case 18:
+    {
+      TIMER* timer = (TIMER*)ebx;
+      int time = eax;
+      timer_settime(timer, time);
+    }
+    break;
+  case 19:
+    {
+      TIMER* timer = (TIMER*)ebx;
+      timer_free(timer);
+    }
+    break;
   case 10000:  // dumphex
     {
       int val = eax;
@@ -221,7 +243,14 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       static int rand_x;
       int a = 1103515245, b = 12345, c = 2147483647;
       rand_x = (a * rand_x + b) & c;
-      reg[7] = (rand_x >> 16) & RAND_MAX;
+      reg[7] = (rand_x >> 16) & 0x7fff;  // RAND_MAX
+    }break;
+  case 10002:  // sprintf
+    {
+      char* buf = (char*)(ebx + ds_base);
+      char* format = (char*)(ecx + ds_base);
+      int* ap = (int*)(edi + ds_base);
+      vsprintf(buf, format, ap);
     }break;
   }
   return NULL;
