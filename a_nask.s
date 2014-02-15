@@ -1,6 +1,7 @@
 .globl	api_putchar, api_putstr0, api_end, api_openwin
-.globl	api_putstrwin, api_boxfilwin
+.globl	api_putstrwin, api_boxfilwin, api_point
 .globl	api_initmalloc, api_malloc, api_free
+.globl	api_dumphex, rand
 
 # void api_putchar(int c)
 api_putchar:
@@ -112,4 +113,43 @@ api_free:
 	mov	12(%esp), %ecx		# Size
 	int	$0x40
 	pop	%ebx
+	ret
+
+# void api_point(int win, int x, int y, int col)
+api_point:
+	push	%edi
+	push	%esi
+	push	%ebx
+	mov	$11, %edx
+	mov	16(%esp), %ebx	# win
+	mov	20(%esp), %esi	# x
+	mov	24(%esp), %edi	# y
+	mov	28(%esp), %eax	# col
+	int	$0x40
+	pop	%ebx
+	pop	%esi
+	pop	%edi
+	ret
+
+# void api_dumphex(int val)
+api_dumphex:
+	push	%edi
+	push	%esi
+	push	%ebx
+	mov	$10000, %edx
+	mov	16(%esp), %eax	# val
+	int	$0x40
+	pop	%ebx
+	pop	%esi
+	pop	%edi
+	ret
+
+# int rand(void)
+rand:
+	push	%edi
+	push	%esi
+	mov	$10001, %edx
+	int	$0x40
+	pop	%esi
+	pop	%edi
 	ret

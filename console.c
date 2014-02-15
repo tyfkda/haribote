@@ -1,4 +1,5 @@
 #include "console.h"
+#include "api.h"
 #include "bootpack.h"
 #include "dsctbl.h"
 #include "fifo.h"
@@ -129,6 +130,28 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       void* addr = (void*)eax;
       int size = (ecx + 0x0f) & -16;  // Align with 16 bytes.
       memman_free(memman, addr, size);
+    }break;
+  case 11:
+    {
+      SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
+      int x = esi, y = edi, col = eax;
+      sht->buf[sht->bxsize * y + x] = col;
+      SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+      sheet_refresh(shtctl, sht, x, y, x + 1, y + 1);
+    }break;
+  case 10000:  // dumphex
+    {
+      int val = eax;
+      char s[30];
+      sprintf(s, "Dump: %08x\n", val);
+      cons_putstr0(cons, s);
+    }break;
+  case 10001:  // rand
+    {
+      static int rand_x;
+      int a = 1103515245, b = 12345, c = 2147483647;
+      rand_x = (a * rand_x + b) & c;
+      reg[7] = (rand_x >> 16) & RAND_MAX;
     }break;
   }
   return NULL;
