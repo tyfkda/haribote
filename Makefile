@@ -11,9 +11,9 @@ DISK_FILES=\
 	$(OBJDIR)/bug1.hrb \
 	$(OBJDIR)/bug3.hrb \
 	ipl.s \
-	$(OBJDIR)/hello.hrb \
 	$(OBJDIR)/hello3.hrb \
 	$(OBJDIR)/hello4.hrb \
+	$(OBJDIR)/hello5.hrb \
 
 SRCDIR=.
 OBJDIR=obj
@@ -62,14 +62,14 @@ $(OBJDIR)/asmhead.bin:	$(OBJDIR)/asmhead.o
 $(OBJDIR)/bootpack.bin:	$(OBJDIR)/bootpack.o $(OBJDIR)/graphics.o $(OBJDIR)/dsctbl.o $(OBJDIR)/stdio.o $(OBJDIR)/int.o $(OBJDIR)/fifo.o $(OBJDIR)/keyboard.o $(OBJDIR)/mouse.o $(OBJDIR)/memory.o $(OBJDIR)/sheet.o $(OBJDIR)/timer.o $(OBJDIR)/mtask.o $(OBJDIR)/window.o $(OBJDIR)/console.o $(OBJDIR)/file.o $(OBJDIR)/naskfunc.o $(OBJDIR)/fontdata.o
 	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls --oformat binary -o $@ $^
 
-$(OBJDIR)/hello.hrb:	$(OBJDIR)/hello.o
-	ld -N -e start -Ttext 0 -S --oformat binary -o $@ $<
-
 $(OBJDIR)/hello3.hrb:	$(OBJDIR)/hello3.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/hello4.hrb:	$(OBJDIR)/hello4.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
+
+$(OBJDIR)/hello5.hrb:	$(OBJDIR)/hello5.o
+	$(LKAPP) -o $@ $<
 
 $(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
