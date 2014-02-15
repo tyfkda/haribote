@@ -271,6 +271,11 @@ void HariMain(void) {
                 }
                 break;
               }
+              if (sht != key_win) {
+                cursor_c = keywin_off(shtctl, key_win, sht_win, cursor_c, cursor_x);
+                key_win = sht;
+                cursor_c = keywin_on(shtctl, key_win, sht_win, cursor_c);
+              }
               if (3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21) {
                 mmx = mx;  // Go to drag mode.
                 mmy = my;
