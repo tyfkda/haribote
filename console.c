@@ -88,6 +88,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
       SHEET* sht = sheet_alloc(shtctl);
       sht->task = task;
+      sht->flags |= 0x10;
       reg[7] = (int)sht;  // Set return value: SHEET* sheet == int win;
       sheet_setbuf(sht, buf, xsize, ysize, col_inv);
       make_window8(buf, xsize, ysize, title, FALSE);
@@ -318,7 +319,7 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
     SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
     for (int i = 0; i < MAX_SHEETS; ++i) {
       SHEET* sht = &shtctl->sheets0[i];
-      if (sht->flags != 0 && sht->task == task)
+      if ((sht->flags & 0x11) == 0x11 && sht->task == task)
         sheet_free(shtctl, sht);
     }
     memman_free_4k(memman, q, 64 * 1024);

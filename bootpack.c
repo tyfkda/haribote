@@ -13,6 +13,29 @@
 #include "timer.h"
 #include "window.h"
 
+static int keywin_off(SHTCTL* shtctl, SHEET* key_win, SHEET* sht_win, int cur_c, int cur_x) {
+  change_wtitle8(shtctl, key_win, FALSE);
+  if (key_win == sht_win) {
+    cur_c = -1;  // Hide cursor.
+    boxfill8(sht_win->buf, sht_win->bxsize, COL8_WHITE, cur_x, 28, cur_x + 8, 44);
+  } else {
+    if ((key_win->flags & 0x20) != 0)
+      fifo_put(&key_win->task->fifo, 3);  // Send hide cursor message.
+  }
+  return cur_c;
+}
+
+static int keywin_on(SHTCTL* shtctl, SHEET* key_win, SHEET* sht_win, int cur_c) {
+  change_wtitle8(shtctl, key_win, TRUE);
+  if (key_win == sht_win) {
+    cur_c = COL8_BLACK;  // Show cursor.
+  } else {
+    if ((key_win->flags & 0x20) != 0)
+      fifo_put(&key_win->task->fifo, 2);  // Send show cursor message.
+  }
+  return cur_c;
+}
+
 static const char keytable[2][0x80] = {
   {  // Normal.
       0,   0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '^',   0,   0,
@@ -87,6 +110,8 @@ void HariMain(void) {
   *((int*)(task_cons->tss.esp + 8)) = (int)sht_cons;
   *((int*)(task_cons->tss.esp + 12)) = (int)memtotal;
   task_run(task_cons, 2, 2);
+  sht_cons->task = task_cons;
+  sht_cons->flags |= 0x20;
 
   // sht_win
   SHEET* sht_win = sheet_alloc(shtctl);
@@ -119,7 +144,8 @@ void HariMain(void) {
   sheet_updown(shtctl, sht_win, 2);
   sheet_updown(shtctl, sht_mouse, 3);
 
-  int key_to = 0, key_shift = 0;
+  int key_shift = 0;
+  SHEET* key_win = sht_win;
 
   for (;;) {
     io_cli();
@@ -139,37 +165,28 @@ void HariMain(void) {
 
       switch (i) {
       case 0x1c + 256:  // Enter.
-        if (key_to != 0)  // To console.
-          fifo_put(&task_cons->fifo, 10 + 256);
+        if (key_win != sht_win)  // To console.
+          fifo_put(&key_win->task->fifo, 10 + 256);
         break;
       case 0x0e + 256:  // Back space.
-        if (key_to == 0) {  // To task A
+        if (key_win == sht_win) {  // To task A
           if (cursor_x > 8) {
             putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, " ", 1);
             cursor_x -= 8;
           }
         } else {  // To console.
-          fifo_put(&task_cons->fifo, 8 + 256);
+          fifo_put(&key_win->task->fifo, 8 + 256);
         }
         break;
       case 0x0f + 256:  // Tab.
-        if (key_to == 0) {
-          key_to = 1;
-          make_wtitle8(buf_win, sht_win->bxsize, "task_a", FALSE);
-          make_wtitle8(buf_cons, sht_cons->bxsize, "console", TRUE);
-          cursor_c = -1;  // Hide cursor.
-          boxfill8(sht_win->buf, sht_win->bxsize, COL8_WHITE, cursor_x, 28, cursor_x + 8, 44);
-          fifo_put(&task_cons->fifo, 2);  // Show console cursor.
-        } else {
-          key_to = 0;
-          make_wtitle8(buf_win, sht_win->bxsize, "task_a", TRUE);
-          make_wtitle8(buf_cons, sht_cons->bxsize, "console", FALSE);
-          cursor_c = COL8_BLACK;  // Show cursor.
-          fifo_put(&task_cons->fifo, 3);  // Hide console cursor.
-        }
-        sheet_refresh(shtctl, sht_win, 0, 0, sht_win->bxsize, 21);
-        sheet_refresh(shtctl, sht_cons, 0, 0, sht_cons->bxsize, 21);
-        break;
+        {
+          cursor_c = keywin_off(shtctl, key_win, sht_win, cursor_c, cursor_x);
+          int j = key_win->height - 1;
+          if (j == 0)
+            j = shtctl->top - 1;
+          key_win = shtctl->sheets[j];
+          cursor_c = keywin_on(shtctl, key_win, sht_win, cursor_c);
+        }break;
       case 0x2a + 256:  // Left shift on.
         key_shift |= 1;
         break;
@@ -203,14 +220,14 @@ void HariMain(void) {
           if (s[0] != 0) {  // Normal character.
             if ('A' <= s[0] && s[0] <= 'Z' && !key_shift)
               s[0] += 'a' - 'A';
-            if (key_to == 0) {  // To task A
+            if (key_win == sht_win) {  // To task A
               if (cursor_x < 128) {
                 s[1] = '\0';
                 putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, s, 1);
                 cursor_x += 8;
               }
             } else {  // To console.
-              fifo_put(&task_cons->fifo, s[0] + 256);
+              fifo_put(&key_win->task->fifo, s[0] + 256);
             }
           }
         }
@@ -244,7 +261,7 @@ void HariMain(void) {
               sheet_updown(shtctl, sht, shtctl->top - 1);
               if (sht->bxsize - 21 <= x && x <= sht->bxsize - 5 && 5 <= 5 && y < 19) {
                 // Close button clicked.
-                if (sht->task != NULL) {
+                if ((sht->flags & 0x10) != 0) {  // Window created by application.
                   CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
                   cons_putstr0(cons, "\nBreak(mouse) :\n");
                   io_cli();

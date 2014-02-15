@@ -43,6 +43,36 @@ void make_wtitle8(unsigned char* buf, int xsize, const char* title, char act) {
   }
 }
 
+void change_wtitle8(SHTCTL* shtctl, SHEET* sht, char act) {
+  int tc_new, tbc_new, tc_old, tbc_old;
+  if (act) {
+    tc_new = COL8_WHITE;
+    tbc_new = COL8_DARK_BLUE;
+    tc_old = COL8_GRAY;
+    tbc_old = COL8_DARK_GRAY;
+  } else {
+    tc_new = COL8_GRAY;
+    tbc_new = COL8_DARK_GRAY;
+    tc_old = COL8_WHITE;
+    tbc_old = COL8_DARK_BLUE;
+  }
+
+  unsigned char* buf = sht->buf;
+  int xsize = sht->bxsize;
+  for (int y = 3; y < 20; ++y) {
+    for (int x = 3; x < xsize - 3; ++x) {
+      unsigned char c = buf[y * xsize + x];
+      if (c == tc_old && x <= xsize - 22) {
+        c = tc_new;
+      } else if (c == tbc_old) {
+        c = tbc_new;
+      }
+      buf[y * xsize + x] = c;
+    }
+  }
+  sheet_refresh(shtctl, sht, 3, 3, xsize, 21);
+}
+
 void make_window8(unsigned char* buf, int xsize, int ysize, const char* title, char act) {
   boxfill8(buf, xsize, COL8_GRAY, 0, 0, xsize, 1);
   boxfill8(buf, xsize, COL8_WHITE, 1, 1, xsize - 1, 2);
