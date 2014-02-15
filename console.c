@@ -209,7 +209,11 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       }
     }break;
   case 16:
-    reg[7] = (int)timer_alloc();
+    {
+      TIMER* timer = timer_alloc();
+      timer->flags2 = 1;  // Enable auto cancel.
+      reg[7] = (int)timer;
+    }
     break;
   case 17:
     {
@@ -351,6 +355,7 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
       if ((sht->flags & 0x11) == 0x11 && sht->task == task)
         sheet_free(shtctl, sht);
     }
+    timer_cancelall(&task->fifo);
     memman_free_4k(memman, q, 64 * 1024);
   }
   memman_free_4k(memman, p, finfo->size);
