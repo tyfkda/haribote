@@ -99,6 +99,7 @@ TASK* task_alloc() {
     task->tss.es = task->tss.ds = task->tss.fs = task->tss.gs = 0;
     task->tss.ldtr = 0;
     task->tss.iomap = 0x40000000;
+    task->tss.ss0 = 0;
     //task->tss.cs = 2 * 8;
     //task->tss.esp = task_b_esp;
     //task->tss.ss = 0;

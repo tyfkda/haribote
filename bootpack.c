@@ -176,6 +176,16 @@ void HariMain(void) {
       case 0xb6 + 256:  // Left shift on.
         key_shift &= ~2;
         break;
+      case 0x3b + 256:  // F1
+        if (key_shift != 0 && task_cons->tss.ss0 != 0) {  // Shift + F1
+          CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
+          cons_putstr0(cons, "\nBreak(key) :\n");
+          io_cli();
+          task_cons->tss.eax = (int)&(task_cons->tss.esp0);
+          task_cons->tss.eip = (int)asm_end_app;
+          io_sti();
+        }
+        break;
       default:
         if (i < 256 + 0x80) {  // Normal character.
           char s[2];

@@ -165,6 +165,16 @@ static char cmd_app(const short* fat, const char* cmdline) {
   return TRUE;
 }
 
+int* inthandler0c(int* esp) {
+  CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
+  cons_putstr0(cons, "\nINT 0C :\n Stack Exception.\n");
+  char s[30];
+  sprintf(s, "EIP = %08x\n", esp[11]);
+  cons_putstr0(cons, s);
+  TASK* task = task_now();
+  return &task->tss.esp0;  // Abort
+}
+
 int* inthandler0d(void) {
   CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
   cons_putstr0(cons, "\nINT 0D :\n General Protected Exception.\n");

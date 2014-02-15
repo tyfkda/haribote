@@ -8,6 +8,8 @@ DISK_FILES=\
 	$(OBJDIR)/crack3.hrb \
 	$(OBJDIR)/crack4.hrb \
 	$(OBJDIR)/crack5.hrb \
+	$(OBJDIR)/bug1.hrb \
+	$(OBJDIR)/bug3.hrb \
 	ipl.s \
 	$(OBJDIR)/hello.hrb \
 	$(OBJDIR)/a.hrb \
@@ -77,6 +79,12 @@ $(OBJDIR)/crack4.hrb:	$(OBJDIR)/crack4.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $<
 
 $(OBJDIR)/crack5.hrb:	$(OBJDIR)/crack5.o $(OBJDIR)/a_nask.o
+	$(LKAPP) -o $@ $<
+
+$(OBJDIR)/bug1.hrb:	$(OBJDIR)/bug1.o $(OBJDIR)/a_nask.o
+	$(LKAPP) -o $@ $<
+
+$(OBJDIR)/bug3.hrb:	$(OBJDIR)/bug3.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $<
 
 clean:

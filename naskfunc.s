@@ -5,10 +5,10 @@
 .globl	load_gdtr, load_idtr
 .globl  load_cr0, store_cr0
 .globl	load_tr
-.globl	asm_inthandler0d, asm_inthandler20, asm_inthandler21, asm_inthandler2c
+.globl	asm_inthandler0c, asm_inthandler0d, asm_inthandler20, asm_inthandler21, asm_inthandler2c
 .globl	farjmp, farcall, start_app
-.globl	asm_cons_putchar, asm_hrb_api
-.extern inthandler0d, inthandler20, inthandler21, inthandler2c
+.globl	asm_cons_putchar, asm_hrb_api, asm_end_app
+.extern inthandler0c, inthandler0d, inthandler20, inthandler21, inthandler2c
 
 .macro asm_inthandler	c_inthandler
 	push	%es
@@ -24,7 +24,26 @@
 	popal
 	pop	%ds
 	pop	%es
-	iretl
+.endm
+
+.macro asm_inthandler_with_exit	c_inthandler
+	sti
+	push	%es
+	push	%ds
+	pushal
+	mov	%esp, %eax
+	push	%eax
+	mov	%ss, %ax
+	mov	%ax, %ds
+	mov	%ax, %es
+	call	\c_inthandler
+	cmp	$0, %eax
+	jne	asm_end_app
+	pop	%eax
+	popal
+	pop	%ds
+	pop	%es
+	add	$4, %esp	# Needed for int $0x0d
 .endm
 
 # void io_hlt(void)
@@ -132,35 +151,25 @@ load_tr:
 	LTR	4(%esp)		# tr
 	ret
 
-asm_inthandler0d:
-	sti
-	push	%es
-	push	%ds
-	pushal
-	mov	%esp, %eax
-	push	%eax
-	mov	%ss, %ax
-	mov	%ax, %ds
-	mov	%ax, %es
-	call	inthandler0d
-	cmp	$0, %eax
-	jne	end_app
-	pop	%eax
-	popal
-	pop	%ds
-	pop	%es
-	add	$4, %esp	# Needed for int $0x0d
+asm_inthandler0c:
+	asm_inthandler_with_exit inthandler0c
 	iret
-	ret
+
+asm_inthandler0d:
+	asm_inthandler_with_exit inthandler0d
+	iret
 
 asm_inthandler20:
 	asm_inthandler inthandler20
+	iretl
 
 asm_inthandler21:
 	asm_inthandler inthandler21
+	iretl
 
 asm_inthandler2c:
 	asm_inthandler inthandler2c
+	iretl
 
 # void farjmp(int eip, int cs)
 farjmp:
@@ -206,13 +215,13 @@ asm_hrb_api:
 	mov	%ax, %es
 	call	hrb_api
 	cmp	$0, %eax
-	jne	end_app
+	jne	asm_end_app
 	add	$32, %esp
 	popal
 	pop	%es
 	pop	%ds
 	iretl
-end_app:
+asm_end_app:
 	# eax is address of tss.esp0
 	mov	(%eax), %esp
 	popal
