@@ -2,8 +2,8 @@
 #define __MTASK_H__
 
 #include "fifo.h"
-#include "memory.h"
-#include "timer.h"
+
+struct MEMMAN;
 
 #define MAX_TASKS       (20)
 #define MAX_TASKS_LV    (8)
@@ -37,9 +37,9 @@ typedef struct {
   TASK tasks0[MAX_TASKS];
 } TASKCTL;
 
-extern TIMER* task_timer;
+extern struct TIMER* task_timer;
 
-TASK* task_init(MEMMAN* memman);
+TASK* task_init(struct MEMMAN* memman);
 TASK* task_alloc();
 TASK* task_now(void);
 void task_run(TASK* task, int level, int priority);

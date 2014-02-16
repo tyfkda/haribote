@@ -11,7 +11,7 @@ typedef struct {
   unsigned int size;
 } FREEINFO;
 
-typedef struct {
+typedef struct MEMMAN {
   int frees, maxfrees, lostsize, losts;
   FREEINFO free[MEMMAN_FREES];
 } MEMMAN;

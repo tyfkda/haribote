@@ -1,7 +1,9 @@
 #include "mtask.h"
 #include "bootpack.h"
 #include "dsctbl.h"
+#include "memory.h"
 #include "stdio.h"  // NULL
+#include "timer.h"
 
 TIMER* task_timer;
 static TASKCTL* taskctl;
