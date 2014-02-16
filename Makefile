@@ -3,13 +3,6 @@ TARGET=haribote.img
 # Files included in the disk image.
 DISK_FILES=\
 	$(OBJDIR)/haribote.sys \
-	$(OBJDIR)/crack1.hrb \
-	$(OBJDIR)/crack2.hrb \
-	$(OBJDIR)/crack3.hrb \
-	$(OBJDIR)/crack4.hrb \
-	$(OBJDIR)/crack5.hrb \
-	$(OBJDIR)/bug1.hrb \
-	$(OBJDIR)/bug3.hrb \
 	ipl.s \
 	$(OBJDIR)/hello3.hrb \
 	$(OBJDIR)/hello4.hrb \
