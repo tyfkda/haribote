@@ -19,6 +19,7 @@ DISK_FILES=\
 	$(OBJDIR)/lines.hrb \
 	$(OBJDIR)/walk.hrb \
 	$(OBJDIR)/noodle.hrb \
+	$(OBJDIR)/beepdown.hrb \
 
 SRCDIR=.
 OBJDIR=obj
@@ -89,6 +90,9 @@ $(OBJDIR)/walk.hrb:	$(OBJDIR)/walk.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/noodle.hrb:	$(OBJDIR)/noodle.o
+	$(LKAPP) -o $@ $< $(APPLIBS)
+
+$(OBJDIR)/beepdown.hrb:	$(OBJDIR)/beepdown.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o

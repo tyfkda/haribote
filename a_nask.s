@@ -3,6 +3,7 @@
 .globl	api_getkey
 .globl	api_initmalloc, api_malloc, api_free
 .globl	api_alloctimer, api_inittimer, api_settimer, api_freetimer
+.globl	api_beep
 .globl	api_dumphex, rand, sprintf
 
 # void api_putchar(int c)
@@ -219,6 +220,13 @@ api_freetimer:
 	mov	8(%esp), %ebx	# timer
 	int	$0x40
 	pop	%ebx
+	ret
+
+# void api_beep(int tone)
+api_beep:
+	mov	$20, %edx
+	mov	4(%esp), %eax	# tone
+	int	$0x40
 	ret
 
 # void api_dumphex(int val)

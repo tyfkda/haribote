@@ -39,6 +39,8 @@ void api_inittimer(TIMER* timer, int data);
 void api_settimer(TIMER* timer, int time);
 void api_freetimer(TIMER* timer);
 
+void api_beep(int tone);
+
 
 void api_dumphex(int val);
 
