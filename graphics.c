@@ -23,6 +23,19 @@ void init_palette(void) {
     0x84, 0x84, 0x84,  // 15: dark gray
   };
   set_palette(0, 15, table_rgb);
+
+  unsigned char table2[216 * 3];
+  for (int b = 0; b < 6; ++b) {
+    for (int g = 0; g < 6; ++g) {
+      for (int r = 0; r < 6; ++r) {
+        unsigned char* p = &table2[(r + g * 6 + b * 36) * 3];
+        p[0] = r * 51;
+        p[1] = g * 51;
+        p[2] = b * 51;
+      }
+    }
+  }
+  set_palette(16, 231, table2);
 }
 
 void set_palette(int start, int end, unsigned char* rgb) {

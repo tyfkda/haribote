@@ -20,6 +20,8 @@ DISK_FILES=\
 	$(OBJDIR)/walk.hrb \
 	$(OBJDIR)/noodle.hrb \
 	$(OBJDIR)/beepdown.hrb \
+	$(OBJDIR)/color.hrb \
+	$(OBJDIR)/color2.hrb \
 
 SRCDIR=.
 OBJDIR=obj
@@ -93,6 +95,12 @@ $(OBJDIR)/noodle.hrb:	$(OBJDIR)/noodle.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/beepdown.hrb:	$(OBJDIR)/beepdown.o
+	$(LKAPP) -o $@ $< $(APPLIBS)
+
+$(OBJDIR)/color.hrb:	$(OBJDIR)/color.o
+	$(LKAPP) -o $@ $< $(APPLIBS)
+
+$(OBJDIR)/color2.hrb:	$(OBJDIR)/color2.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o
