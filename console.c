@@ -353,7 +353,7 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
 
     SEGMENT_DESCRIPTOR* gdt = (SEGMENT_DESCRIPTOR*)ADR_GDT;
     set_segmdesc(gdt + 1003, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);
-    set_segmdesc(gdt + 1004, 64 * 1024 - 1, (int)q, AR_DATA32_RW + 0x60);
+    set_segmdesc(gdt + 1004, segsiz - 1, (int)q, AR_DATA32_RW + 0x60);
     *((int*)0x0fe8) = (int)q;  // Store data segment address.
     memcpy(&q[esp], &p[dathrb], datsiz);
 
