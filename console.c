@@ -92,7 +92,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       sheet_setbuf(sht, buf, xsize, ysize, col_inv);
       make_window8(buf, xsize, ysize, title, FALSE);
       sheet_slide(shtctl, sht, 100 + 200, 50);
-      sheet_updown(shtctl, sht, 2);
+      sheet_updown(shtctl, sht, shtctl->top);
     }break;
   case 6:
     {
