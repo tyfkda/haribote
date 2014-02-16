@@ -91,7 +91,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       reg[7] = (int)sht;  // Set return value: SHEET* sheet == int win;
       sheet_setbuf(sht, buf, xsize, ysize, col_inv);
       make_window8(buf, xsize, ysize, title, FALSE);
-      sheet_slide(shtctl, sht, 100 + 200, 50);
+      sheet_slide(shtctl, sht, (shtctl->xsize - xsize) / 2, (shtctl->ysize - ysize) / 2);
       sheet_updown(shtctl, sht, shtctl->top);
     }break;
   case 6:
