@@ -54,7 +54,6 @@ static void sheet_refreshmap(SHTCTL* ctl, int vx0, int vy0, int vx1, int vy1, in
     unsigned char sid = sht - ctl->sheets0;
     unsigned char* buf = sht->buf;
     int bxsize = sht->bxsize, bysize = sht->bysize;
-    unsigned char col_inv = sht->col_inv;
     int bx0 = vx0 - sht->vx0;
     int by0 = vy0 - sht->vy0;
     int bx1 = vx1 - sht->vx0;
@@ -63,12 +62,23 @@ static void sheet_refreshmap(SHTCTL* ctl, int vx0, int vy0, int vx1, int vy1, in
     if (by0 < 0)  by0 = 0;
     if (bx1 > bxsize)  bx1 = bxsize;
     if (by1 > bysize)  by1 = bysize;
-    for (int by = by0; by < by1; ++by) {
-      int vy = sht->vy0 + by;
-      for (int bx = bx0; bx < bx1; ++bx) {
-        int vx = sht->vx0 + bx;
-        if (buf[by * bxsize + bx] != col_inv)
+    if (sht->col_inv == -1) {  // No transparent sheet.
+      for (int by = by0; by < by1; ++by) {
+        int vy = sht->vy0 + by;
+        for (int bx = bx0; bx < bx1; ++bx) {
+          int vx = sht->vx0 + bx;
           map[vy * xsize + vx] = sid;
+        }
+      }
+    } else {
+      unsigned char col_inv = sht->col_inv;
+      for (int by = by0; by < by1; ++by) {
+        int vy = sht->vy0 + by;
+        for (int bx = bx0; bx < bx1; ++bx) {
+          int vx = sht->vx0 + bx;
+          if (buf[by * bxsize + bx] != col_inv)
+            map[vy * xsize + vx] = sid;
+        }
       }
     }
   }
