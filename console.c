@@ -325,6 +325,20 @@ static void cmd_type(CONSOLE* cons, const short* fat, const char* cmdline) {
   memman_free_4k(memman, p, size);
 }
 
+static void cmd_exit(CONSOLE* cons, const short* fat) {
+  MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
+  TASK* task = task_now();
+  SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+  FIFO* fifo = (FIFO*)*((int*)0x0fec);
+  timer_cancel(cons->timer);
+  memman_free_4k(memman, (void*)fat, 4 * 2880);
+  io_cli();
+  fifo_put(fifo, cons->sheet - shtctl->sheets0 + 768);  // 768~1023
+  io_sti();
+  for (;;)
+    task_sleep(task);
+}
+
 static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
   char name[13];
   strncpy(name, cmdline, 8);
@@ -416,6 +430,8 @@ void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memto
     cmd_dir(cons);
   } else if (strncmp(cmdline, "type ", 5) == 0) {
     cmd_type(cons, fat, cmdline);
+  } else if (strcmp(cmdline, "exit") == 0) {
+    cmd_exit(cons, fat);
   } else if (cmdline[0] != '\0') {
     if (!cmd_app(cons, fat, cmdline))
       cons_putstr0(cons, "Bad command.\n");

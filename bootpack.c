@@ -56,7 +56,9 @@ static SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
   make_window8(buf, 256, 165, "console", FALSE);
   make_textbox8(sht, 8, 28, 240, 128, COL8_BLACK);
   TASK* task = task_alloc();
-  task->tss.esp = (int)memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 3;
+  int stack_size = 64 * 1024;
+  task->cons_stack = memman_alloc_4k(memman, stack_size);
+  task->tss.esp = (int)task->cons_stack + stack_size - 4 - 4 * 3;
   task->tss.eip = (int) &console_task;
   task->tss.cs = 2 * 8;
   task->tss.es = task->tss.ss = task->tss.ds = task->tss.fs = task->tss.gs = 1 * 8;
@@ -72,6 +74,22 @@ static SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
   return sht;
 }
 
+static void close_constask(TASK* task) {
+  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
+  task_sleep(task);
+  if (task->cons_stack != NULL)
+    memman_free_4k(memman, task->cons_stack, 64 * 1024);
+  memman_free_4k(memman, task->fifo.buf, 128 * sizeof(int));
+  task_free(task);
+}
+
+static void close_console(SHTCTL* shtctl, SHEET* sht) {
+  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
+  close_constask(sht->task);
+  memman_free_4k(memman, sht->buf, 256 * 165);  // Warn! sheet size.
+  sheet_free(shtctl, sht);
+}
+
 void HariMain(void) {
   init_gdtidt();
   init_pic();
@@ -81,6 +99,7 @@ void HariMain(void) {
   int fifobuf[128];
   MOUSE_DEC mdec;
   fifo_init(&fifo, 128, fifobuf, NULL);
+  *((int *) 0x0fec) = (int) &fifo;
   init_pit();
   init_keyboard(&fifo, 256);
   enable_mouse(&fifo, 512, &mdec);
@@ -155,14 +174,24 @@ void HariMain(void) {
 
     int i = fifo_get(&fifo);
     io_sti();
+
+    if (key_win != NULL && key_win->flags == 0) {  // Console window closed.
+      if (shtctl->top == 1) {  // No window, only mouse and background.
+        key_win = NULL;
+      } else {
+        keywin_on(shtctl, key_win = shtctl->sheets[shtctl->top - 1]);
+      }
+    }
     if (256 <= i && i < 512) {  // Keyboard data.
-      char s[30];
-      sprintf(s, "key:%02x", i - 256);
-      putfonts8_asc_sht(shtctl, sht_back, 0, sht_back->bysize - 28, COL8_RED, COL8_DARK_GRAY, s, strlen(s));
+      {
+        char s[30];
+        sprintf(s, "key:%02x", i - 256);
+        putfonts8_asc_sht(shtctl, sht_back, 0, sht_back->bysize - 28, COL8_RED, COL8_DARK_GRAY, s, strlen(s));
+      }
 
       switch (i) {
       case 0x0f + 256:  // Tab.
-        {
+        if (key_win != NULL) {
           keywin_off(shtctl, key_win);
           int j = key_win->height - 1;
           if (j == 0)
@@ -198,7 +227,8 @@ void HariMain(void) {
         break;
       case 0x3c + 256:  // F2
         if (key_shift != 0) {  // Shift + F2 : Create console.
-          keywin_off(shtctl, key_win);
+          if (key_win != NULL)
+            keywin_off(shtctl, key_win);
           key_win = open_console(shtctl, memtotal);
           sheet_slide(shtctl, key_win, 32, 4);
           sheet_updown(shtctl, key_win, shtctl->top);
@@ -213,7 +243,7 @@ void HariMain(void) {
         if (i < 256 + 0x80) {  // Normal character.
           char s[2];
           s[0] = keytable[key_shift ? 1 : 0][i - 256];
-          if (s[0] != 0) {  // Normal character.
+          if (s[0] != 0 && key_win != NULL) {  // Normal character.
             if ('A' <= s[0] && s[0] <= 'Z' && !key_shift)
               s[0] += 'a' - 'A';
             fifo_put(&key_win->task->fifo, s[0] + 256);
@@ -286,6 +316,8 @@ void HariMain(void) {
         }
       }
       continue;
+    } else if (768 <= i && i < 1024) {  // Close console request.
+      close_console(shtctl, shtctl->sheets0 + (i - 768));
     }
   }
 }

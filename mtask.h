@@ -25,6 +25,7 @@ typedef struct TASK {
   TSS32 tss;
   struct CONSOLE* cons;
   int ds_base;
+  void* cons_stack;
 } TASK;
 
 typedef struct {
@@ -44,6 +45,7 @@ extern struct TIMER* task_timer;
 
 TASK* task_init(struct MEMMAN* memman);
 TASK* task_alloc();
+void task_free(TASK* task);
 TASK* task_now(void);
 void task_run(TASK* task, int level, int priority);
 void task_switch(void);

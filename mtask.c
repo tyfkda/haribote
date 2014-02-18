@@ -102,12 +102,17 @@ TASK* task_alloc() {
     task->tss.ldtr = 0;
     task->tss.iomap = 0x40000000;
     task->tss.ss0 = 0;
+    task->cons_stack = NULL;
     //task->tss.cs = 2 * 8;
     //task->tss.esp = task_b_esp;
     //task->tss.ss = 0;
     return task;
   }
   return NULL;
+}
+
+void task_free(TASK* task) {
+  task->flags = 0;
 }
 
 void task_run(TASK* task, int level, int priority) {
