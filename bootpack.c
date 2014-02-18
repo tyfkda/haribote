@@ -118,7 +118,9 @@ void HariMain(void) {
   init_mouse_cursor8(buf_mouse, 99);
   int mx = (binfo->scrnx - 16) / 2;
   int my = (binfo->scrny - 28 - 16) / 2;
-  int mmx = -1, mmy = -1;  // Mouse drag position.
+  int mmx = -1, mmy = -1, new_mx = -1, new_my = 0, new_wx = 0, new_wy = 0;  // Mouse drag position.
+  char drag_moved = FALSE;
+  SHEET* sht_dragging = NULL;
 
   sheet_slide(shtctl, sht_back, 0, 0);
   sheet_slide(shtctl, sht_cons[1], 264, 2);
@@ -137,6 +139,18 @@ void HariMain(void) {
     io_cli();
 
     if (fifo_status(&fifo) == 0) {
+      if (new_mx >= 0) {
+        io_sti();
+        sheet_slide(shtctl, sht_mouse, new_mx, new_my);
+        new_mx = -1;
+      }
+      if (drag_moved) {
+        io_sti();
+        sheet_slide(shtctl, sht_dragging, new_wx, new_wy);
+        drag_moved = FALSE;
+        if (mmx < 0)  // Drag released.
+          sht_dragging = NULL;
+      }
       task_sleep(task_a);
       io_sti();
       continue;
@@ -211,8 +225,9 @@ void HariMain(void) {
         if (my < 0)  my = 0;
         if (mx >= binfo->scrnx - 1)  mx = binfo->scrnx - 1;
         if (my >= binfo->scrny - 1)  my = binfo->scrny - 1;
-        sheet_slide(shtctl, sht_mouse, mx, my);
 
+        new_mx = mx;
+        new_my = my;
         if ((mdec.btn & 0x01) != 0) {  // Mouse left button pressed.
           if (mmx < 0) {  // Normal mode.
             for (int j = shtctl->top; --j > 0; ) {
@@ -245,16 +260,20 @@ void HariMain(void) {
               if (3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21) {
                 mmx = mx;  // Go to drag mode.
                 mmy = my;
+                new_wx = sht->vx0;
+                new_wy = sht->vy0;
+                sht_dragging = sht;
               }
               break;
             }
           } else {  // Drag mode.
-            SHEET* sht = shtctl->sheets[shtctl->top - 1];
             int x = mx - mmx;
             int y = my - mmy;
-            sheet_slide(shtctl, sht, sht->vx0 + x, sht->vy0 + y);
+            new_wx += x;
+            new_wy += y;
             mmx = mx;
             mmy = my;
+            drag_moved = TRUE;
           }
         } else {
           mmx = -1;  // Go to normal mode.
