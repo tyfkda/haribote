@@ -4,7 +4,7 @@
 struct SHTCTL;
 struct SHEET;
 
-typedef struct {
+typedef struct CONSOLE {
   struct SHTCTL* shtctl;
   struct SHEET* sheet;
   int cur_x, cur_y, cur_c;

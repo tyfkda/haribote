@@ -96,22 +96,27 @@ void HariMain(void) {
   init_screen8(buf_back, binfo->scrnx, binfo->scrny);
 
   // sht_cons
-  SHEET* sht_cons = sheet_alloc(shtctl);
-  unsigned char* buf_cons = (unsigned char*)memman_alloc_4k(memman, 256 * 165);
-  sheet_setbuf(sht_cons, buf_cons, 256, 165, -1);
-  make_window8(buf_cons, 256, 165, "console", FALSE);
-  make_textbox8(sht_cons, 8, 28, 240, 128, COL8_BLACK);
-  TASK* task_cons = task_alloc();
-  task_cons->tss.esp = (int)memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 3;
-  task_cons->tss.eip = (int) &console_task;
-  task_cons->tss.cs = 2 * 8;
-  task_cons->tss.es = task_cons->tss.ss = task_cons->tss.ds = task_cons->tss.fs = task_cons->tss.gs = 1 * 8;
-  *((int*)(task_cons->tss.esp + 4)) = (int)shtctl;
-  *((int*)(task_cons->tss.esp + 8)) = (int)sht_cons;
-  *((int*)(task_cons->tss.esp + 12)) = (int)memtotal;
-  task_run(task_cons, 2, 2);
-  sht_cons->task = task_cons;
-  sht_cons->flags |= 0x20;
+  SHEET* sht_cons[2];
+  unsigned char* buf_cons[2];
+  TASK* task_cons[2];
+  for (int i = 0; i < 2; ++i) {
+    sht_cons[i] = sheet_alloc(shtctl);
+    buf_cons[i] = (unsigned char*)memman_alloc_4k(memman, 256 * 165);
+    sheet_setbuf(sht_cons[i], buf_cons[i], 256, 165, -1);
+    make_window8(buf_cons[i], 256, 165, "console", FALSE);
+    make_textbox8(sht_cons[i], 8, 28, 240, 128, COL8_BLACK);
+    task_cons[i] = task_alloc();
+    task_cons[i]->tss.esp = (int)memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 4 - 4 * 3;
+    task_cons[i]->tss.eip = (int) &console_task;
+    task_cons[i]->tss.cs = 2 * 8;
+    task_cons[i]->tss.es = task_cons[i]->tss.ss = task_cons[i]->tss.ds = task_cons[i]->tss.fs = task_cons[i]->tss.gs = 1 * 8;
+    *((int*)(task_cons[i]->tss.esp + 4)) = (int)shtctl;
+    *((int*)(task_cons[i]->tss.esp + 8)) = (int)sht_cons[i];
+    *((int*)(task_cons[i]->tss.esp + 12)) = (int)memtotal;
+    task_run(task_cons[i], 2, 2);
+    sht_cons[i]->task = task_cons[i];
+    sht_cons[i]->flags |= 0x20;
+  }
 
   // sht_win
   SHEET* sht_win = sheet_alloc(shtctl);
@@ -136,13 +141,15 @@ void HariMain(void) {
   int mmx = -1, mmy = -1;  // Mouse drag position.
 
   sheet_slide(shtctl, sht_back, 0, 0);
-  sheet_slide(shtctl, sht_cons, 32, 4);
+  sheet_slide(shtctl, sht_cons[1], 56, 6);
+  sheet_slide(shtctl, sht_cons[0], 8, 2);
   sheet_slide(shtctl, sht_win, 32, 170);
   sheet_slide(shtctl, sht_mouse, mx, my);
   sheet_updown(shtctl, sht_back, 0);
-  sheet_updown(shtctl, sht_cons, 1);
-  sheet_updown(shtctl, sht_win, 2);
-  sheet_updown(shtctl, sht_mouse, 3);
+  sheet_updown(shtctl, sht_cons[1], 1);
+  sheet_updown(shtctl, sht_cons[0], 1);
+  sheet_updown(shtctl, sht_win, 3);
+  sheet_updown(shtctl, sht_mouse, 4);
 
   int key_shift = 0;
   SHEET* key_win = sht_win;
@@ -200,13 +207,17 @@ void HariMain(void) {
         key_shift &= ~2;
         break;
       case 0x3b + 256:  // F1
-        if (key_shift != 0 && task_cons->tss.ss0 != 0) {  // Shift + F1
-          CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
-          cons_putstr0(cons, "\nBreak(key) :\n");
-          io_cli();
-          task_cons->tss.eax = (int)&(task_cons->tss.esp0);
-          task_cons->tss.eip = (int)asm_end_app;
-          io_sti();
+        if (key_shift != 0) {  // Shift + F1
+          TASK* task = key_win->task;
+          if (task != NULL && task->tss.ss0 != 0) {
+            CONSOLE* cons = task->cons;
+            if (cons != NULL)
+              cons_putstr0(cons, "\nBreak(key) :\n");
+            io_cli();
+            task->tss.eax = (int)&(task->tss.esp0);
+            task->tss.eip = (int)asm_end_app;
+            io_sti();
+          }
         }
         break;
       case 0x57 + 256:  // F11
@@ -262,11 +273,13 @@ void HariMain(void) {
               if (sht->bxsize - 21 <= x && x <= sht->bxsize - 5 && 5 <= 5 && y < 19) {
                 // Close button clicked.
                 if ((sht->flags & 0x10) != 0) {  // Window created by application.
-                  CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
-                  cons_putstr0(cons, "\nBreak(mouse) :\n");
+                  TASK* task = sht->task;
+                  CONSOLE* cons = task->cons;
+                  if (cons != NULL)
+                    cons_putstr0(cons, "\nBreak(mouse) :\n");
                   io_cli();
-                  task_cons->tss.eax = (int)&(task_cons->tss.esp0);
-                  task_cons->tss.eip = (int)asm_end_app;
+                  task->tss.eax = (int)&(task->tss.esp0);
+                  task->tss.eip = (int)asm_end_app;
                   io_sti();
                 }
                 break;

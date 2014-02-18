@@ -3,6 +3,7 @@
 
 #include "fifo.h"
 
+struct CONSOLE;
 struct MEMMAN;
 
 #define MAX_TASKS       (20)
@@ -22,6 +23,8 @@ typedef struct TASK {
   int level, priority;
   FIFO fifo;
   TSS32 tss;
+  struct CONSOLE* cons;
+  int ds_base;
 } TASK;
 
 typedef struct {

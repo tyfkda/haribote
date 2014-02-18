@@ -68,9 +68,9 @@ void cons_putstr1(CONSOLE* cons, char* s, int l) {
 
 int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax) {
   (void)edi; (void)esi; (void)ebp; (void)esp; (void)ebx; (void)edx; (void)ecx; (void)eax;
-  const int ds_base = *((int*)0x0fe8);  // Get data segment address.
   TASK* task = task_now();
-  CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
+  const int ds_base = task->ds_base;  // Get data segment address.
+  CONSOLE* cons = task->cons;
   volatile int* reg = &eax + 1;  // Need `volatile` modifier for gcc.
   // reg[0] = edi, reg[1] = esi, reg[2] = ebp, reg[3] = esp
   // reg[4] = ebx, reg[5] = edx, reg[6] = ecx, reg[7] = eax
@@ -351,16 +351,14 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
     int datsiz = *((int*)(p + 0x0010));
     int dathrb = *((int*)(p + 0x0014));
     char* q = (char*)memman_alloc_4k(memman, segsiz);  // Data segment.
+    TASK* task = task_now();
+    task->ds_base = (int)q;  // Store data segment address.
 
     SEGMENT_DESCRIPTOR* gdt = (SEGMENT_DESCRIPTOR*)ADR_GDT;
-    set_segmdesc(gdt + 1003, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);
-    set_segmdesc(gdt + 1004, segsiz - 1, (int)q, AR_DATA32_RW + 0x60);
-
-    *((int*)0x0fe8) = (int)q;  // Store data segment address.
+    set_segmdesc(gdt + task->sel / 8 + 1000, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);
+    set_segmdesc(gdt + task->sel / 8 + 2000, segsiz - 1, (int)q, AR_DATA32_RW + 0x60);
     memcpy(&q[esp], &p[dathrb], datsiz);
-
-    TASK* task = task_now();
-    start_app(0x1b, 1003 * 8, esp, 1004 * 8, &(task->tss.esp0));
+    start_app(0x1b, task->sel + 1000 * 8, esp, task->sel + 2000 * 8, &(task->tss.esp0));
 
     // End of application.
     // Free sheets which are opened by the task.
@@ -393,19 +391,19 @@ int* inthandler0c(int* esp) {
   // esp[13] = eflags
   // esp[14] = esp  : esp for application
   // esp[15] = ss   : ss for application
-  CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
+  TASK* task = task_now();
+  CONSOLE* cons = task->cons;
   cons_putstr0(cons, "\nINT 0C :\n Stack Exception.\n");
   char s[30];
   sprintf(s, "EIP = %08x\n", esp[11]);
   cons_putstr0(cons, s);
-  TASK* task = task_now();
   return &task->tss.esp0;  // Abort
 }
 
 int* inthandler0d(void) {
-  CONSOLE* cons = (CONSOLE*)*((int*)0x0fec);
-  cons_putstr0(cons, "\nINT 0D :\n General Protected Exception.\n");
   TASK* task = task_now();
+  CONSOLE* cons = task->cons;
+  cons_putstr0(cons, "\nINT 0D :\n General Protected Exception.\n");
   return &task->tss.esp0;  // Abort
 }
 
@@ -426,6 +424,7 @@ void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memto
 
 void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   TASK* task = task_now();
+
   int fifobuf[128];
   fifo_init(&task->fifo, 128, fifobuf, task);
 
@@ -442,12 +441,13 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   cons.cur_x = 8;
   cons.cur_y = 28;
   cons.cur_c = -1;
-  *((int*)0x0fec) = (int)&cons;
-  cons_putchar(&cons, '>', TRUE);
+  task->cons = &cons;
 
   cons.timer = timer_alloc();
   timer_init(cons.timer, &task->fifo, 1);
   timer_settime(cons.timer, 50);
+
+  cons_putchar(&cons, '>', TRUE);
 
   for (;;) {
     io_cli();
