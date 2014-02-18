@@ -13,33 +13,22 @@
 #include "timer.h"
 #include "window.h"
 
-static int keywin_off(SHTCTL* shtctl, SHEET* key_win, SHEET* sht_win, int cur_c, int cur_x) {
+static void keywin_off(SHTCTL* shtctl, SHEET* key_win) {
   change_wtitle8(shtctl, key_win, FALSE);
-  if (key_win == sht_win) {
-    cur_c = -1;  // Hide cursor.
-    boxfill8(sht_win->buf, sht_win->bxsize, COL8_WHITE, cur_x, 28, cur_x + 8, 44);
-  } else {
-    if ((key_win->flags & 0x20) != 0)
-      fifo_put(&key_win->task->fifo, 3);  // Send hide cursor message.
-  }
-  return cur_c;
+  if ((key_win->flags & 0x20) != 0)
+    fifo_put(&key_win->task->fifo, 3);  // Send hide cursor message.
 }
 
-static int keywin_on(SHTCTL* shtctl, SHEET* key_win, SHEET* sht_win, int cur_c) {
+static void keywin_on(SHTCTL* shtctl, SHEET* key_win) {
   change_wtitle8(shtctl, key_win, TRUE);
-  if (key_win == sht_win) {
-    cur_c = COL8_BLACK;  // Show cursor.
-  } else {
-    if ((key_win->flags & 0x20) != 0)
-      fifo_put(&key_win->task->fifo, 2);  // Send show cursor message.
-  }
-  return cur_c;
+  if ((key_win->flags & 0x20) != 0)
+    fifo_put(&key_win->task->fifo, 2);  // Send show cursor message.
 }
 
 static const char keytable[2][0x80] = {
   {  // Normal.
-      0,   0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '^',   0,   0,
-    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '@', '[',   0,   0, 'A', 'S',
+      0,   0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '^',0x08,   0,
+    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '@', '[',0x0a,   0, 'A', 'S',
     'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', ':',   0,   0, ']', 'Z', 'X', 'C', 'V',
     'B', 'N', 'M', ',', '.', '/',   0, '*',   0, ' ',   0,   0,   0,   0,   0,   0,
       0,   0,   0,   0,   0,   0,   0, '7', '8', '9', '-', '4', '5', '6', '+', '1',
@@ -48,8 +37,8 @@ static const char keytable[2][0x80] = {
       0,   0,   0,0x5c,   0,   0,   0,   0,   0,   0,   0,   0,   0,0x5c,   0,   0,
   },
   {  // Shift.
-      0,   0, '!', '"', '#', '$', '%', '&', '*', '(', ')',   0, '=', '~',   0,   0,
-    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '`', '{',   0,   0, 'A', 'S',
+      0,   0, '!', '"', '#', '$', '%', '&', '*', '(', ')',   0, '=', '~',0x08,   0,
+    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '`', '{',0x0a,   0, 'A', 'S',
     'D', 'F', 'G', 'H', 'J', 'K', 'L', '+', '*',   0,   0, '}', 'Z', 'X', 'C', 'V',
     'B', 'N', 'M', '<', '>', '?',   0, '*',   0, ' ',   0,   0,   0,   0,   0,   0,
       0,   0,   0,   0,   0,   0,   0, '7', '8', '9', '-', '4', '5', '6', '+', '1',
@@ -99,6 +88,7 @@ void HariMain(void) {
   SHEET* sht_cons[2];
   unsigned char* buf_cons[2];
   TASK* task_cons[2];
+  int* cons_fifo[2];
   for (int i = 0; i < 2; ++i) {
     sht_cons[i] = sheet_alloc(shtctl);
     buf_cons[i] = (unsigned char*)memman_alloc_4k(memman, 256 * 165);
@@ -116,20 +106,10 @@ void HariMain(void) {
     task_run(task_cons[i], 2, 2);
     sht_cons[i]->task = task_cons[i];
     sht_cons[i]->flags |= 0x20;
-  }
 
-  // sht_win
-  SHEET* sht_win = sheet_alloc(shtctl);
-  unsigned char* buf_win = (unsigned char*)memman_alloc_4k(memman, 160 * 52);
-  sheet_setbuf(sht_win, buf_win, 160, 52, -1);
-  make_window8(buf_win, 160, 52, "window", TRUE);
-  make_textbox8(sht_win, 8, 28, 144, 16, COL8_WHITE);
-  int cursor_x = 8;
-  int cursor_c = COL8_WHITE;
-  TIMER* timer;
-  timer = timer_alloc();
-  timer_init(timer, &fifo, 0);
-  timer_settime(timer, 50);  // 0.5 sec
+    cons_fifo[i] = (int*)memman_alloc_4k(memman, 128 * sizeof(int));
+    fifo_init(&task_cons[i]->fifo, 128, cons_fifo[i], task_cons[i]);
+  }
 
   // sht_mouse
   SHEET* sht_mouse = sheet_alloc(shtctl);
@@ -141,18 +121,17 @@ void HariMain(void) {
   int mmx = -1, mmy = -1;  // Mouse drag position.
 
   sheet_slide(shtctl, sht_back, 0, 0);
-  sheet_slide(shtctl, sht_cons[1], 56, 6);
+  sheet_slide(shtctl, sht_cons[1], 264, 2);
   sheet_slide(shtctl, sht_cons[0], 8, 2);
-  sheet_slide(shtctl, sht_win, 32, 170);
   sheet_slide(shtctl, sht_mouse, mx, my);
   sheet_updown(shtctl, sht_back, 0);
   sheet_updown(shtctl, sht_cons[1], 1);
-  sheet_updown(shtctl, sht_cons[0], 1);
-  sheet_updown(shtctl, sht_win, 3);
-  sheet_updown(shtctl, sht_mouse, 4);
+  sheet_updown(shtctl, sht_cons[0], 2);
+  sheet_updown(shtctl, sht_mouse, 3);
 
   int key_shift = 0;
-  SHEET* key_win = sht_win;
+  SHEET* key_win = sht_cons[0];
+  keywin_on(shtctl, sht_cons[0]);
 
   for (;;) {
     io_cli();
@@ -171,28 +150,14 @@ void HariMain(void) {
       putfonts8_asc_sht(shtctl, sht_back, 0, sht_back->bysize - 28, COL8_RED, COL8_DARK_GRAY, s, strlen(s));
 
       switch (i) {
-      case 0x1c + 256:  // Enter.
-        if (key_win != sht_win)  // To console.
-          fifo_put(&key_win->task->fifo, 10 + 256);
-        break;
-      case 0x0e + 256:  // Back space.
-        if (key_win == sht_win) {  // To task A
-          if (cursor_x > 8) {
-            putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, " ", 1);
-            cursor_x -= 8;
-          }
-        } else {  // To console.
-          fifo_put(&key_win->task->fifo, 8 + 256);
-        }
-        break;
       case 0x0f + 256:  // Tab.
         {
-          cursor_c = keywin_off(shtctl, key_win, sht_win, cursor_c, cursor_x);
+          keywin_off(shtctl, key_win);
           int j = key_win->height - 1;
           if (j == 0)
             j = shtctl->top - 1;
           key_win = shtctl->sheets[j];
-          cursor_c = keywin_on(shtctl, key_win, sht_win, cursor_c);
+          keywin_on(shtctl, key_win);
         }break;
       case 0x2a + 256:  // Left shift on.
         key_shift |= 1;
@@ -231,23 +196,11 @@ void HariMain(void) {
           if (s[0] != 0) {  // Normal character.
             if ('A' <= s[0] && s[0] <= 'Z' && !key_shift)
               s[0] += 'a' - 'A';
-            if (key_win == sht_win) {  // To task A
-              if (cursor_x < 128) {
-                s[1] = '\0';
-                putfonts8_asc_sht(shtctl, sht_win, cursor_x, 28, COL8_BLACK, COL8_WHITE, s, 1);
-                cursor_x += 8;
-              }
-            } else {  // To console.
-              fifo_put(&key_win->task->fifo, s[0] + 256);
-            }
+            fifo_put(&key_win->task->fifo, s[0] + 256);
           }
         }
         break;
       }
-      if (cursor_c >= 0) {
-        boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
-      }
-      sheet_refresh(shtctl, sht_win, cursor_x, 28, cursor_x + 8, 44);
       continue;
     } else if (512 <= i && i < 768) {  // Mouse data.
       if (mouse_decode(&mdec, i - 512) != 0) {
@@ -285,9 +238,9 @@ void HariMain(void) {
                 break;
               }
               if (sht != key_win) {
-                cursor_c = keywin_off(shtctl, key_win, sht_win, cursor_c, cursor_x);
+                keywin_off(shtctl, key_win);
                 key_win = sht;
-                cursor_c = keywin_on(shtctl, key_win, sht_win, cursor_c);
+                keywin_on(shtctl, key_win);
               }
               if (3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21) {
                 mmx = mx;  // Go to drag mode.
@@ -309,18 +262,5 @@ void HariMain(void) {
       }
       continue;
     }
-    switch (i) {
-    case 0:  // 0.5sec
-    case 1:  // 0.5sec
-      if (cursor_c >= 0) {
-        cursor_c = i == 0 ? COL8_WHITE : COL8_BLACK;
-        boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
-        sheet_refresh(shtctl, sht_win, cursor_x, 28, cursor_x + 8, 44);
-      }
-      timer_init(timer, &fifo, 1 - i);
-      timer_settime(timer, 50);
-      break;
-    }
-    continue;
   }
 }

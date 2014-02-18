@@ -425,9 +425,6 @@ void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memto
 void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   TASK* task = task_now();
 
-  int fifobuf[128];
-  fifo_init(&task->fifo, 128, fifobuf, task);
-
   MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
   short* fat = (short*)memman_alloc_4k(memman, sizeof(short) * 2880);
   file_readfat(fat, (unsigned char*)(ADR_DISKIMG + 0x000200));
