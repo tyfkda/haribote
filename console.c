@@ -507,6 +507,9 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
         boxfill8(sheet->buf, sheet->bxsize, COL8_BLACK, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
         cons.cur_c = -1;
         break;
+      case 4:  // Close button clicked.
+        cmd_exit(&cons, fat);
+        break;
       }
     }
     // Redraw cursor.
