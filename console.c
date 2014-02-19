@@ -12,11 +12,11 @@
 
 void cons_newline(CONSOLE* cons) {
   cons->cur_x = 8;
-  if (cons->cur_y < 28 + 112) {
+  SHEET* sheet = cons->sheet;
+  if (cons->cur_y < 28 + 112 || sheet == NULL) {
     cons->cur_y += 16;
     return;
   }
-  SHEET* sheet = cons->sheet;
   unsigned char* buf = sheet->buf;
   int bxsize = sheet->bxsize;
   // Scroll.
@@ -32,7 +32,8 @@ void cons_putchar(CONSOLE* cons, int chr, char move) {
   switch (chr) {
   case 0x09:  // Tab.
     for (;;) {
-      putfonts8_asc_sht(cons->shtctl, cons->sheet, cons->cur_x, cons->cur_y, COL8_WHITE, COL8_BLACK, " ", 1);
+      if (cons->sheet != NULL)
+        putfonts8_asc_sht(cons->shtctl, cons->sheet, cons->cur_x, cons->cur_y, COL8_WHITE, COL8_BLACK, " ", 1);
       cons->cur_x += 8;
       if (cons->cur_x >= 8 + 240)
         cons_newline(cons);
@@ -46,7 +47,8 @@ void cons_putchar(CONSOLE* cons, int chr, char move) {
   case 0x0d:  // Carrige return.
     break;
   default:  // Normal character.
-    putfonts8_asc_sht(cons->shtctl, cons->sheet, cons->cur_x, cons->cur_y, COL8_WHITE, COL8_BLACK, s, 1);
+    if (cons->sheet != NULL)
+      putfonts8_asc_sht(cons->shtctl, cons->sheet, cons->cur_x, cons->cur_y, COL8_WHITE, COL8_BLACK, s, 1);
     if (move) {
       cons->cur_x += 8;
       if (cons->cur_x == 8 + 240)
@@ -330,10 +332,14 @@ static void cmd_exit(CONSOLE* cons, const short* fat) {
   TASK* task = task_now();
   SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
   FIFO* fifo = (FIFO*)*((int*)0x0fec);
-  timer_cancel(cons->timer);
+  if (cons->sheet != NULL)
+    timer_cancel(cons->timer);
   memman_free_4k(memman, (void*)fat, 4 * 2880);
   io_cli();
-  fifo_put(fifo, cons->sheet - shtctl->sheets0 + 768);  // 768~1023
+  if (cons->sheet != NULL)
+    fifo_put(fifo, cons->sheet - shtctl->sheets0 + 768);  // 768~1023
+  else
+    fifo_put(fifo, cons->sheet - shtctl->sheets0 + 1024);  // 1024~2023
   io_sti();
   for (;;)
     task_sleep(task);
@@ -348,6 +354,17 @@ static void cmd_start(const char* cmdline, int memtotal) {
   // Send key command.
   FIFO* fifo = &sht->task->fifo;
   for (int i = 6; cmdline[i] != 0; ++i)
+    fifo_put(fifo, cmdline[i] + 256);
+  fifo_put(fifo, 10 + 256);  // Enter.
+}
+
+// No console start.
+static void cmd_ncst(const char* cmdline, int memtotal) {
+  TASK* task = open_constask(NULL, NULL, memtotal);
+
+  // Send key command.
+  FIFO* fifo = &task->fifo;
+  for (int i = 5; cmdline[i] != 0; ++i)
     fifo_put(fifo, cmdline[i] + 256);
   fifo_put(fifo, 10 + 256);  // Enter.
 }
@@ -435,18 +452,20 @@ int* inthandler0d(void) {
 }
 
 void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memtotal) {
-  if (strcmp(cmdline, "mem") == 0) {
+  if (strcmp(cmdline, "mem") == 0 && cons->sheet != NULL) {
     cmd_mem(cons, memtotal);
-  } else if (strcmp(cmdline, "cls") == 0) {
+  } else if (strcmp(cmdline, "cls") == 0 && cons->sheet != NULL) {
     cmd_cls(cons);
-  } else if (strcmp(cmdline, "dir") == 0) {
+  } else if (strcmp(cmdline, "dir") == 0 && cons->sheet != NULL) {
     cmd_dir(cons);
-  } else if (strncmp(cmdline, "type ", 5) == 0) {
+  } else if (strncmp(cmdline, "type ", 5) == 0 && cons->sheet != NULL) {
     cmd_type(cons, fat, cmdline);
   } else if (strcmp(cmdline, "exit") == 0) {
     cmd_exit(cons, fat);
   } else if (strncmp(cmdline, "start ", 6) == 0) {
     cmd_start(cmdline, memtotal);
+  } else if (strncmp(cmdline, "ncst ", 5) == 0) {
+    cmd_ncst(cmdline, memtotal);
   } else if (cmdline[0] != '\0') {
     if (!cmd_app(cons, fat, cmdline))
       cons_putstr0(cons, "Bad command.\n");
@@ -471,9 +490,11 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   cons.cur_c = -1;
   task->cons = &cons;
 
-  cons.timer = timer_alloc();
-  timer_init(cons.timer, &task->fifo, 1);
-  timer_settime(cons.timer, 50);
+  if (sheet != NULL) {
+    cons.timer = timer_alloc();
+    timer_init(cons.timer, &task->fifo, 1);
+    timer_settime(cons.timer, 50);
+  }
 
   cons_putchar(&cons, '>', TRUE);
 
@@ -493,6 +514,8 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
         cmdline[cons.cur_x / 8 - 2] = '\0';
         cons_newline(&cons);
         cons_runcmd(cmdline, &cons, fat, memtotal);
+        if (sheet == NULL)
+          cmd_exit(&cons, fat);
         cons_putchar(&cons, '>', TRUE);
         break;
       case 8 + 256:  // Back space.
@@ -528,8 +551,10 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
       }
     }
     // Redraw cursor.
-    if (cons.cur_c >= 0)
-      boxfill8(sheet->buf, sheet->bxsize, cons.cur_c, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
-    sheet_refresh(shtctl, sheet, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
+    if (sheet != NULL) {
+      if (cons.cur_c >= 0)
+        boxfill8(sheet->buf, sheet->bxsize, cons.cur_c, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
+      sheet_refresh(shtctl, sheet, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
+    }
   }
 }

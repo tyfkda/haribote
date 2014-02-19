@@ -48,13 +48,8 @@ static const char keytable[2][0x80] = {
   },
 };
 
-SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
+TASK* open_constask(SHTCTL* shtctl, SHEET* sht, unsigned int memtotal) {
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
-  SHEET* sht = sheet_alloc(shtctl);
-  unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, 256 * 165);
-  sheet_setbuf(sht, buf, 256, 165, -1);
-  make_window8(buf, 256, 165, "console", FALSE);
-  make_textbox8(sht, 8, 28, 240, 128, COL8_BLACK);
   TASK* task = task_alloc();
   int stack_size = 64 * 1024;
   task->cons_stack = memman_alloc_4k(memman, stack_size);
@@ -66,11 +61,21 @@ SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
   *((int*)(task->tss.esp + 8)) = (int)sht;
   *((int*)(task->tss.esp + 12)) = (int)memtotal;
   task_run(task, 2, 2);
-  sht->task = task;
-  sht->flags |= 0x20;
 
   int* cons_fifo = (int*)memman_alloc_4k(memman, 128 * sizeof(int));
   fifo_init(&task->fifo, 128, cons_fifo, task);
+  return task;
+}
+
+SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
+  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
+  SHEET* sht = sheet_alloc(shtctl);
+  unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, 256 * 165);
+  sheet_setbuf(sht, buf, 256, 165, -1);
+  make_window8(buf, 256, 165, "console", FALSE);
+  make_textbox8(sht, 8, 28, 240, 128, COL8_BLACK);
+  sht->task = open_constask(shtctl, sht, memtotal);
+  sht->flags |= 0x20;
   return sht;
 }
 
@@ -222,6 +227,7 @@ void HariMain(void) {
             task->tss.eax = (int)&(task->tss.esp0);
             task->tss.eip = (int)asm_end_app;
             io_sti();
+            task_run(task, -1, 0);  // Wake to execute termination.
           }
         }
         break;
@@ -285,6 +291,7 @@ void HariMain(void) {
                   task->tss.eax = (int)&(task->tss.esp0);
                   task->tss.eip = (int)asm_end_app;
                   io_sti();
+                  task_run(task, -1, 0);  // Wake to execute termination.
                 } else {  // Console window.
                   TASK* task = sht->task;
                   io_cli();
@@ -323,6 +330,8 @@ void HariMain(void) {
       continue;
     } else if (768 <= i && i < 1024) {  // Close console request.
       close_console(shtctl, shtctl->sheets0 + (i - 768));
+    } else if (1024 <= i && i < 2024) {  // Close console request.
+      close_constask(taskctl->tasks0 + (i - 1024));
     }
   }
 }

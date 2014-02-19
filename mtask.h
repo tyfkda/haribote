@@ -34,7 +34,7 @@ typedef struct {
   TASK* tasks[MAX_TASKS_LV];
 } TASKLEVEL;
 
-typedef struct {
+typedef struct TASKCTL {
   int now_lv;
   char lv_change;
   TASKLEVEL level[MAX_TASKLEVELS];
@@ -42,6 +42,7 @@ typedef struct {
 } TASKCTL;
 
 extern struct TIMER* task_timer;
+extern struct TASKCTL* taskctl;
 
 TASK* task_init(struct MEMMAN* memman);
 TASK* task_alloc();

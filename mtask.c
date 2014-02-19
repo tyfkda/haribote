@@ -6,7 +6,7 @@
 #include "timer.h"
 
 TIMER* task_timer;
-static TASKCTL* taskctl;
+TASKCTL* taskctl;
 
 static void task_idle(void) {
   for (;;)
