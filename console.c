@@ -203,6 +203,17 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
         case 3:  // Cursor off
           cons->cur_c = -1;
           break;
+        case 4:  // Close console only.
+          {
+            SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+            FIFO* sys_fifo = (FIFO*)*((int*)0x0fec);
+            timer_cancel(cons->timer);
+            io_cli();
+            fifo_put(sys_fifo, cons->sheet - shtctl->sheets0 + 2024);
+            cons->sheet = NULL;
+            io_sti();
+          }
+          break;
         default:
           if (i >= 256) {  // Keyboard, etc.
             reg[7] = i - 256;
@@ -490,7 +501,7 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   cons.cur_c = -1;
   task->cons = &cons;
 
-  if (sheet != NULL) {
+  if (cons.sheet != NULL) {
     cons.timer = timer_alloc();
     timer_init(cons.timer, &task->fifo, 1);
     timer_settime(cons.timer, 50);
@@ -514,7 +525,7 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
         cmdline[cons.cur_x / 8 - 2] = '\0';
         cons_newline(&cons);
         cons_runcmd(cmdline, &cons, fat, memtotal);
-        if (sheet == NULL)
+        if (cons.sheet == NULL)
           cmd_exit(&cons, fat);
         cons_putchar(&cons, '>', TRUE);
         break;
@@ -535,14 +546,17 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
       switch (i) {
       case 0:
       case 1:
-        if (cons.cur_c >= 0)
-          cons.cur_c = i == 0 ? COL8_WHITE : COL8_BLACK;
-        timer_init(cons.timer, &task->fifo, 1 - i);
-        timer_settime(cons.timer, 50);
+        if (cons.sheet != NULL) {
+          if (cons.cur_c >= 0)
+            cons.cur_c = i == 0 ? COL8_WHITE : COL8_BLACK;
+          timer_init(cons.timer, &task->fifo, 1 - i);
+          timer_settime(cons.timer, 50);
+        }
         break;
       case 2:  cons.cur_c = COL8_WHITE; break;
       case 3:
-        boxfill8(sheet->buf, sheet->bxsize, COL8_BLACK, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
+        if (cons.sheet != NULL)
+          boxfill8(sheet->buf, sheet->bxsize, COL8_BLACK, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
         cons.cur_c = -1;
         break;
       case 4:  // Close button clicked.
@@ -551,10 +565,10 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
       }
     }
     // Redraw cursor.
-    if (sheet != NULL) {
+    if (cons.sheet != NULL) {
       if (cons.cur_c >= 0)
-        boxfill8(sheet->buf, sheet->bxsize, cons.cur_c, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
-      sheet_refresh(shtctl, sheet, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
+        boxfill8(cons.sheet->buf, cons.sheet->bxsize, cons.cur_c, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
+      sheet_refresh(shtctl, cons.sheet, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
     }
   }
 }

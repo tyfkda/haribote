@@ -294,6 +294,11 @@ void HariMain(void) {
                   task_run(task, -1, 0);  // Wake to execute termination.
                 } else {  // Console window.
                   TASK* task = sht->task;
+                  sheet_updown(shtctl, sht, -1);
+                  if (sht == key_win) {
+                    keywin_off(shtctl, key_win);
+                    keywin_on(shtctl, key_win = shtctl->sheets[shtctl->top - 1]);
+                  }
                   io_cli();
                   fifo_put(&task->fifo, 4);
                   io_sti();
@@ -332,6 +337,10 @@ void HariMain(void) {
       close_console(shtctl, shtctl->sheets0 + (i - 768));
     } else if (1024 <= i && i < 2024) {  // Close console request.
       close_constask(taskctl->tasks0 + (i - 1024));
+    } else if (2024 <= i && i < 2280) {  // Close console only.
+      SHEET* sht2 = shtctl->sheets0 + (i - 2024);
+      memman_free_4k(memman, sht2->buf, 256 * 165);
+      sheet_free(shtctl, sht2);
     }
   }
 }
