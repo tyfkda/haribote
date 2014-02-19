@@ -48,7 +48,7 @@ static const char keytable[2][0x80] = {
   },
 };
 
-static SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
+SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
   SHEET* sht = sheet_alloc(shtctl);
   unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, 256 * 165);

@@ -339,6 +339,19 @@ static void cmd_exit(CONSOLE* cons, const short* fat) {
     task_sleep(task);
 }
 
+static void cmd_start(const char* cmdline, int memtotal) {
+  SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+  SHEET* sht = open_console(shtctl, memtotal);
+  sheet_slide(shtctl, sht, 32, 4);
+  sheet_updown(shtctl, sht, shtctl->top);
+
+  // Send key command.
+  FIFO* fifo = &sht->task->fifo;
+  for (int i = 6; cmdline[i] != 0; ++i)
+    fifo_put(fifo, cmdline[i] + 256);
+  fifo_put(fifo, 10 + 256);  // Enter.
+}
+
 static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
   char name[13];
   strncpy(name, cmdline, 8);
@@ -432,6 +445,8 @@ void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memto
     cmd_type(cons, fat, cmdline);
   } else if (strcmp(cmdline, "exit") == 0) {
     cmd_exit(cons, fat);
+  } else if (strncmp(cmdline, "start ", 6) == 0) {
+    cmd_start(cmdline, memtotal);
   } else if (cmdline[0] != '\0') {
     if (!cmd_app(cons, fat, cmdline))
       cons_putstr0(cons, "Bad command.\n");
