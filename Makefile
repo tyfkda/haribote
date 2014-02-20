@@ -16,14 +16,41 @@ DISK_FILES=\
 	$(OBJDIR)/color.hrb \
 	$(OBJDIR)/color2.hrb \
 
+OBJS_API = \
+	$(OBJDIR)/api_alloctimer.o \
+	$(OBJDIR)/api_beep.o \
+	$(OBJDIR)/api_boxfilwin.o \
+	$(OBJDIR)/api_closewin.o \
+	$(OBJDIR)/api_end.o \
+	$(OBJDIR)/api_free.o \
+	$(OBJDIR)/api_freetimer.o \
+	$(OBJDIR)/api_getkey.o \
+	$(OBJDIR)/api_initmalloc.o \
+	$(OBJDIR)/api_inittimer.o \
+	$(OBJDIR)/api_linewin.o \
+	$(OBJDIR)/api_malloc.o \
+	$(OBJDIR)/api_openwin.o \
+	$(OBJDIR)/api_point.o \
+	$(OBJDIR)/api_putchar.o \
+	$(OBJDIR)/api_putstr0.o \
+	$(OBJDIR)/api_putstr1.o \
+	$(OBJDIR)/api_putstrwin.o \
+	$(OBJDIR)/api_rand.o \
+	$(OBJDIR)/api_refresh.o \
+	$(OBJDIR)/api_settimer.o \
+	$(OBJDIR)/api_sprintf.o \
+
 SRCDIR=.
 OBJDIR=obj
+LIBDIR=lib
+
+APILIB=$(LIBDIR)/apilib.a
 
 CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
 LKAPP=ld -T hrbapp.ls --oformat binary
-APPLIBS=$(OBJDIR)/a_nask.o
+APPLIBS=$(APILIB)
 
 all:	$(TARGET)
 
@@ -63,62 +90,66 @@ $(OBJDIR)/asmhead.bin:	$(OBJDIR)/asmhead.o
 $(OBJDIR)/bootpack.bin:	$(OBJDIR)/bootpack.o $(OBJDIR)/graphics.o $(OBJDIR)/dsctbl.o $(OBJDIR)/stdio.o $(OBJDIR)/int.o $(OBJDIR)/fifo.o $(OBJDIR)/keyboard.o $(OBJDIR)/mouse.o $(OBJDIR)/memory.o $(OBJDIR)/sheet.o $(OBJDIR)/timer.o $(OBJDIR)/mtask.o $(OBJDIR)/window.o $(OBJDIR)/console.o $(OBJDIR)/file.o $(OBJDIR)/naskfunc.o $(OBJDIR)/fontdata.o
 	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls --oformat binary -o $@ $^
 
-$(OBJDIR)/hello3.hrb:	$(OBJDIR)/hello3.o $(OBJDIR)/a_nask.o
+$(APILIB):	$(OBJS_API)
+	ar r $@ $^
+
+$(OBJDIR)/hello3.hrb:	$(OBJDIR)/hello3.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/hello4.hrb:	$(OBJDIR)/hello4.o $(OBJDIR)/a_nask.o
+$(OBJDIR)/hello4.hrb:	$(OBJDIR)/hello4.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/hello5.hrb:	$(OBJDIR)/hello5.o
+$(OBJDIR)/hello5.hrb:	$(OBJDIR)/hello5.o $(APILIB)
 	$(LKAPP) -o $@ $<
 
-$(OBJDIR)/winhelo.hrb:	$(OBJDIR)/winhelo.o
+$(OBJDIR)/winhelo.hrb:	$(OBJDIR)/winhelo.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/stars.hrb:	$(OBJDIR)/stars.o
+$(OBJDIR)/stars.hrb:	$(OBJDIR)/stars.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/lines.hrb:	$(OBJDIR)/lines.o
+$(OBJDIR)/lines.hrb:	$(OBJDIR)/lines.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/walk.hrb:	$(OBJDIR)/walk.o
+$(OBJDIR)/walk.hrb:	$(OBJDIR)/walk.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/noodle.hrb:	$(OBJDIR)/noodle.o
+$(OBJDIR)/noodle.hrb:	$(OBJDIR)/noodle.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/beepdown.hrb:	$(OBJDIR)/beepdown.o
+$(OBJDIR)/beepdown.hrb:	$(OBJDIR)/beepdown.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/color.hrb:	$(OBJDIR)/color.o
+$(OBJDIR)/color.hrb:	$(OBJDIR)/color.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/color2.hrb:	$(OBJDIR)/color2.o
+$(OBJDIR)/color2.hrb:	$(OBJDIR)/color2.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(OBJDIR)/a_nask.o
+$(OBJDIR)/crack1.hrb:	$(OBJDIR)/crack1.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/crack2.hrb:	$(OBJDIR)/crack2.o $(OBJDIR)/a_nask.o
+$(OBJDIR)/crack2.hrb:	$(OBJDIR)/crack2.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/crack3.hrb:	$(OBJDIR)/crack3.o $(OBJDIR)/a_nask.o
+$(OBJDIR)/crack3.hrb:	$(OBJDIR)/crack3.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/crack4.hrb:	$(OBJDIR)/crack4.o $(OBJDIR)/a_nask.o
+$(OBJDIR)/crack4.hrb:	$(OBJDIR)/crack4.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/crack5.hrb:	$(OBJDIR)/crack5.o $(OBJDIR)/a_nask.o
+$(OBJDIR)/crack5.hrb:	$(OBJDIR)/crack5.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/crack7.hrb:	$(OBJDIR)/crack7.o $(OBJDIR)/a_nask.o
+$(OBJDIR)/crack7.hrb:	$(OBJDIR)/crack7.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/bug1.hrb:	$(OBJDIR)/bug1.o $(OBJDIR)/a_nask.o
+$(OBJDIR)/bug1.hrb:	$(OBJDIR)/bug1.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
-$(OBJDIR)/bug3.hrb:	$(OBJDIR)/bug3.o $(OBJDIR)/a_nask.o
+$(OBJDIR)/bug3.hrb:	$(OBJDIR)/bug3.o $(APILIB)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 clean:
 	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.hrb $(OBJDIR)/*.map $(TARGET)
+	rm -f $(APILIB)

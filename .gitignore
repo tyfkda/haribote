@@ -1,4 +1,5 @@
 *.o
+*.a
 *.bin
 *.sys
 *.hrb

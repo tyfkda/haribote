@@ -42,8 +42,6 @@ void api_freetimer(TIMER* timer);
 void api_beep(int tone);
 
 
-void api_dumphex(int val);
-
 #define RAND_MAX  (0x7fff)
 int rand(void);
 
