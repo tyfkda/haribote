@@ -111,6 +111,9 @@ $(OBJDIR)/crack4.hrb:	$(OBJDIR)/crack4.o $(OBJDIR)/a_nask.o
 $(OBJDIR)/crack5.hrb:	$(OBJDIR)/crack5.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
+$(OBJDIR)/crack7.hrb:	$(OBJDIR)/crack7.o $(OBJDIR)/a_nask.o
+	$(LKAPP) -o $@ $< $(APPLIBS)
+
 $(OBJDIR)/bug1.hrb:	$(OBJDIR)/bug1.o $(OBJDIR)/a_nask.o
 	$(LKAPP) -o $@ $< $(APPLIBS)
 

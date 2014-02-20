@@ -1,6 +1,7 @@
 #ifndef __MTASK_H__
 #define __MTASK_H__
 
+#include "dsctbl.h"
 #include "fifo.h"
 
 struct CONSOLE;
@@ -23,6 +24,7 @@ typedef struct TASK {
   int level, priority;
   FIFO fifo;
   TSS32 tss;
+  SEGMENT_DESCRIPTOR ldt[2];
   struct CONSOLE* cons;
   int ds_base;
   void* cons_stack;

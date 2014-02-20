@@ -61,7 +61,9 @@ TASK* task_init(MEMMAN* memman) {
   for (int i = 0; i < MAX_TASKS; ++i) {
     taskctl->tasks0[i].flags = 0;
     taskctl->tasks0[i].sel = (TASK_GDT0 + i) * 8;
+    taskctl->tasks0[i].tss.ldtr = (TASK_GDT0 + MAX_TASKS + i) * 8;
     set_segmdesc(gdt + TASK_GDT0 + i, 103, (int)&taskctl->tasks0[i].tss, AR_TSS32);
+    set_segmdesc(gdt + TASK_GDT0 + MAX_TASKS + i, 15, (int)taskctl->tasks0[i].ldt, AR_LDT);
   }
   for (int i = 0; i < MAX_TASKLEVELS; ++i) {
     taskctl->level[i].running = 0;
@@ -99,7 +101,6 @@ TASK* task_alloc() {
     task->tss.eax = task->tss.ecx = task->tss.edx = task->tss.ebx = 0;
     task->tss.ebp = task->tss.esi = task->tss.edi = 0;
     task->tss.es = task->tss.ds = task->tss.fs = task->tss.gs = 0;
-    task->tss.ldtr = 0;
     task->tss.iomap = 0x40000000;
     task->tss.ss0 = 0;
     task->cons_stack = NULL;
