@@ -39,7 +39,7 @@ int vsprintf(char *str, const char *fmt, int* arg) {
 
     int keta = 0;
     char padding = ' ';
-    char buf[sizeof(int) * 3 + 3], *last = &buf[sizeof(buf)];
+    char buf[sizeof(int) * 3 + 3];
     char* q;
   again:
     switch (*(++fmt)) {
@@ -53,17 +53,21 @@ int vsprintf(char *str, const char *fmt, int* arg) {
     case '6': case '7': case '8': case '9':
       keta = *fmt - '0';
       goto again;
-    case 'd': q = int2num(last, *arg++, 10, hextableLower, padding, keta); break;
-    case 'x': q = uint2num(last, *arg++, 16, hextableLower, padding, keta); break;
-    case 'X': q = uint2num(last, *arg++, 16, hextableUpper, padding, keta); break;
+    case 'd': q = int2num(&buf[sizeof(buf)], *arg++, 10, hextableLower, padding, keta); break;
+    case 'x': q = uint2num(&buf[sizeof(buf)], *arg++, 16, hextableLower, padding, keta); break;
+    case 'X': q = uint2num(&buf[sizeof(buf)], *arg++, 16, hextableUpper, padding, keta); break;
     case 'p':
-      q = uint2num(last, *arg++, 16, hextableLower, '0', sizeof(void*) * 2);
+      q = uint2num(&buf[sizeof(buf)], *arg++, 16, hextableLower, '0', sizeof(void*) * 2);
       *(--q) = 'x';
       *(--q) = '0';
       break;
+    case 's':
+      q = (char*)(*arg++);
+      break;
     }
-    strcpy(dst, q);
-    dst += (last - q) - 1;
+
+    while (*q != '\0')
+      *dst++ = *q++;
     ++fmt;
   }
   *dst = '\0';

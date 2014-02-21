@@ -19,6 +19,12 @@ typedef struct {
   int ldtr, iomap;
 } TSS32;
 
+typedef struct {
+  unsigned char* buf;
+  int size;
+  int pos;
+} FILEHANDLE;
+
 typedef struct TASK {
   int sel, flags;  // sel = GDT number.
   int level, priority;
@@ -28,6 +34,9 @@ typedef struct TASK {
   struct CONSOLE* cons;
   int ds_base;
   void* cons_stack;
+  FILEHANDLE* fhandle;
+  const short* fat;
+  char* cmdline;
 } TASK;
 
 typedef struct {

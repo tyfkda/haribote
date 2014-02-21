@@ -262,6 +262,84 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       io_out8(0x61, (i | 0x03) & 0x0f);
     }
     break;
+  case 21:
+    reg[7] = 0;
+    for (int i = 0; i < 8; ++i) {
+      if (task->fhandle[i].buf == NULL) {
+        const char* filename = (char*)ebx + ds_base;
+        FILEHANDLE* fh = &task->fhandle[i];
+        FILEINFO* finfo = file_search(filename, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
+        if (finfo != NULL) {
+          MEMMAN* memman = (MEMMAN*)MEMMAN_ADDR;
+          reg[7] = (int)fh;
+          fh->buf = memman_alloc_4k(memman, finfo->size);
+          fh->size = finfo->size;
+          fh->pos = 0;
+          file_loadfile(finfo->clustno, finfo->size, fh->buf, task->fat, (char*)(ADR_DISKIMG + 0x003e00));
+        }
+        break;
+      }
+    }
+    break;
+  case 22:
+    {
+      FILEHANDLE* fh = (FILEHANDLE*)eax;
+      MEMMAN* memman = (MEMMAN*)MEMMAN_ADDR;
+      memman_free_4k(memman, fh->buf, fh->size);
+      fh->buf = NULL;
+    }
+    break;
+  case 23:
+    {
+      FILEHANDLE* fh = (FILEHANDLE*)eax;
+      int origin = ecx;
+      int offset = ebx;
+      switch (origin) {
+      case 0:  fh->pos = offset; break;
+      case 1:  fh->pos += offset; break;
+      case 2:  fh->pos = fh->size + offset; break;
+      }
+      if (fh->pos < 0)
+        fh->pos = 0;
+      else if (fh->pos > fh->size)
+        fh->pos = fh->size;
+    }
+    break;
+  case 24:
+    {
+      FILEHANDLE* fh = (FILEHANDLE*)eax;
+      int mode = ecx;
+      switch (mode) {
+      case 0:  reg[7] = fh->size; break;
+      case 1:  reg[7] = fh->pos; break;
+      case 2:  reg[7] = fh->pos - fh->size; break;
+      }
+    }
+    break;
+  case 25:
+    {
+      FILEHANDLE* fh = (FILEHANDLE*)eax;
+      unsigned char* dst = (unsigned char*)ebx + ds_base;
+      int size = ecx;
+      unsigned char* src = &fh->buf[fh->pos];
+
+      int readsize = (size > fh->size - fh->pos) ? fh->size - fh->pos : size;
+      memcpy(dst, src, readsize);
+      fh->pos += readsize;
+      reg[7] = readsize;
+    }
+    break;
+  case 26:
+    {
+      char* buf = (char*)ebx + ds_base;
+      int maxsize = ecx;
+      char* src = task->cmdline;
+      int i;
+      for (i = 0; i < maxsize && (*buf++ = *src++) != '\0'; ++i)
+        ;
+      reg[7] = i;
+    }
+    break;
   }
   return NULL;
 }
@@ -300,21 +378,6 @@ static void cmd_dir(CONSOLE* cons) {
       cons_putstr0(cons, s);
     }
   }
-}
-
-static void cmd_type(CONSOLE* cons, const short* fat, const char* cmdline) {
-  MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
-  FILEINFO *finfo = file_search(cmdline + 5, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
-  if (finfo == NULL) {
-    cons_putstr0(cons, "File not found.");
-    return;
-  }
-
-  int size = finfo->size;
-  char* p = (char*)memman_alloc_4k(memman, size);
-  file_loadfile(finfo->clustno, size, p, fat, (char*)(ADR_DISKIMG + 0x003e00));
-  cons_putstr1(cons, p, size);
-  memman_free_4k(memman, p, size);
 }
 
 static void cmd_exit(CONSOLE* cons, const short* fat) {
@@ -361,8 +424,13 @@ static void cmd_ncst(const char* cmdline, int memtotal) {
 
 static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
   char name[13];
-  strncpy(name, cmdline, 8);
-  name[8] = '\0';
+  int i;
+  for (i = 0; i < 8; ++i) {
+    if (cmdline[i] <= ' ')
+      break;
+    name[i] = cmdline[i];
+  }
+  name[i] = '\0';
 
   FILEINFO *finfo = file_search(name, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
   if (finfo == NULL) {
@@ -400,6 +468,13 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
       SHEET* sht = &shtctl->sheets0[i];
       if ((sht->flags & 0x11) == 0x11 && sht->task == task)
         sheet_free(shtctl, sht);
+    }
+    // Close files.
+    for (int i = 0; i < 8; ++i) {
+      if (task->fhandle[i].buf != NULL) {
+        memman_free_4k(memman, task->fhandle[i].buf, task->fhandle[i].size);
+        task->fhandle[i].buf = NULL;
+      }
     }
     timer_cancelall(&task->fifo);
     memman_free_4k(memman, q, 64 * 1024);
@@ -447,8 +522,6 @@ void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memto
     cmd_cls(cons);
   } else if (strcmp(cmdline, "dir") == 0 && cons->sheet != NULL) {
     cmd_dir(cons);
-  } else if (strncmp(cmdline, "type ", 5) == 0 && cons->sheet != NULL) {
-    cmd_type(cons, fat, cmdline);
   } else if (strcmp(cmdline, "exit") == 0) {
     cmd_exit(cons, fat);
   } else if (strncmp(cmdline, "start ", 6) == 0) {
@@ -468,6 +541,12 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   short* fat = (short*)memman_alloc_4k(memman, sizeof(short) * 2880);
   file_readfat(fat, (unsigned char*)(ADR_DISKIMG + 0x000200));
 
+  FILEHANDLE fhandle[8];
+  for (int i = 0; i < 8; ++i)
+    fhandle[i].buf = NULL;  // Not used.
+  task->fhandle = fhandle;
+  task->fat = fat;
+
   char cmdline[30];
 
   // Show prompt.
@@ -478,6 +557,7 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   cons.cur_y = 28;
   cons.cur_c = -1;
   task->cons = &cons;
+  task->cmdline = cmdline;
 
   if (cons.sheet != NULL) {
     cons.timer = timer_alloc();

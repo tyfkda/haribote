@@ -18,6 +18,7 @@ DISK_FILES=\
 	$(OBJDIR)/beepdown.hrb \
 	$(OBJDIR)/color.hrb \
 	$(OBJDIR)/color2.hrb \
+	$(OBJDIR)/type.hrb \
 
 APILIB=$(LIBDIR)/apilib.a
 

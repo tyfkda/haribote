@@ -30,15 +30,16 @@ FILEINFO* file_search(const char* name, FILEINFO* finfo, int max) {
   return NULL;
 }
 
-void file_loadfile(short clustno, int size, char* buf, const short* fat, char* img) {
+void file_loadfile(short clustno, int size, void* buf, const short* fat, char* img) {
+  char* p = buf;
   for (;;) {
     if (size <= 512) {
-      memcpy(buf, &img[clustno * 512], size);
+      memcpy(p, &img[clustno * 512], size);
       break;
     }
-    memcpy(buf, &img[clustno * 512], 512);
+    memcpy(p, &img[clustno * 512], 512);
     size -= 512;
-    buf += 512;
+    p += 512;
     clustno = fat[clustno];
   }
 }

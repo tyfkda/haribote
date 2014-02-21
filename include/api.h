@@ -41,6 +41,14 @@ void api_freetimer(TIMER* timer);
 
 void api_beep(int tone);
 
+int api_fopen(const char* fname);
+void api_fclose(int fhandle);
+void api_fseek(int fhandle, int offset, int mode);
+int api_fsize(int fhandle, int mode);
+int api_fread(void* buf, int maxsize, int fhandle);
+
+int api_cmdline(char* buf, int maxsize);
+
 
 #define RAND_MAX  (0x7fff)
 int rand(void);
