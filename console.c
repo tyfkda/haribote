@@ -262,27 +262,6 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       io_out8(0x61, (i | 0x03) & 0x0f);
     }
     break;
-  case 10000:  // dumphex
-    {
-      int val = eax;
-      char s[30];
-      sprintf(s, "Dump: %08x\n", val);
-      cons_putstr0(cons, s);
-    }break;
-  case 10001:  // rand
-    {
-      static int rand_x;
-      int a = 1103515245, b = 12345, c = 2147483647;
-      rand_x = (a * rand_x + b) & c;
-      reg[7] = (rand_x >> 16) & 0x7fff;  // RAND_MAX
-    }break;
-  case 10002:  // sprintf
-    {
-      char* buf = (char*)(ebx + ds_base);
-      char* format = (char*)(ecx + ds_base);
-      int* ap = (int*)(edi + ds_base);
-      vsprintf(buf, format, ap);
-    }break;
   }
   return NULL;
 }

@@ -39,6 +39,7 @@ OBJS_API = \
 	$(OBJDIR)/api_refresh.o \
 	$(OBJDIR)/api_settimer.o \
 	$(OBJDIR)/api_sprintf.o \
+	$(OBJDIR)/api_strcpy.o \
 
 SRCDIR=.
 OBJDIR=obj
@@ -87,8 +88,8 @@ $(OBJDIR)/haribote.sys:	$(OBJDIR)/asmhead.bin $(OBJDIR)/bootpack.bin
 $(OBJDIR)/asmhead.bin:	$(OBJDIR)/asmhead.o
 	ld -N -e start -Ttext 0xc200 -S --oformat binary -o $@ $<
 
-$(OBJDIR)/bootpack.bin:	$(OBJDIR)/bootpack.o $(OBJDIR)/graphics.o $(OBJDIR)/dsctbl.o $(OBJDIR)/stdio.o $(OBJDIR)/int.o $(OBJDIR)/fifo.o $(OBJDIR)/keyboard.o $(OBJDIR)/mouse.o $(OBJDIR)/memory.o $(OBJDIR)/sheet.o $(OBJDIR)/timer.o $(OBJDIR)/mtask.o $(OBJDIR)/window.o $(OBJDIR)/console.o $(OBJDIR)/file.o $(OBJDIR)/naskfunc.o $(OBJDIR)/fontdata.o
-	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls --oformat binary -o $@ $^
+$(OBJDIR)/bootpack.bin:	$(OBJDIR)/bootpack.o $(OBJDIR)/graphics.o $(OBJDIR)/dsctbl.o $(OBJDIR)/stdio.o $(OBJDIR)/int.o $(OBJDIR)/fifo.o $(OBJDIR)/keyboard.o $(OBJDIR)/mouse.o $(OBJDIR)/memory.o $(OBJDIR)/sheet.o $(OBJDIR)/timer.o $(OBJDIR)/mtask.o $(OBJDIR)/window.o $(OBJDIR)/console.o $(OBJDIR)/file.o $(OBJDIR)/naskfunc.o $(OBJDIR)/fontdata.o $(APILIB)
+	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls --oformat binary -o $@ $^ $(APILIB)
 
 $(APILIB):	$(OBJS_API)
 	ar r $@ $^
