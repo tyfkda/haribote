@@ -480,6 +480,7 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
     memman_free_4k(memman, q, 64 * 1024);
   }
   memman_free_4k(memman, p, finfo->size);
+  cons_newline(cons);
   return TRUE;
 }
 
