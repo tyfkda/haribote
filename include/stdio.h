@@ -6,6 +6,7 @@
 #define NULL   ((void*)0)
 
 int putchar(int c);
+int puts(const char* str);
 int printf(const char* format, ...);
 int sprintf(char *str, const char *fmt, ...);
 
