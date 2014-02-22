@@ -2,7 +2,7 @@
 #include "mtask.h"
 #include "stdio.h"  // NULL
 
-const int FLAGS_OVERRUN = 1 << 0;
+#define FLAGS_OVERRUN  (1 << 0)
 
 void fifo_init(FIFO* fifo, int size, int* buf, TASK* task) {
   fifo->buf = buf;
@@ -36,6 +36,6 @@ int fifo_get(FIFO* fifo) {
   return data;
 }
 
-int fifo_status(FIFO* fifo) {
-  return fifo->size - fifo->free;
+int fifo_empty(FIFO* fifo) {
+  return fifo->size == fifo->free;
 }

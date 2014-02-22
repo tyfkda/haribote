@@ -12,6 +12,6 @@ typedef struct FIFO {
 void fifo_init(FIFO* fifo, int size, int* buf, struct TASK* task);
 int fifo_put(FIFO* fifo, int data);
 int fifo_get(FIFO* fifo);
-int fifo_status(FIFO* fifo);
+int fifo_empty(FIFO* fifo);
 
 #endif

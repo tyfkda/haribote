@@ -214,7 +214,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       int sleep = eax;
       for (;;) {
         io_cli();
-        if (fifo_status(&task->fifo) == 0) {
+        if (fifo_empty(&task->fifo)) {
           if (sleep) {
             task_sleep(task);
           } else {
@@ -603,7 +603,7 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
 
   for (;;) {
     io_cli();
-    if (fifo_status(&task->fifo) == 0) {
+    if (fifo_empty(&task->fifo)) {
       task_sleep(task);
       continue;
     }

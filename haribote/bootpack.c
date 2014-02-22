@@ -183,7 +183,7 @@ void HariMain(void) {
   for (;;) {
     io_cli();
 
-    if (fifo_status(&fifo) == 0) {
+    if (fifo_empty(&fifo)) {
       if (new_mx >= 0) {
         io_sti();
         sheet_slide(shtctl, sht_mouse, new_mx, new_my);
