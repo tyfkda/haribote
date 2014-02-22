@@ -1,10 +1,10 @@
 .globl	api_putstr0
+.include "syscall.def"
 
 # void api_putstr0(const char* s)
 api_putstr0:
 	push	%ebx
-	mov	$2, %edx
 	mov	8(%esp), %ebx	# s
-	int	$0x40
+	syscall	API_PUTSTR0
 	pop	%ebx
 	ret

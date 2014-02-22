@@ -1,0 +1,34 @@
+
+.macro syscall	apino
+	mov	$\apino, %edx
+	int	$0x40
+.endm
+
+.equ	API_PUTCHAR, 1
+.equ	API_PUTSTR0, 2
+.equ	API_PUTSTR1, 3
+.equ	API_END, 4
+.equ	API_OPENWIN, 5
+.equ    API_PUTSTRWIN, 6
+.equ    API_BOXFILWIN, 7
+.equ	API_INITMALLOC, 8
+.equ	API_MALLOC, 9
+.equ	API_FREE, 10
+.equ	API_POINT, 11
+.equ    API_REFRESHWIN, 12
+.equ	API_LINEWIN, 13
+.equ	API_CLOSEWIN, 14
+.equ	API_GETKEY, 15
+.equ	API_ALLOCTIMER, 16
+.equ	API_INITTIMER, 17
+.equ	API_SETTIMER, 18
+.equ	API_FREETIMER, 19
+.equ	API_BEEP, 20
+.equ	API_FOPEN, 21
+.equ	API_FCLOSE, 22
+.equ	API_FSEEK, 23
+.equ	API_FSIZE, 24
+.equ	API_FREAD, 25
+.equ	API_CMDLINE, 26
+
+#eof

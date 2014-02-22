@@ -11,6 +11,33 @@
 #include "timer.h"
 #include "window.h"
 
+#define API_PUTCHAR  (1)
+#define API_PUTSTR0  (2)
+#define API_PUTSTR1  (3)
+#define API_END  (4)
+#define API_OPENWIN  (5)
+#define API_PUTSTRWIN  (6)
+#define API_BOXFILWIN  (7)
+#define API_INITMALLOC  (8)
+#define API_MALLOC  (9)
+#define API_FREE  (10)
+#define API_POINT  (11)
+#define API_REFRESHWIN  (12)
+#define API_LINEWIN  (13)
+#define API_CLOSEWIN  (14)
+#define API_GETKEY  (15)
+#define API_ALLOCTIMER  (16)
+#define API_INITTIMER  (17)
+#define API_SETTIMER  (18)
+#define API_FREETIMER  (19)
+#define API_BEEP  (20)
+#define API_FOPEN  (21)
+#define API_FCLOSE  (22)
+#define API_FSEEK  (23)
+#define API_FSIZE  (24)
+#define API_FREAD  (25)
+#define API_CMDLINE  (26)
+
 void cons_newline(CONSOLE* cons) {
   cons->cur_x = 8;
   SHEET* sheet = cons->sheet;
@@ -79,11 +106,11 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   // reg[4] = ebx, reg[5] = edx, reg[6] = ecx, reg[7] = eax
 
   switch (edx) {
-  case 1:  cons_putchar(cons, eax & 0xff, TRUE); break;
-  case 2:  cons_putstr0(cons, (char*)ebx + ds_base); break;
-  case 3:  cons_putstr1(cons, (char*)ebx + ds_base, ecx); break;
-  case 4: return &task->tss.esp0;
-  case 5:
+  case API_PUTCHAR:  cons_putchar(cons, eax & 0xff, TRUE); break;
+  case API_PUTSTR0:  cons_putstr0(cons, (char*)ebx + ds_base); break;
+  case API_PUTSTR1:  cons_putstr1(cons, (char*)ebx + ds_base, ecx); break;
+  case API_END: return &task->tss.esp0;
+  case API_OPENWIN:
     {
       unsigned char* buf = (unsigned char*)ebx + ds_base;
       int xsize = esi, ysize = edi, col_inv = eax;
@@ -98,7 +125,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       sheet_slide(shtctl, sht, (shtctl->xsize - xsize) / 2, (shtctl->ysize - ysize) / 2);
       sheet_updown(shtctl, sht, shtctl->top);
     }break;
-  case 6:
+  case API_PUTSTRWIN:
     {
       SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
       char refresh = (ebx & 1) == 0;
@@ -110,7 +137,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
         sheet_refresh(shtctl, sht, x, y, x + len * 8, y + 16);
       }
     }break;
-  case 7:
+  case API_BOXFILWIN:
     {
       SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
       char refresh = (ebx & 1) == 0;
@@ -121,7 +148,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
         sheet_refresh(shtctl, sht, x0, y0, x1, y1);
       }
     }break;
-  case 8:
+  case API_INITMALLOC:
     {
       MEMMAN* memman = (MEMMAN*)(ebx + ds_base);
       void* addr = (void*)eax;
@@ -129,20 +156,20 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       memman_init(memman);
       memman_free(memman, addr, size);
     }break;
-  case 9:
+  case API_MALLOC:
     {
       MEMMAN* memman = (MEMMAN*)(ebx + ds_base);
       int size = (ecx + 0x0f) & -16;  // Align with 16 bytes.
       reg[7] = (int)memman_alloc(memman, size);
     }break;
-  case 10:
+  case API_FREE:
     {
       MEMMAN* memman = (MEMMAN*)(ebx + ds_base);
       void* addr = (void*)eax;
       int size = (ecx + 0x0f) & -16;  // Align with 16 bytes.
       memman_free(memman, addr, size);
     }break;
-  case 11:
+  case API_POINT:
     {
       SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
       char refresh = (ebx & 1) == 0;
@@ -153,14 +180,14 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
         sheet_refresh(shtctl, sht, x, y, x + 1, y + 1);
       }
     }break;
-  case 12:
+  case API_REFRESHWIN:
     {
       SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
       int x0 = eax, y0 = ecx, x1 = esi, y1 = edi;
       SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
       sheet_refresh(shtctl, sht, x0, y0, x1, y1);
     }break;
-  case 13:
+  case API_LINEWIN:
     {
       SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
       char refresh = ebx & 1;
@@ -176,13 +203,13 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
         sheet_refresh(shtctl, sht, x0, y0, x1, y1);
       }
     }break;
-  case 14:
+  case API_CLOSEWIN:
     {
       SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
       SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
       sheet_free(shtctl, sht);
     }break;
-  case 15:
+  case API_GETKEY:
     {
       int sleep = eax;
       for (;;) {
@@ -228,34 +255,34 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
         }
       }
     }break;
-  case 16:
+  case API_ALLOCTIMER:
     {
       TIMER* timer = timer_alloc();
       timer->flags2 = 1;  // Enable auto cancel.
       reg[7] = (int)timer;
     }
     break;
-  case 17:
+  case API_INITTIMER:
     {
       TIMER* timer = (TIMER*)ebx;
       int data = eax;
       timer_init(timer, &task->fifo, data + 256);
     }
     break;
-  case 18:
+  case API_SETTIMER:
     {
       TIMER* timer = (TIMER*)ebx;
       int time = eax;
       timer_settime(timer, time);
     }
     break;
-  case 19:
+  case API_FREETIMER:
     {
       TIMER* timer = (TIMER*)ebx;
       timer_free(timer);
     }
     break;
-  case 20:
+  case API_BEEP:
     if (eax == 0) {
       int i = io_in8(0x61);
       io_out8(0x61, i & 0x0d);
@@ -268,7 +295,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       io_out8(0x61, (i | 0x03) & 0x0f);
     }
     break;
-  case 21:
+  case API_FOPEN:
     reg[7] = 0;
     for (int i = 0; i < 8; ++i) {
       if (task->fhandle[i].buf == NULL) {
@@ -287,7 +314,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       }
     }
     break;
-  case 22:
+  case API_FCLOSE:
     {
       FILEHANDLE* fh = (FILEHANDLE*)eax;
       MEMMAN* memman = (MEMMAN*)MEMMAN_ADDR;
@@ -295,7 +322,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       fh->buf = NULL;
     }
     break;
-  case 23:
+  case API_FSEEK:
     {
       FILEHANDLE* fh = (FILEHANDLE*)eax;
       int origin = ecx;
@@ -311,7 +338,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
         fh->pos = fh->size;
     }
     break;
-  case 24:
+  case API_FSIZE:
     {
       FILEHANDLE* fh = (FILEHANDLE*)eax;
       int mode = ecx;
@@ -322,7 +349,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       }
     }
     break;
-  case 25:
+  case API_FREAD:
     {
       FILEHANDLE* fh = (FILEHANDLE*)eax;
       unsigned char* dst = (unsigned char*)ebx + ds_base;
@@ -335,7 +362,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       reg[7] = readsize;
     }
     break;
-  case 26:
+  case API_CMDLINE:
     {
       char* buf = (char*)ebx + ds_base;
       int maxsize = ecx;

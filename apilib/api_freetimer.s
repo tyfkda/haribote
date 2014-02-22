@@ -1,10 +1,10 @@
 .globl	api_freetimer
+.include "syscall.def"
 
 # void api_freetimer(TIMER* timer)
 api_freetimer:
 	push	%ebx
-	mov	$19, %edx
 	mov	8(%esp), %ebx	# timer
-	int	$0x40
+	syscall	API_FREETIMER
 	pop	%ebx
 	ret

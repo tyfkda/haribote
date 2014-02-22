@@ -1,10 +1,10 @@
 .globl	api_closewin
+.include "syscall.def"
 
 # void api_closewin(int win)
 api_closewin:
 	push	%ebx
-	mov	$14, %edx
 	mov	8(%esp), %ebx	# win
-	int	$0x40
+	syscall	API_CLOSEWIN
 	pop	%ebx
 	ret

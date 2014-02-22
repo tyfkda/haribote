@@ -1,6 +1,6 @@
 .globl	api_end
+.include "syscall.def"
 
 # void api_end(void)
 api_end:
-	mov	$4, %edx
-	int	$0x40
+	syscall	API_END
