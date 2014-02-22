@@ -13,7 +13,7 @@ void HariMain(void) {
       buf[(x + 8) + (y + 28) * 144] = 16 + (r / 43) + (g / 43) * 6 + (b / 43) * 36;
     }
   }
-  api_refresh(win, 8, 28, 136, 156);
+  api_refreshwin(win, 8, 28, 136, 156);
 
   api_getkey(1);
   exit(0);

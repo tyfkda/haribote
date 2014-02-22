@@ -11,7 +11,7 @@ void HariMain(void) {
     int y = rand() % 67 + 26;
     api_point(win | 1, x, y, 3);
   }
-  api_refresh(win, 6, 26, 144, 94);
+  api_refreshwin(win, 6, 26, 144, 94);
 
   for (;;)
     if (api_getkey(1) == 0x0a)  // Enter

@@ -24,7 +24,7 @@ void HariMain(void) {
         api_linewin(win, table[i].x, table[i].y, table[j].x, table[j].y, 8 - dis);
     }
   }
-  api_refresh(win, 0, 0, 216, 237);
+  api_refreshwin(win, 0, 0, 216, 237);
 
   for (;;)
     if (api_getkey(1) == 0x0a)

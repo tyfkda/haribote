@@ -20,7 +20,7 @@ void HariMain(void) {
   for (int y = 0; y < 128; ++y)
     for (int x = 0; x < 128; ++x)
       buf[(x + 8) + (y + 28) * 144] = rgb2pal(x * 2, y * 2, 0, x, y);
-  api_refresh(win, 8, 28, 136, 156);
+  api_refreshwin(win, 8, 28, 136, 156);
 
   api_getkey(1);
   exit(0);

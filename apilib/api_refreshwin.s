@@ -1,7 +1,7 @@
-.globl	api_refresh
+.globl	api_refreshwin
 
-# void api_refresh(int win, int x0, int y0, int x1, int y1)
-api_refresh:
+# void api_refreshwin(int win, int x0, int y0, int x1, int y1)
+api_refreshwin:
 	push	%edi
 	push	%esi
 	push	%ebx
