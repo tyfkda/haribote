@@ -5,9 +5,12 @@
 
 #include "fifo.h"
 
+#define MOUSE_LBUTTON  (1 << 0)
+
 typedef struct {
   unsigned char buf[3], phase;
-  int x, y, btn;
+  int dx, dy;
+  int btn;
 } MOUSE_DEC;
 
 void enable_mouse(FIFO* fifo, int data0, MOUSE_DEC* mdec);

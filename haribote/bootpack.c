@@ -127,6 +127,7 @@ void HariMain(void) {
   FIFO fifo;
   int fifobuf[128];
   MOUSE_DEC mdec;
+  int mobtn = 0;  // Old mouse button state.
   fifo_init(&fifo, 128, fifobuf, NULL);
   *((int *) 0x0fec) = (int) &fifo;
   init_pit();
@@ -281,9 +282,11 @@ void HariMain(void) {
       continue;
     } else if (512 <= i && i < 768) {  // Mouse data.
       if (mouse_decode(&mdec, i - 512) != 0) {
+        int mtrg = mdec.btn & ~mobtn;
+        mobtn = mdec.btn;
         // Move mouse cursor.
-        mx += mdec.x;
-        my += mdec.y;
+        mx += mdec.dx;
+        my += mdec.dy;
         if (mx < 0)  mx = 0;
         if (my < 0)  my = 0;
         if (mx >= binfo->scrnx - 1)  mx = binfo->scrnx - 1;
@@ -291,63 +294,64 @@ void HariMain(void) {
 
         new_mx = mx;
         new_my = my;
-        if ((mdec.btn & 0x01) != 0) {  // Mouse left button pressed.
-          if (mmx < 0) {  // Normal mode.
-            for (int j = shtctl->top; --j > 0; ) {
-              SHEET* sht = shtctl->sheets[j];
-              int x = mx - sht->vx0;
-              int y = my - sht->vy0;
-              if (x < 0 || x >= sht->bxsize || y < 0 || y >= sht->bysize ||
-                  sht->buf[y * sht->bxsize + x] == sht->col_inv)
-                continue;
-              sheet_updown(shtctl, sht, shtctl->top - 1);
-              if (sht->bxsize - 21 <= x && x <= sht->bxsize - 5 && 5 <= 5 && y < 19) {
-                // Close button clicked.
-                if ((sht->flags & 0x10) != 0) {  // Window created by application.
-                  TASK* task = sht->task;
-                  io_cli();
-                  task->tss.eax = (int)&(task->tss.esp0);
-                  task->tss.eip = (int)asm_end_app;
-                  io_sti();
-                  task_run(task, -1, 0);  // Wake to execute termination.
-                } else {  // Console window.
-                  TASK* task = sht->task;
-                  sheet_updown(shtctl, sht, -1);
-                  if (sht == key_win) {
-                    keywin_off(shtctl, key_win);
-                    keywin_on(shtctl, key_win = shtctl->sheets[shtctl->top - 1]);
-                  }
-                  io_cli();
-                  fifo_put(&task->fifo, 4);
-                  io_sti();
+        if (mtrg & MOUSE_LBUTTON) {  // Mouse left button is clicked.
+          for (int j = shtctl->top; --j > 0; ) {
+            SHEET* sht = shtctl->sheets[j];
+            int x = mx - sht->vx0;
+            int y = my - sht->vy0;
+            if (x < 0 || x >= sht->bxsize || y < 0 || y >= sht->bysize ||
+                sht->buf[y * sht->bxsize + x] == sht->col_inv)
+              continue;
+            sheet_updown(shtctl, sht, shtctl->top - 1);
+            if (sht->bxsize - 21 <= x && x <= sht->bxsize - 5 && 5 <= 5 && y < 19) {
+              // Close button clicked.
+              if ((sht->flags & 0x10) != 0) {  // Window created by application.
+                TASK* task = sht->task;
+                io_cli();
+                task->tss.eax = (int)&(task->tss.esp0);
+                task->tss.eip = (int)asm_end_app;
+                io_sti();
+                task_run(task, -1, 0);  // Wake to execute termination.
+              } else {  // Console window.
+                TASK* task = sht->task;
+                sheet_updown(shtctl, sht, -1);
+                if (sht == key_win) {
+                  keywin_off(shtctl, key_win);
+                  keywin_on(shtctl, key_win = shtctl->sheets[shtctl->top - 1]);
                 }
-                break;
-              }
-              if (sht != key_win) {
-                keywin_off(shtctl, key_win);
-                key_win = sht;
-                keywin_on(shtctl, key_win);
-              }
-              if (3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21) {
-                mmx = mx;  // Go to drag mode.
-                mmy = my;
-                new_wx = sht->vx0;
-                new_wy = sht->vy0;
-                sht_dragging = sht;
+                io_cli();
+                fifo_put(&task->fifo, 4);
+                io_sti();
               }
               break;
             }
-          } else {  // Drag mode.
-            int x = mx - mmx;
-            int y = my - mmy;
+            if (sht != key_win) {
+              keywin_off(shtctl, key_win);
+              key_win = sht;
+              keywin_on(shtctl, key_win);
+            }
+            if (3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21) {
+              mmx = mx;  // Go to drag mode.
+              mmy = my;
+              new_wx = sht->vx0;
+              new_wy = sht->vy0;
+              sht_dragging = sht;
+            }
+            break;
+          }
+        }
+        if (mmx >= 0) {  // Drag mode.
+          if ((mdec.btn & MOUSE_LBUTTON) == 0) {  // Mouse left button released.
+            mmx = -1;  // Drag end.
+          } else {
+            int dx = mx - mmx;
+            int dy = my - mmy;
             new_wx += x;
             new_wy += y;
             mmx = mx;
             mmy = my;
             drag_moved = TRUE;
           }
-        } else {
-          mmx = -1;  // Go to normal mode.
         }
       }
       continue;

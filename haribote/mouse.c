@@ -30,6 +30,8 @@ void enable_mouse(FIFO* fifo, int data0, MOUSE_DEC* mdec) {
   io_out8(PORT_KEYDAT, MOUSECMD_ENABLE);
   // ACK(0xfa) will be sent.
   mdec->phase = 0;
+  mdec->dx = mdec->dy = 0;
+  mdec->btn = 0;
 }
 
 int mouse_decode(MOUSE_DEC* mdec, unsigned dat) {
@@ -52,13 +54,13 @@ int mouse_decode(MOUSE_DEC* mdec, unsigned dat) {
     mdec->buf[2] = dat;
     mdec->phase = 1;
     mdec->btn = mdec->buf[0] & 0x07;
-    mdec->x = mdec->buf[1];
-    mdec->y = mdec->buf[2];
+    mdec->dx = mdec->buf[1];
+    mdec->dy = mdec->buf[2];
     if ((mdec->buf[0] & 0x10) != 0)
-      mdec->x |= -1 << 8;
+      mdec->dx |= -1 << 8;
     if ((mdec->buf[0] & 0x20) != 0)
-      mdec->y |= -1 << 8;
-    mdec->y = -mdec->y;
+      mdec->dy |= -1 << 8;
+    mdec->dy = -mdec->dy;
     return 1;
   }
   return -1;
