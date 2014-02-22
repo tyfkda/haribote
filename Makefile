@@ -2,6 +2,7 @@ TARGET=haribote.img
 
 OBJDIR=obj
 LIBDIR=lib
+DATADIR=data
 
 # Files included in the disk image.
 DISK_FILES=\
@@ -23,6 +24,9 @@ DISK_FILES=\
 	$(OBJDIR)/invader.hrb \
 	$(OBJDIR)/calc.hrb \
 	$(OBJDIR)/tview.hrb \
+	$(OBJDIR)/gview.hrb \
+	$(DATADIR)/fujisan.jpg \
+	$(DATADIR)/night.bmp \
 
 APILIB=$(LIBDIR)/apilib.a
 

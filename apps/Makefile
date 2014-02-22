@@ -30,5 +30,10 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.c
 $(OBJDIR)/%.hrb:	$(OBJDIR)/%.o $(APPLIBS)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
+$(OBJDIR)/gview.o:	$(SRCDIR)/gview.c $(SRCDIR)/jpeg.ccc
+$(OBJDIR)/gview.hrb:	$(OBJDIR)/gview.o $(APPLIBS) #$(OBJDIR)/bmp.o
+#$(OBJDIR)/bmp.o:	$(SRCDIR)/bmp.nasm
+#	as $< -o $@
+
 $(APILIB):
 	make -C ../apilib

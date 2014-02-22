@@ -1,7 +1,7 @@
 OUTPUT_FORMAT("binary");
 
 _stack_size = 64K;
-_heap_size = 32K + 8K;
+_heap_size = 1024K;
 
 MEMORY {
   rom (rx) : ORIGIN = 0, LENGTH = 1024K
