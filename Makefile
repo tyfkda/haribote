@@ -19,6 +19,7 @@ DISK_FILES=\
 	$(OBJDIR)/color.hrb \
 	$(OBJDIR)/color2.hrb \
 	$(OBJDIR)/type.hrb \
+	$(OBJDIR)/bball.hrb \
 
 APILIB=$(LIBDIR)/apilib.a
 

@@ -166,6 +166,11 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       int x0 = eax, y0 = ecx, x1 = esi, y1 = edi, col = ebp;
       line8(sht->buf, sht->bxsize, x0, y0, x1, y1, col);
       if (refresh) {
+#define SWAP(type, a, b)  do { type tmp = a; a = b; b = tmp; } while (0)
+        if (x0 > x1)
+          SWAP(int, x0, x1);
+        if (y0 > y1)
+          SWAP(int, y0, y1);
         SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
         sheet_refresh(shtctl, sht, x0, y0, x1, y1);
       }
