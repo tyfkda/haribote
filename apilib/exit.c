@@ -1,5 +1,5 @@
 #include "stdio.h"
-#include "api.h"
+#include "apilib.h"
 
 void exit(int status) {
   // TODO: Handle atexit.
