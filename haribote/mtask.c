@@ -5,6 +5,12 @@
 #include "stdio.h"  // NULL
 #include "timer.h"
 
+enum TaskFlag {
+  FREE = 0,
+  ALLOCATED = 1,
+  RUNNING = 2,
+};
+
 TIMER* task_timer;
 TASKCTL* taskctl;
 
@@ -21,7 +27,7 @@ TASK* task_now(void) {
 static void task_add(TASK *task) {
   TASKLEVEL *tl = &taskctl->level[task->level];
   tl->tasks[tl->running++] = task;
-  task->flags = 2;  // Running.
+  task->flags = RUNNING;
 }
 
 static void task_remove(struct TASK *task) {
@@ -38,7 +44,7 @@ static void task_remove(struct TASK *task) {
     --tl->now;
   if (tl->now >= tl->running)
     tl->now = 0;
-  task->flags = 1;  // Sleep.
+  task->flags = ALLOCATED;  // Sleep.
 
   // Shift
   for (; i < tl->running; ++i)
@@ -71,7 +77,7 @@ TASK* task_init(MEMMAN* memman) {
   }
 
   TASK* task = task_alloc();  // Main task.
-  task->flags = 2;  // Running.
+  task->flags = RUNNING;
   task->priority = 2;  // 0.02 sec
   task->level = 0;  // Max level.
   task_add(task);
@@ -95,7 +101,7 @@ TASK* task_alloc() {
     TASK* task = &taskctl->tasks0[i];
     if (task->flags != 0)
       continue;
-    task->flags = 1;  // Used.
+    task->flags = ALLOCATED;  // Used.
     task->tss.eip = 0;
     task->tss.eflags = 0x00000202; /* IF = 1; */
     task->tss.eax = task->tss.ecx = task->tss.edx = task->tss.ebx = 0;
@@ -121,9 +127,9 @@ void task_run(TASK* task, int level, int priority) {
     level = task->level;
   if (priority > 0)
     task->priority = priority;
-  if (task->flags == 2 && task->level != level)  // Change running task level.
-    task_remove(task);  // This causes flags = 1.
-  if (task->flags != 2) {
+  if (task->flags == RUNNING && task->level != level)  // Change running task level.
+    task_remove(task);  // This makes the task ALLOCATED (sleep).
+  if (task->flags != RUNNING) {
     task->level = level;
     task_add(task);
   }
@@ -132,13 +138,13 @@ void task_run(TASK* task, int level, int priority) {
 }
 
 void task_sleep(TASK* task) {
-  if (task->flags != 2)
+  if (task->flags != RUNNING)
     return;
 
   // TODO: Need to prevent interrupt?
 
   TASK* now_task = task_now();
-  task_remove(task);  // This makes flags = 1.
+  task_remove(task);  // This makes the task ALLOCATED (sleep).
   if (task == now_task) {
     // Sleep by self => need task switch.
     task_switchsub();
@@ -168,6 +174,6 @@ void task_switch(void) {
 }
 
 void task_wake(TASK* task) {
-  if (task->flags != 2)
+  if (task->flags != RUNNING)
     task_run(task, -1, 0);
 }
