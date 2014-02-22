@@ -1,7 +1,7 @@
 .globl start
 .code16
 
-	.equ	CYLS, 10
+	.equ	CYLS, 10	# TODO: Get cylinder count from file.
 
 start:
 	jmp	entry
@@ -39,13 +39,51 @@ entry:
 	movb	$0, %ch		# Cylinder 0
 	movb	$0, %dh		# Head 0
 	movb	$2, %cl		# Sector 2
-readloop:
+	mov	$18*2*CYLS-1, %bx
+	call	readfast
+
+	# Jump to loaded program
+	movb	$CYLS, (0x0ff0)
+	jmp	0xc200
+
+# Read from disk in batch as much as possible.
+# %es : Read address
+# %ch : Cylinder
+# %dh : Head
+# %cl : Sector
+# %bx : Number of read sector
+readfast:
+	mov	%es, %ax
+	shl	$3, %ax		# ah = ax / 32
+	and	$0x7f, %ah	# ah = (es / 32) % 128
+	mov	$128, %al
+	sub	%ah, %al	# al = 128 - ah : How many sectors to 64K align.
+
+	mov	%bl, %ah
+	cmp	$0, %bh
+	je	.skip1
+	mov	$18, %ah
+.skip1:
+	cmp	%ah, %al
+	jbe	.skip2
+	mov	%ah, %al
+.skip2:
+	mov	$19, %ah
+	sub	%cl, %ah
+	cmp	%ah, %al
+	jbe	.skip3
+	mov	%ah, %al
+.skip3:
+	push	%bx
 	mov	$0, %si		# Retry counter
 retry:
 	movb	$0x02, %ah	# Read disk
-	movb	$1, %al		# 1 sector
 	movw	$0, %bx
 	movb	$0x00, %dl	# A drive
+	push	%es
+	push	%dx
+	push	%cx
+	push	%ax
 	int	$0x13		# Call BIOS
 	jnc	next
 	add	$1, %si
@@ -54,26 +92,36 @@ retry:
 	mov	$0x00, %ah
 	mov	$0x00, %dl
 	int	$0x13
+	pop	%ax
+	pop	%cx
+	pop	%dx
+	pop	%es
 	jmp	retry
 next:
-	mov	%es, %ax	# Forward address 0x200
-	add	$0x0020, %ax
-	mov	%ax, %es
-	add	$1, %cl
+	pop	%ax
+	pop	%cx
+	pop	%dx
+	pop	%bx
+	shr	$5, %bx		# from 16 bytes units to 512 bytes units
+	mov	$0, %ah
+	add	%ax, %bx
+	shl	$5, %bx
+	mov	%bx, %es	# es += al * 0x20
+	pop	%bx
+	sub	%ax, %bx
+	jz	.ret		# Read completed!
+	add	%al, %cl
 	cmp	$18, %cl	# Read until 18 sector
-	jbe	readloop
+	jbe	readfast
 	mov	$1, %cl
 	add	$1, %dh
 	cmp	$2, %dh		# Read 2 heads
-	jb	readloop
+	jb	readfast
 	mov	$0, %dh
 	add	$1, %ch
-	cmp	$CYLS, %ch
-	jb	readloop	# Read until CYLS
-
-	# Jump to loaded program
-	mov	%ch, (0x0ff0)
-	jmp	0xc200
+	jmp	readfast	# Read until CYLS
+.ret:
+	ret
 
 error:
 	mov	$0, %ax
