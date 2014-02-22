@@ -18,9 +18,8 @@
 #define COL8_DARK_CYAN  (14)
 #define COL8_DARK_GRAY  (15)
 
-void api_putchar(int c);
 void api_putstr0(const char* s);
-void api_end(void);
+void api_end(void) __attribute__((__noreturn__));
 int api_openwin(unsigned char* buf, int xsiz, int ysiz, int col_inv, const char* title);
 void api_closewin(int win);
 void api_putstrwin(int win, int x, int y, int col, int len, const char* str);

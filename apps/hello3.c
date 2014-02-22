@@ -1,11 +1,11 @@
-#include "api.h"
+#include "stdio.h"
 
 void HariMain(void) {
-  api_putchar('h');
-  api_putchar('e');
-  api_putchar('l');
-  api_putchar('l');
-  api_putchar('o');
-  api_putchar('\n');
-  api_end();
+  putchar('h');
+  putchar('e');
+  putchar('l');
+  putchar('l');
+  putchar('o');
+  putchar('\n');
+  exit(0);
 }

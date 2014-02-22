@@ -1,4 +1,5 @@
-#include "stdio.h"
+#include "stdarg.h"
+#include "stdio.h"  // FALSE, TRUE
 
 static char* uint2num(char *s, unsigned int x, int base, const char* table,
                       char padding, int keta) {
@@ -27,7 +28,7 @@ static char* int2num(char *s, int x, int base, const char* table,
   return p;
 }
 
-int vsprintf(char *str, const char *fmt, int* arg) {
+int vsprintf(char *str, const char *fmt, va_list ap) {
   static const char hextableLower[] = "0123456789abcdef";
   static const char hextableUpper[] = "0123456789ABCDEF";
   char* dst = str;
@@ -53,16 +54,16 @@ int vsprintf(char *str, const char *fmt, int* arg) {
     case '6': case '7': case '8': case '9':
       keta = *fmt - '0';
       goto again;
-    case 'd': q = int2num(&buf[sizeof(buf)], *arg++, 10, hextableLower, padding, keta); break;
-    case 'x': q = uint2num(&buf[sizeof(buf)], *arg++, 16, hextableLower, padding, keta); break;
-    case 'X': q = uint2num(&buf[sizeof(buf)], *arg++, 16, hextableUpper, padding, keta); break;
+    case 'd': q = int2num(&buf[sizeof(buf)], va_arg(ap, int), 10, hextableLower, padding, keta); break;
+    case 'x': q = uint2num(&buf[sizeof(buf)], va_arg(ap, int), 16, hextableLower, padding, keta); break;
+    case 'X': q = uint2num(&buf[sizeof(buf)], va_arg(ap, int), 16, hextableUpper, padding, keta); break;
     case 'p':
-      q = uint2num(&buf[sizeof(buf)], *arg++, 16, hextableLower, '0', sizeof(void*) * 2);
+      q = uint2num(&buf[sizeof(buf)], va_arg(ap, int), 16, hextableLower, '0', sizeof(void*) * 2);
       *(--q) = 'x';
       *(--q) = '0';
       break;
     case 's':
-      q = (char*)(*arg++);
+      q = va_arg(ap, char*);
       break;
     }
 
@@ -72,9 +73,4 @@ int vsprintf(char *str, const char *fmt, int* arg) {
   }
   *dst = '\0';
   return dst - str;
-}
-
-int sprintf(char *str, const char *fmt, ...) {
-  int* arg = (int*)(&(&fmt)[1]);  // Get va_arg
-  return vsprintf(str, fmt, arg);
 }

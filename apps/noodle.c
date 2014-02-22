@@ -1,4 +1,5 @@
 #include "api.h"
+#include "stdio.h"
 
 void HariMain(void) {
   api_initmalloc();
@@ -23,5 +24,5 @@ void HariMain(void) {
       }
     }
   }
-  api_end();
+  exit(0);
 }

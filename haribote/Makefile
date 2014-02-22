@@ -3,12 +3,12 @@ SRCDIR=.
 INC=-I ../include
 APILIBDIR=../apilib
 OBJDIR=../obj
+LIBDIR=../lib
 
 OBJS= \
 	$(OBJDIR)/bootpack.o \
 	$(OBJDIR)/graphics.o \
 	$(OBJDIR)/dsctbl.o \
-	$(OBJDIR)/stdio.o \
 	$(OBJDIR)/int.o \
 	$(OBJDIR)/fifo.o \
 	$(OBJDIR)/keyboard.o \
@@ -22,11 +22,11 @@ OBJS= \
 	$(OBJDIR)/file.o \
 	$(OBJDIR)/naskfunc.o \
 	$(OBJDIR)/fontdata.o \
-	$(OBJDIR)/api_sprintf.o \
-	$(OBJDIR)/api_strcpy.o \
 
 CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
+
+APILIB=$(LIBDIR)/apilib.a
 
 all:	$(OBJDIR)/ipl.bin $(OBJDIR)/haribote.sys
 
@@ -48,5 +48,8 @@ $(OBJDIR)/haribote.sys:	$(OBJDIR)/asmhead.bin $(OBJDIR)/bootpack.bin
 $(OBJDIR)/asmhead.bin:	$(OBJDIR)/asmhead.o
 	ld -N -e start -Ttext 0xc200 -S --oformat binary -o $@ $<
 
-$(OBJDIR)/bootpack.bin:	$(OBJS)
+$(OBJDIR)/bootpack.bin:	$(OBJS) $(APILIB)
 	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls --oformat binary -o $@ $^
+
+$(APILIB):
+	make -C ../apilib

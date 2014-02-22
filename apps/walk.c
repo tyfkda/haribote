@@ -1,4 +1,5 @@
 #include "api.h"
+#include "stdio.h"
 
 void HariMain(void) {
   api_initmalloc();
@@ -18,5 +19,5 @@ void HariMain(void) {
     api_putstrwin(win, x, y, 3, 1, "*");  // Erase
   }
   api_closewin(win);
-  api_end();
+  exit(0);
 }

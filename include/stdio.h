@@ -14,6 +14,12 @@ char* strncpy(char* dst, const char* src, int n);
 int strcmp(const char* s1, const char* s2);
 int strncmp(const char* s1, const char* s2, int n);
 int sprintf(char *str, const char *fmt, ...);
-int vsprintf(char *str, const char *fmt, int* ap);
+
+int putchar(int c);
+int printf(const char* format, ...);
+void exit(int status) __attribute__((__noreturn__));
+
+void* malloc(int size);
+void free(void* p);
 
 #endif

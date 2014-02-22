@@ -1,4 +1,5 @@
 #include "api.h"
+#include "stdio.h"
 
 void HariMain(void) {
   api_initmalloc();
@@ -15,5 +16,5 @@ void HariMain(void) {
   api_refresh(win, 8, 28, 136, 156);
 
   api_getkey(1);
-  api_end();
+  exit(0);
 }

@@ -1,4 +1,5 @@
 #include "api.h"
+#include "stdio.h"
 
 unsigned char rgb2pal(int r, int g, int b, int x, int y) {
   static int table[4] = { 3, 1, 0, 2 };
@@ -22,5 +23,5 @@ void HariMain(void) {
   api_refresh(win, 8, 28, 136, 156);
 
   api_getkey(1);
-  api_end();
+  exit(0);
 }

@@ -1,7 +1,6 @@
-#include "api.h"
+#include "stdio.h"
 
 void HariMain(void) {
-  for (;;) {
-    api_putchar('a');
-  }
+  for (;;)
+    putchar('a');
 }

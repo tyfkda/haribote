@@ -1,4 +1,5 @@
 #include "api.h"
+#include "stdio.h"
 
 void HariMain(void) {
   TIMER* timer = api_alloctimer();
@@ -11,5 +12,5 @@ void HariMain(void) {
       break;
   }
   api_beep(0);
-  api_end();
+  exit(0);
 }

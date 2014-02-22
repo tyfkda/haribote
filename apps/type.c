@@ -1,4 +1,5 @@
 #include "api.h"
+#include "stdio.h"
 
 void HariMain() {
   char cmdline[30];
@@ -14,12 +15,12 @@ void HariMain() {
       char c;
       if (api_fread(&c, 1, fh) == 0)
         break;
-      api_putchar(c);
+      putchar(c);
     }
   } else {
     char s[50];
     sprintf(s, "File not found: %s\n", filename);
     api_putstr0(s);
   }
-  api_end();
+  exit(0);
 }
