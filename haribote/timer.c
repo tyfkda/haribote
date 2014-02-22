@@ -30,7 +30,7 @@ void init_pit(void) {
 
 void inthandler20(int* esp) {
   (void)esp;
-  char ts = 0;  // Task switch?
+  char switch_task = FALSE;
   io_out8(PIC0_OCW2, 0x60);  // Notify IRQ-00 recv to PIC
   ++timerctl.count;
   if (timerctl.next_time > timerctl.count)
@@ -43,14 +43,14 @@ void inthandler20(int* esp) {
     if (timer != task_timer) {
       fifo_put(timer->fifo, timer->data);
     } else {
-      ts = 1;
+      switch_task = TRUE;
     }
     timer = timer->next_timer;
   }
   timerctl.t0 = timer;
   timerctl.next_time = timerctl.t0->timeout;
 
-  if (ts)
+  if (switch_task)
     task_switch();
 }
 
