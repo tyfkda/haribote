@@ -7,8 +7,11 @@
 #define PIT_CTRL  (0x0043)
 #define PIT_CNT0  (0x0040)
 
-#define TIMER_FLAGS_ALLOC  (1)
-#define TIMER_FLAGS_USING  (2)
+enum TIMER_FLAGS {
+  TIMER_FLAGS_FREE = 0,
+  TIMER_FLAGS_ALLOCATED = 1,
+  TIMER_FLAGS_RUNNING = 2,
+};
 
 TIMERCTL timerctl;
 
@@ -19,10 +22,10 @@ void init_pit(void) {
   timerctl.count = 0;
   timerctl.next_time = (unsigned int)-1;
   for (int i = 0; i < MAX_TIMER; ++i)
-    timerctl.timers0[i].flags = 0;
+    timerctl.timers0[i].flags = TIMER_FLAGS_FREE;
   TIMER* t = timer_alloc();
   t->timeout = (unsigned int)-1;
-  t->flags = TIMER_FLAGS_USING;
+  t->flags = TIMER_FLAGS_RUNNING;
   t->next_timer = NULL;
   timerctl.t0 = t;
   timerctl.next_time = (unsigned int)-1;
@@ -39,7 +42,7 @@ void inthandler20(int* esp) {
   for (;;) {
     if (timer->timeout > timerctl.count)
       break;
-    timer->flags = TIMER_FLAGS_ALLOC;
+    timer->flags = TIMER_FLAGS_ALLOCATED;
     if (timer != task_timer) {
       fifo_put(timer->fifo, timer->data);
     } else {
@@ -57,8 +60,8 @@ void inthandler20(int* esp) {
 TIMER* timer_alloc(void) {
   for (int i = 0; i < MAX_TIMER; ++i) {
     TIMER* timer = &timerctl.timers0[i];
-    if (timer->flags == 0) {
-      timer->flags = TIMER_FLAGS_ALLOC;
+    if (timer->flags == TIMER_FLAGS_FREE) {
+      timer->flags = TIMER_FLAGS_ALLOCATED;
       timer->flags2 = 0;
       return timer;
     }
@@ -67,7 +70,7 @@ TIMER* timer_alloc(void) {
 }
 
 void timer_free(TIMER* timer) {
-  timer->flags = 0;
+  timer->flags = TIMER_FLAGS_FREE;
 }
 
 void timer_init(TIMER* timer, FIFO* fifo, int data) {
@@ -77,7 +80,7 @@ void timer_init(TIMER* timer, FIFO* fifo, int data) {
 
 void timer_settime(TIMER* timer, unsigned int timeout) {
   timer->timeout = timeout + timerctl.count;
-  timer->flags = TIMER_FLAGS_USING;
+  timer->flags = TIMER_FLAGS_RUNNING;
   int e = io_load_eflags();
   io_cli();
   TIMER* t = timerctl.t0, *s = NULL;
@@ -102,7 +105,7 @@ void timer_settime(TIMER* timer, unsigned int timeout) {
 int timer_cancel(TIMER* timer) {
   int e = io_load_eflags();
   io_cli();
-  if (timer->flags == TIMER_FLAGS_USING) {
+  if (timer->flags == TIMER_FLAGS_RUNNING) {
     if (timer == timerctl.t0) {
       TIMER* t = timer->next_timer;
       timerctl.t0 = t;
@@ -115,7 +118,7 @@ int timer_cancel(TIMER* timer) {
       }
       t->next_timer = timer->next_timer;
     }
-    timer->flags = TIMER_FLAGS_ALLOC;
+    timer->flags = TIMER_FLAGS_ALLOCATED;
     io_store_eflags(e);
     return TRUE;
   }
