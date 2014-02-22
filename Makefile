@@ -22,6 +22,7 @@ DISK_FILES=\
 	$(OBJDIR)/bball.hrb \
 	$(OBJDIR)/invader.hrb \
 	$(OBJDIR)/calc.hrb \
+	$(OBJDIR)/tview.hrb \
 
 APILIB=$(LIBDIR)/apilib.a
 
