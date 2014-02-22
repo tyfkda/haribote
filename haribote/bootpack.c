@@ -244,9 +244,6 @@ void HariMain(void) {
         if (key_shift != 0) {  // Shift + F1
           TASK* task = key_win->task;
           if (task != NULL && task->tss.ss0 != 0) {
-            CONSOLE* cons = task->cons;
-            if (cons != NULL)
-              cons_putstr0(cons, "\nBreak(key) :\n");
             io_cli();
             task->tss.eax = (int)&(task->tss.esp0);
             task->tss.eip = (int)asm_end_app;
@@ -308,9 +305,6 @@ void HariMain(void) {
                 // Close button clicked.
                 if ((sht->flags & 0x10) != 0) {  // Window created by application.
                   TASK* task = sht->task;
-                  CONSOLE* cons = task->cons;
-                  if (cons != NULL)
-                    cons_putstr0(cons, "\nBreak(mouse) :\n");
                   io_cli();
                   task->tss.eax = (int)&(task->tss.esp0);
                   task->tss.eip = (int)asm_end_app;
