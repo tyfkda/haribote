@@ -14,4 +14,7 @@ void exit(int status) __attribute__((__noreturn__));
 void* malloc(int size);
 void free(void* p);
 
+// stdlib.h
+long strtol(char *s, char **endp, int base);
+
 #endif
