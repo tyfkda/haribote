@@ -14,7 +14,7 @@ APILIB=$(LIBDIR)/apilib.a
 CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
-LKAPP=ld -T hrbapp.ls --oformat binary
+LKAPP=ld -T $(LIBDIR)/hrbapp.ls --oformat binary
 APPLIBS=$(APILIB)
 
 all:	$(APPS)
