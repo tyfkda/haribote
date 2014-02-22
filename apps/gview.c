@@ -12,8 +12,8 @@ typedef struct {
 } RGB;
 
 /* bmp.nasm */
-//int info_BMP(struct DLL_STRPICENV *env, int *info, int size, unsigned char *fp);
-//int decode0_BMP(struct DLL_STRPICENV *env, int size, unsigned char *fp, int b_type, unsigned char *buf, int skip);
+int _info_BMP(struct DLL_STRPICENV *env, int *info, int size, unsigned char *fp);
+int _decode0_BMP(struct DLL_STRPICENV *env, int size, unsigned char *fp, int b_type, unsigned char *buf, int skip);
 
 /* jpeg.c */
 //int info_JPEG(struct DLL_STRPICENV *env, int *info, int size, char *fp);
@@ -49,14 +49,14 @@ void HariMain(void) {
   }
   
   /* ファイルタイプチェック */
-  //if (info_BMP(&env, info, fsize, filebuf) == 0) {
+  if (_info_BMP(&env, info, fsize, filebuf) == 0) {
     /* BMPではなかった */
     if (info_JPEG(&env, info, fsize, filebuf) == 0) {
       /* JPEGでもなかった */
       api_putstr0("file type unknown.\n");
       api_end();
     }
-  //}
+  }
   /* どちらかのinfo関数が成功すると、以下の情報がinfoに入っている */
   /*	info[0] : ファイルタイプ (1:BMP, 2:JPEG) */
   /*	info[1] : カラー情報 */
@@ -79,7 +79,7 @@ void HariMain(void) {
   
   /* ファイル内容を画像データに変換 */
   if (info[0] == 1) {
-    //i = decode0_BMP (&env, fsize, filebuf, 4, (unsigned char *) picbuf, 0);
+    i = _decode0_BMP(&env, fsize, filebuf, 4, (unsigned char *) picbuf, 0);
   } else {
     i = decode0_JPEG(&env, fsize, filebuf, 4, (unsigned char *) picbuf, 0);
   }

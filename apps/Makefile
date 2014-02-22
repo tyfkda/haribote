@@ -31,7 +31,8 @@ $(OBJDIR)/%.hrb:	$(OBJDIR)/%.o $(APPLIBS)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/gview.o:	$(SRCDIR)/gview.c $(SRCDIR)/jpeg.ccc
-$(OBJDIR)/gview.hrb:	$(OBJDIR)/gview.o $(APPLIBS) #$(OBJDIR)/bmp.o
+$(OBJDIR)/gview.hrb:	$(OBJDIR)/gview.o $(APPLIBS) bmp.obj
+	$(LKAPP) -o $@ $^
 #$(OBJDIR)/bmp.o:	$(SRCDIR)/bmp.nasm
 #	as $< -o $@
 
