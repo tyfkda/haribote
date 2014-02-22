@@ -161,10 +161,6 @@ memcpy:
 	sub	$1, %ecx
 	jnz	memcpy
 	ret
-	
-msg:
-	.ascii	"hello, world"
-	.byte	0x0d, 0x0a, 0x00
 
 	.align	16
 GDT0:
