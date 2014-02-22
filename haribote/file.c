@@ -2,8 +2,11 @@
 #include "stdio.h"  // NULL
 #include "string.h"  // memcpy, strncmp
 
+#define MAX_CLUSTER  (2880)
+#define CLUSTER_SIZE  (512)
+
 void file_readfat(short* fat, unsigned char* img) {
-  for (int i = 0, j = 0; i < 2880; i += 2, j += 3) {
+  for (int i = 0, j = 0; i < MAX_CLUSTER; i += 2, j += 3) {
     fat[i + 0] = (img[j + 0]      | img[j + 1] << 8) & 0xfff;
     fat[i + 1] = (img[j + 1] >> 4 | img[j + 2] << 4) & 0xfff;
   }
@@ -34,13 +37,13 @@ FILEINFO* file_search(const char* name, FILEINFO* finfo, int max) {
 void file_loadfile(short clustno, int size, void* buf, const short* fat, char* img) {
   char* p = buf;
   for (;;) {
-    if (size <= 512) {
-      memcpy(p, &img[clustno * 512], size);
+    if (size <= CLUSTER_SIZE) {
+      memcpy(p, &img[clustno * CLUSTER_SIZE], size);
       break;
     }
-    memcpy(p, &img[clustno * 512], 512);
-    size -= 512;
-    p += 512;
+    memcpy(p, &img[clustno * CLUSTER_SIZE], CLUSTER_SIZE);
+    size -= CLUSTER_SIZE;
+    p += CLUSTER_SIZE;
     clustno = fat[clustno];
   }
 }
