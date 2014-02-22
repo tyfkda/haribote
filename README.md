@@ -31,7 +31,7 @@ But I changed to use Linux, and simplify required tools using Ruby.
 * 0x000200 - 0x0013ff : FAT
 * 0x001400 - 0x0025ff : FAT (back up)
 * 0x002600 - 0x0041ff : Root directory table
-* 0x004200 - 0x168000 : Cluster data
+* 0x004200 - 0x167fff : Cluster data
 
 ## Memory layout
 * 0x00007c00 - 0x00007dff : Boot sector is loaded (512 bytes)
