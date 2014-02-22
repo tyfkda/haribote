@@ -10,6 +10,7 @@
 #include "mtask.h"
 #include "sheet.h"
 #include "stdio.h"
+#include "string.h"
 #include "timer.h"
 #include "window.h"
 

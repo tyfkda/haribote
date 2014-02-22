@@ -1,5 +1,6 @@
 #include "file.h"
-#include "stdio.h"  // memcpy
+#include "stdio.h"  // NULL
+#include "string.h"  // memcpy, strncmp
 
 void file_readfat(short* fat, unsigned char* img) {
   for (int i = 0, j = 0; i < 2880; i += 2, j += 3) {
