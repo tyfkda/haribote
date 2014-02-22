@@ -2,7 +2,10 @@
 #include "memory.h"
 #include "stdio.h"  // for NULL
 
-#define SHEET_USE  (1)
+enum SHEET_FLAGS {
+  SHEET_FREE = 0,
+  SHEET_USED = 1,
+};
 
 SHTCTL* shtctl_init(MEMMAN* memman, unsigned char* vram, int xsize, int ysize) {
   SHTCTL* ctl = (SHTCTL*)memman_alloc_4k(memman, sizeof(SHTCTL));
@@ -18,15 +21,15 @@ SHTCTL* shtctl_init(MEMMAN* memman, unsigned char* vram, int xsize, int ysize) {
   ctl->ysize = ysize;
   ctl->top = -1;  // No sheet.
   for (int i = 0; i < MAX_SHEETS; ++i)
-    ctl->sheets0[i].flags = 0;  // Not used.
+    ctl->sheets0[i].flags = SHEET_FREE;
   return ctl;
 }
 
 SHEET* sheet_alloc(SHTCTL* ctl) {
   for (int i = 0; i < MAX_SHEETS; ++i) {
     SHEET* sht = &ctl->sheets0[i];
-    if (sht->flags == 0) {
-      sht->flags = SHEET_USE;
+    if (sht->flags == SHEET_FREE) {
+      sht->flags = SHEET_USED;
       sht->height = -1;
       sht->task = NULL;
       return sht;
@@ -185,5 +188,5 @@ void sheet_slide(SHTCTL* ctl, SHEET* sht, int vx0, int vy0) {
 void sheet_free(SHTCTL* ctl, SHEET* sht) {
   if (sht->height >= 0)
     sheet_updown(ctl, sht, -1);
-  sht->flags = 0;
+  sht->flags = SHEET_FREE;
 }
