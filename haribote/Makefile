@@ -5,23 +5,9 @@ APILIBDIR=../apilib
 OBJDIR=../obj
 LIBDIR=../lib
 
-OBJS= \
-	$(OBJDIR)/bootpack.o \
-	$(OBJDIR)/graphics.o \
-	$(OBJDIR)/dsctbl.o \
-	$(OBJDIR)/int.o \
-	$(OBJDIR)/fifo.o \
-	$(OBJDIR)/keyboard.o \
-	$(OBJDIR)/mouse.o \
-	$(OBJDIR)/memory.o \
-	$(OBJDIR)/sheet.o \
-	$(OBJDIR)/timer.o \
-	$(OBJDIR)/mtask.o \
-	$(OBJDIR)/window.o \
-	$(OBJDIR)/console.o \
-	$(OBJDIR)/file.o \
-	$(OBJDIR)/naskfunc.o \
-	$(OBJDIR)/fontdata.o \
+SRCS=$(wildcard $(SRCDIR)/*.c)
+SRCS+=$(SRCDIR)/asmhead.s $(SRCDIR)/naskfunc.s
+OBJS=$(subst $(SRCDIR)/,$(OBJDIR)/,$(subst .s,.o,$(SRCS:%.c=%.o)))
 
 CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
