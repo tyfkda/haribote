@@ -20,7 +20,7 @@ FILEINFO* file_search(const char* name, FILEINFO* finfo, int max) {
     if (name[i] == '.') {
       j = 8;
     } else {
-      s[j++] = toupper(name[i]);
+      s[j++] = name[i];
     }
   }
   for (int i = 0; i < max; ++i, ++finfo) {

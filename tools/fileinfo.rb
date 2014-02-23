@@ -15,9 +15,8 @@ def make_str_len(str, len)
 end
 
 def create_fileinfo(filename, cluster)
-  up = filename.upcase
-  base = File.basename(up, '.*')
-  ext = File.extname(up)
+  base = File.basename(filename, '.*')
+  ext = File.extname(filename)
   ext = ext[1..-1] unless ext.empty?
 
   type = 0x20  # Normal file.

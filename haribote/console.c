@@ -468,7 +468,7 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
   FILEINFO *finfo = file_search(name, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
   if (finfo == NULL) {
     // Try executable extension.
-    strcpy(name + strlen(name), ".HRB");
+    strcpy(name + strlen(name), ".hrb");
     finfo = file_search(name, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
     if (finfo == NULL)
       return FALSE;
