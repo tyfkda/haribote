@@ -346,8 +346,8 @@ void HariMain(void) {
           } else {
             int dx = mx - mmx;
             int dy = my - mmy;
-            new_wx += x;
-            new_wy += y;
+            new_wx += dx;
+            new_wy += dy;
             mmx = mx;
             mmy = my;
             drag_moved = TRUE;
