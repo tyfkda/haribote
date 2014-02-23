@@ -30,27 +30,18 @@ DISK_FILES=\
 
 APILIB=$(LIBDIR)/apilib.a
 
+FAT12IMG=ruby tools/fat12img
+
 all:	$(TARGET)
 
 .PHONY:	os lib apps
 
 $(TARGET):	os lib apps
-	cat $(OBJDIR)/ipl.bin > $@
-	# FAT x 2
-	ruby tools/fat.rb $(DISK_FILES) >> $@
-	ruby tools/padding.rb -cps 0x1400 $@ >> $@
-	ruby tools/fat.rb $(DISK_FILES) >> $@
-	# Disk root directory.
-	ruby tools/padding.rb -cps 0x2600 $@ >> $@
-	ruby tools/fileinfo.rb $(DISK_FILES) >> $@
-	# Put file entities, aligned with 512 bytes.
-	ruby tools/padding.rb -cps 0x4200 $@ >> $@
+	$(FAT12IMG) $@ format
+	$(FAT12IMG) $@ write obj/ipl.bin 0
 	for filename in $(DISK_FILES); do \
-	  cat $$filename >> $@; \
-	  ruby tools/padding.rb -ps 512 $$filename >> $@; \
+	  $(FAT12IMG) $@ save $$filename; \
 	done
-	ruby tools/padding.rb -cps 0x168000 $@ >> $@
-
 os:
 	make -C haribote
 

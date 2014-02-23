@@ -1,0 +1,349 @@
+#!/bin/sh ruby
+
+# Manipulate FAT12 (2HD disk format) image file.
+
+# Usage:
+#   fat12img [image file name] [command] [arguments...]
+
+# Commands:
+#   format : Format image file.
+#   dir : Show directory files.
+#   save [target file name] : Put file entity into image file.
+#   write [target file name] [cluster] : Put file entity at cluster directly.
+
+FD_SIZE = 1474560
+FAT1_ADDRESS = 0x0200
+FAT_BYTES = 0x1200
+FAT2_ADDRESS = 0x1400
+DIR_ADDRESS = 0x2600
+FILEINFO_BYTES = 32
+FILE_COUNT = 224
+CLUSTER_BYTES = 512
+
+FILE_NORMAL = 0x20
+
+def setstrlen(str, len, pad = ' ')
+  if str.length < len
+    str + pad * (len - str.length)
+  elsif str.length > len
+    str[0...len]
+  else
+    str
+  end
+end
+
+def filename83(filename)
+  fname = setstrlen(File.basename(filename, '.*'), 8)
+  ext = File.extname(filename)
+  ext = ext[1..-1] if ext[0] == '.'
+  ext = setstrlen(ext, 3)
+  return fname + ext
+end
+
+def writeopen(filename, &block)
+  open(filename, File::WRONLY | File::BINARY) do |f|
+    block.call(f)
+  end
+end
+
+class Fat
+  attr_accessor :fat
+
+  def initialize(filename)
+    @filename = filename
+    data = nil
+    open(filename, 'rb') do |f|
+      f.seek(FAT1_ADDRESS)
+      data = f.read(FAT_BYTES).unpack('C*')
+    end
+    @fat = []
+    (0...FAT_BYTES / 3).each do |j|
+      i = j * 3
+      n1 = data[i + 0] | ((data[i + 1] & 0x0f) << 8)
+      n2 = (data[i + 1] >> 4) | (data[i + 2] << 4)
+      @fat.push(n1)
+      @fat.push(n2)
+    end
+  end
+
+  def write
+    data = []
+    (0...FAT_BYTES / 3).each do |i|
+      n1 = @fat[i * 2 + 0]
+      n2 = @fat[i * 2 + 1]
+      data.push(n1 & 0xff)
+      data.push(((n2 & 0x0f) << 4) | (n1 >> 8))
+      data.push(n2 >> 4)
+    end
+    data = data.pack('C*')
+    writeopen(@filename) do |f|
+      f.seek(FAT1_ADDRESS)
+      f.write(data)
+      f.seek(FAT2_ADDRESS)
+      f.write(data)
+    end
+  end
+
+  def have_space?(cluster_count)
+    start = nil
+    n = 0
+    @fat.size.times do |i|
+      x = @fat[i]
+      if x == 0
+        start = i unless start
+        n += 1
+        return start if n >= cluster_count
+      end
+    end
+    return false
+  end
+
+  def find_free_cluster(start)
+    (start...@fat.size).each do |i|
+      return i if @fat[i] == 0
+    end
+    return false
+  end
+
+  def put(cluster, value)
+    @fat[cluster] = value
+  end
+
+  def del(cluster, size)
+    no = (size + CLUSTER_BYTES - 1) / CLUSTER_BYTES
+    no.times do |i|
+      p = @fat[cluster]
+      @fat[cluster] = 0  # Free
+
+      if p >= 0xff8
+        break if i == no - 1
+        $stderr.puts "FAT broken"
+        exit(1)
+      end
+      cluster = p
+    end
+  end
+end
+
+class FileInfo
+  attr_accessor :filename, :type, :time, :date, :cluster, :size
+  def initialize(filename, type, time, date, cluster, size)
+    @filename = filename
+    @type = type
+    @time = time
+    @date = date
+    @cluster = cluster
+    @size = size
+  end
+
+  def pack
+    return (@filename +
+            ([@type] +
+             [0] * 10 +
+             [@time,
+              @date,
+              @cluster,
+              @size]).pack('C11vvvV'))
+  end
+end
+
+class DirInfo
+  def initialize(filename, start, count)
+    @filename = filename
+    @start = start
+    @count = count
+
+    @fileinfos = []
+    open(filename, 'rb') do |f|
+      f.seek(start)
+      count.times do
+        bin = f.read(FILEINFO_BYTES)
+        filename = bin[0...11]
+        type = bin[11].unpack('C')[0]
+        time, date, cluster, size = bin[22..-1].unpack('vvvV')
+        head = filename[0].ord
+        if head == 0
+          @fileinfos.push(nil)
+        elsif head == 0xe5
+          @fileinfos.push(false)
+        else
+          @fileinfos.push(FileInfo.new(filename, type, time, date, cluster, size))
+        end
+      end
+    end
+  end
+
+  def size
+    @fileinfos.size
+  end
+
+  def get(index)
+    return @fileinfos[index]
+  end
+
+  def find_free_index(start = 0)
+    (start...@fileinfos.size).each do |i|
+      return i unless @fileinfos[i]
+    end
+    return false
+  end
+
+  def add(index, filename, size, cluster)
+    time = date = 0
+    @fileinfos[index] = FileInfo.new(filename, FILE_NORMAL, time, date, cluster, size)
+  end
+
+  def find(filename)
+    (0...@fileinfos.size).each do |i|
+      fileinfo = @fileinfos[i]
+      break if fileinfo === nil
+      next unless fileinfo
+      if filename == fileinfo.filename
+        return i
+      end
+    end
+    return false
+  end
+
+  def del(filename)
+    index = find(filename)
+    unless index
+      return nil, nil
+    end
+    fileinfo = @fileinfos[index]
+    @fileinfos[index] = false  # Delete
+    return fileinfo.cluster, fileinfo.size
+  end
+
+  def write
+    writeopen(@filename) do |f|
+      f.seek(@start)
+      @fileinfos.each do |fileinfo|
+        break if fileinfo === nil
+        if fileinfo
+          f.write(fileinfo.pack)
+        else
+          deleted = "\xe5" + "\0" * (FILEINFO_BYTES - 1)
+          f.write(deleted)
+        end
+      end
+    end
+  end
+end
+
+def format(filename)
+  open(filename, 'wb') do |f|
+    img = [0] * FD_SIZE
+    img[FAT1_ADDRESS + 0] = img[FAT2_ADDRESS + 0] = 0xf0
+    img[FAT1_ADDRESS + 1] = img[FAT2_ADDRESS + 1] = 0xff
+    img[FAT1_ADDRESS + 2] = img[FAT2_ADDRESS + 2] = 0xff
+    f.write(img.pack('C*'))
+  end
+end
+
+def write_cluster(f, cluster_no, data)
+  f.seek(0x003e00 + cluster_no * CLUSTER_BYTES)
+  f.write(data[0...CLUSTER_BYTES])
+end
+
+def save(filename, target_fn, fat, dirinfo)
+  return false unless File.exists?(target_fn)
+  size = File.size(target_fn)
+  cluster_count = (size + CLUSTER_BYTES - 1) / CLUSTER_BYTES
+  start_cluster = fat.have_space?(cluster_count)
+  return false unless start_cluster
+  file_index = dirinfo.find_free_index
+  return false unless file_index
+
+  data = open(target_fn, 'rb').read
+
+  # Write fileinfo.
+  dirinfo.add(file_index, filename83(target_fn), data.size, start_cluster)
+
+  # Write data and FAT.
+  prev_cluster_no = -1
+  writeopen(filename) do |f|
+    loop do
+      cluster_no = fat.find_free_cluster(prev_cluster_no + 1)
+      if prev_cluster_no >= 0
+        fat.put(prev_cluster_no, cluster_no)
+      end
+      if size <= CLUSTER_BYTES  # Last cluster.
+        fat.put(cluster_no, 0xfff)  # End mark.
+        write_cluster(f, cluster_no, data)
+        break
+      end
+
+      write_cluster(f, cluster_no, data)
+      prev_cluster_no = cluster_no
+      data = data[CLUSTER_BYTES..-1]
+      size -= CLUSTER_BYTES
+    end
+  end
+  return true
+end
+
+def delete(image_fn, target_fn)
+  fn = filename83(target_fn)
+  dirinfo = DirInfo.new(image_fn, DIR_ADDRESS, FILE_COUNT)
+  index, size = dirinfo.del(fn)
+  return false unless index
+  fat = Fat.new(image_fn)
+  fat.del(index, size)
+
+  dirinfo.write
+  fat.write
+  return true
+end
+
+def main
+  image_fn = ARGV.shift
+  command = ARGV.shift
+  case command
+  when 'format'
+    format(image_fn)
+  when 'dir'
+    dirinfo = DirInfo.new(image_fn, DIR_ADDRESS, FILE_COUNT)
+    dirinfo.size.times do |i|
+      m = dirinfo.get(i)
+      break if m === nil
+      if m
+        puts(sprintf("%-8s.%-3s %7d", m.filename[0...8], m.filename[8...11], m.size))
+      end
+    end
+  when 'save'
+    target_fn = ARGV.shift
+    delete(image_fn, target_fn)
+    dirinfo = DirInfo.new(image_fn, DIR_ADDRESS, FILE_COUNT)
+    fat = Fat.new(image_fn)
+    unless save(image_fn, target_fn, fat, dirinfo)
+      $stderr.puts "Save failed #{target_fn}"
+      exit(1)
+    end
+
+    dirinfo.write
+    fat.write
+  when 'del'
+    target_fn = ARGV.shift
+    unless delete(image_fn, target_fn)
+      $stderr.puts "Not found #{target_fn}"
+      exit(1)
+    end
+  when 'write'
+    target_fn = ARGV.shift
+    cluster = ARGV.shift.to_i
+    unless File.exists?(target_fn)
+      $stderr.puts "Not found #{target_fn}"
+      exit(1)
+    end
+    writeopen(image_fn) do |f|
+      f.seek(cluster * CLUSTER_BYTES)
+      data = open(target_fn, 'rb').read
+      f.write(data)
+    end
+  end
+end
+
+if $0 == __FILE__
+  main
+end
