@@ -1,4 +1,4 @@
-#!/bin/sh ruby
+#!/usr/bin/env ruby
 
 # Manipulate FAT12 (2HD disk format) image file.
 

@@ -30,7 +30,7 @@ DISK_FILES=\
 
 APILIB=$(LIBDIR)/apilib.a
 
-FAT12IMG=ruby tools/fat12img
+FAT12IMG=tools/fat12img
 
 all:	$(TARGET)
 
