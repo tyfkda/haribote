@@ -93,6 +93,8 @@ TASK* task_init(MEMMAN* memman) {
   idle->tss.cs = 2 * 8;
   task_run(idle, MAX_TASKLEVELS - 1, 1);
 
+  taskctl->task_fpu = NULL;
+
   return task;
 }
 
@@ -113,6 +115,11 @@ TASK* task_alloc() {
     //task->tss.cs = 2 * 8;
     //task->tss.esp = task_b_esp;
     //task->tss.ss = 0;
+    task->fpu[0] = 0x037f;  // CW (control word)
+    task->fpu[1] = 0x0000;  // SW (status word)
+    task->fpu[2] = 0xffff;  // TW (tag word)
+    for (int i = 3; i < 108 / 4; ++i)
+      task->fpu[i] = 0;
     return task;
   }
   return NULL;
@@ -176,4 +183,19 @@ void task_switch(void) {
 void task_wake(TASK* task) {
   if (task->flags != RUNNING)
     task_run(task, -1, 0);
+}
+
+int* inthandler07(int *esp) {
+  (void)esp;
+  TASK *now = task_now();
+  io_cli();
+  io_clts();
+  if (taskctl->task_fpu != now) {
+    if (taskctl->task_fpu != NULL)
+      io_fnsave(taskctl->task_fpu->fpu);
+    io_frstor(now->fpu);
+    taskctl->task_fpu = now;
+  }
+  io_sti();
+  return 0;
 }

@@ -1,14 +1,15 @@
 .globl	io_hlt, io_cli, io_sti, io_stihlt
+.globl	io_clts, io_fnsave, io_frstor
 .globl	io_in8, io_in16, io_in32
 .globl	io_out8, io_out16, io_out32
 .globl	io_load_eflags, io_store_eflags
 .globl	load_gdtr, load_idtr
 .globl  load_cr0, store_cr0
 .globl	load_tr
-.globl	asm_inthandler0c, asm_inthandler0d, asm_inthandler20, asm_inthandler21, asm_inthandler2c
 .globl	farjmp, farcall, start_app
 .globl	asm_cons_putchar, asm_hrb_api, asm_end_app
-.extern inthandler0c, inthandler0d, inthandler20, inthandler21, inthandler2c
+.globl	asm_inthandler07, asm_inthandler0c, asm_inthandler0d, asm_inthandler20, asm_inthandler21, asm_inthandler2c
+.extern inthander07, inthandler0c, inthandler0d, inthandler20, inthandler21, inthandler2c
 
 .macro asm_inthandler	c_inthandler
 	push	%es
@@ -43,7 +44,6 @@
 	popal
 	pop	%ds
 	pop	%es
-	add	$4, %esp	# Needed for int $0x0d
 .endm
 
 # void io_hlt(void)
@@ -65,6 +65,23 @@ io_sti:
 io_stihlt:
 	sti
 	hlt
+	ret
+
+# void io_clts(void)
+io_clts:
+	clts
+	ret
+
+# void fnsave(int* addr)
+io_fnsave:
+	mov	4(%esp), %eax	# addr
+	fnsave	(%eax)
+	ret
+
+# void io_frstor(int* addr)
+io_frstor:
+	mov	4(%esp), %eax	# addr
+	frstor	(%eax)
 	ret
 
 # int io_in8(int port)
@@ -151,12 +168,18 @@ load_tr:
 	LTR	4(%esp)		# tr
 	ret
 
+asm_inthandler07:
+	asm_inthandler_with_exit inthandler07
+	iret
+
 asm_inthandler0c:
 	asm_inthandler_with_exit inthandler0c
+	add	$4, %esp	# Needed for int $0x0c
 	iret
 
 asm_inthandler0d:
 	asm_inthandler_with_exit inthandler0d
+	add	$4, %esp	# Needed for int $0x0d
 	iret
 
 asm_inthandler20:

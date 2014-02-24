@@ -30,6 +30,7 @@ typedef struct TASK {
   int level, priority;
   FIFO fifo;
   TSS32 tss;
+  int fpu[108 / 4];
   SEGMENT_DESCRIPTOR ldt[2];
   struct CONSOLE* cons;
   int ds_base;
@@ -47,6 +48,7 @@ typedef struct {
 
 typedef struct TASKCTL {
   int now_lv;
+  TASK* task_fpu;
   char lv_change;
   TASKLEVEL level[MAX_TASKLEVELS];
   TASK tasks0[MAX_TASKS];
@@ -63,5 +65,6 @@ void task_run(TASK* task, int level, int priority);
 void task_switch(void);
 void task_sleep(TASK* task);
 void task_wake(TASK* task);
+int* inthandler07(int* esp);
 
 #endif

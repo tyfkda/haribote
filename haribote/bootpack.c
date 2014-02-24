@@ -109,6 +109,10 @@ static void close_constask(TASK* task) {
   if (task->cons_stack != NULL)
     memman_free_4k(memman, task->cons_stack, 64 * 1024);
   memman_free_4k(memman, task->fifo.buf, 128 * sizeof(int));
+  io_cli();
+  if (taskctl->task_fpu == task)
+    taskctl->task_fpu = NULL;
+  io_sti();
   task_free(task);
 }
 
