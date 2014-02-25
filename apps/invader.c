@@ -245,9 +245,9 @@ void wait(int i, TIMER* timer, char *keyflag) {
     j = api_getkey(1);
     if (i == j)
       break;
-    if (j == '4')
+    if (j == KEY_LEFT)
       keyflag[0 /* left */]  = 1;
-    if (j == '6')
+    if (j == KEY_RIGHT)
       keyflag[1 /* right */] = 1;
     if (j == ' ')
       keyflag[2 /* space */] = 1;

@@ -1,3 +1,4 @@
+#include "apilib.h"
 #include "bootpack.h"
 #include "console.h"
 #include "dsctbl.h"
@@ -197,12 +198,11 @@ static void handle_key_event(OsInfo* osinfo, int keycode) {
     break;
   default:
     if (keycode < 0x80) {  // Normal character.
-      char s[2];
-      s[0] = keytable[osinfo->key_shift ? 1 : 0][keycode];
-      if (s[0] != 0 && osinfo->key_win != NULL) {  // Normal character.
-        if ('A' <= s[0] && s[0] <= 'Z' && !osinfo->key_shift)
-          s[0] += 'a' - 'A';
-        fifo_put(&osinfo->key_win->task->fifo, s[0] + 256);
+      unsigned char key = keytable[osinfo->key_shift ? 1 : 0][keycode];
+      if (key != 0 && osinfo->key_win != NULL) {  // Normal character.
+        if (!osinfo->key_shift && 'A' <= key && key <= 'Z')
+          key += 'a' - 'A';
+        fifo_put(&osinfo->key_win->task->fifo, key + 256);
       }
     }
     break;
