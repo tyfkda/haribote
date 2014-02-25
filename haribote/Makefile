@@ -35,7 +35,7 @@ $(OBJDIR)/asmhead.bin:	$(OBJDIR)/asmhead.o
 	ld -N -e start -Ttext 0xc200 -S --oformat binary -o $@ $<
 
 $(OBJDIR)/bootpack.bin:	$(OBJS) $(APILIB)
-	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls --oformat binary -o $@ $^
+	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls -o $@ $^
 
 $(APILIB):
 	make -C ../apilib

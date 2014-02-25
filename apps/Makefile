@@ -14,7 +14,8 @@ APILIB=$(LIBDIR)/apilib.a
 CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
-LKAPP=ld -T $(LIBDIR)/hrbapp.ls --oformat binary
+LKSCRIPT=$(LIBDIR)/hrbapp.ls
+LKAPP=ld -T $(LKSCRIPT)
 APPLIBS=$(APILIB)
 
 all:	$(APPS)
@@ -35,6 +36,9 @@ $(OBJDIR)/gview.hrb:	$(OBJDIR)/gview.o $(APPLIBS) bmp.obj
 	$(LKAPP) -o $@ $^
 #$(OBJDIR)/bmp.o:	$(SRCDIR)/bmp.nasm
 #	as $< -o $@
+
+$(OBJDIR)/aobench.hrb:	$(OBJDIR)/aobench.o $(APPLIBS)
+	ld --defsym heap_size=4096K -T $(LKSCRIPT) -o $@ $^
 
 $(APILIB):
 	make -C ../apilib

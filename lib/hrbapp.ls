@@ -1,7 +1,12 @@
 OUTPUT_FORMAT("binary");
 
-_stack_size = 64K;
-_heap_size = 4096K;
+/*
+ * You can overwrite these settings using '--defsym' command line option:
+ *   $ ld --defsym stack_size=256K --defsym heap_size=1024K -T hrbapp.ls ...
+ */
+stack_size = DEFINED(stack_size) ? stack_size : 64K;
+heap_size = DEFINED(heap_size) ? heap_size : 1024K;
+
 
 MEMORY {
   rom (rx) : ORIGIN = 0, LENGTH = 1024K
@@ -10,10 +15,10 @@ MEMORY {
 
 SECTIONS {
     .head : {
-        LONG((_stack_size + SIZEOF(.data) + SIZEOF(.bss) + _heap_size + 0xfff) & ~ 0xfff)      /*  0 : Size of data segment (4KB align) */
+        LONG((stack_size + SIZEOF(.data) + SIZEOF(.bss) + heap_size + 0xfff) & ~ 0xfff)      /*  0 : Size of data segment (4KB align) */
         LONG(0x69726148)      /*  4 : Signature "Hari" */
         LONG(0)               /*  8 : Size of mmarea (4KB align) */
-        LONG(_stack_size)     /* 12 : Stack address and .data destination address */
+        LONG(stack_size)      /* 12 : Stack address and .data destination address */
         LONG(SIZEOF(.data))   /* 16 : Size of .data */
         LONG(LOADADDR(.data)) /* 20 : Address of .data */
         LONG(0xE9000000)      /* 24 : 0xE9000000 (jump) */
