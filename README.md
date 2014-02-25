@@ -11,8 +11,11 @@ introduced in a book called "[30日でできる! OS自作入門](http://amzn.to/
 * 256 color screen mode
 
 ## Screenshots
-![Screenshot](https://raw.github.com/tyfkda/haribote/master/screenshot/ss.png)
+![Screenshot](https://raw.github.com/tyfkda/haribote/master/screenshot/day30.png)
+
 ![fpu applications](https://raw.github.com/tyfkda/haribote/master/screenshot/fpu.png)
+
+[See more](https://github.com/tyfkda/haribote/wiki/Screenshots-old)
 
 ## Required environment
 * Linux
