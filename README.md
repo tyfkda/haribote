@@ -32,10 +32,19 @@ But I changed to use Linux, and simplify required tools using Ruby.
 * `haribote.img` is created
 * Burn image into floppy disk, or run disk image using PC emulator (e.g. VirtualBox)
 
+### Directory structure
+* haribote : Boot loader & OS
+* include : Header files for application
+* lib : Library files for application
+* apilib : API source codes
+* tools : Tools for building OS, disk image
+* apps : applications (not OS)
+
 
 ## How to make your own .hrb application
 ### Create executable for Haribote OS
 1. Create object files using gcc, or any
+  1. `void HariMain(void)` function is the entry point.
 2. Use linker script [hrbapp.ls](https://github.com/tyfkda/haribote/blob/master/lib/hrbapp.ls) to make .hrb file
   * `$ ld -T hrbapp.ls --oformat binary -o <executable file name> <object files...>`
 
@@ -46,6 +55,8 @@ But I changed to use Linux, and simplify required tools using Ruby.
   3. Write OS first: `$ tools/fat12img <image file name> save obj/haribote.sys`
 2. Put executable file
   1. `$ tools/fat12img <image file name> save <.hrb file>`
+
+These sequence is done in $/Makefile.
 
 
 ## Memo
