@@ -236,13 +236,13 @@ void HariMain(void) {
       case 0x2a + 256:  // Left shift on.
         key_shift |= 1;
         break;
-      case 0x36 + 256:  // Left shift on.
+      case 0x36 + 256:  // Right shift on.
         key_shift |= 2;
         break;
-      case 0xaa + 256:  // Left shift on.
+      case 0xaa + 256:  // Left shift off.
         key_shift &= ~1;
         break;
-      case 0xb6 + 256:  // Left shift on.
+      case 0xb6 + 256:  // Right shift off.
         key_shift &= ~2;
         break;
       case 0x3b + 256:  // F1
