@@ -123,83 +123,269 @@ static void close_console(SHTCTL* shtctl, SHEET* sht) {
   sheet_free(shtctl, sht);
 }
 
+typedef struct {
+  BOOTINFO* binfo;
+  SHTCTL* shtctl;
+  SHEET* sht_back;
+  SHEET* key_win;
+  MOUSE_DEC mdec;
+  unsigned int memtotal;
+  int key_shift;
+
+  // Mouse.
+  int mx, my;
+  int mobtn;  // Old mouse button state.
+  int mmx, mmy, new_mx, new_my, new_wx, new_wy;  // Mouse drag position.
+  SHEET* sht_dragging;
+  char drag_moved;
+} OsInfo;
+
+static void handle_key_event(OsInfo* osinfo, int keycode) {
+  {
+    char s[30];
+    sprintf(s, "key:%02x", keycode);
+    putfonts8_asc_sht(osinfo->shtctl, osinfo->sht_back, 0, osinfo->sht_back->bysize - 28, COL8_RED, COL8_DARK_GRAY, s, strlen(s));
+  }
+
+  switch (keycode) {
+  case 0x0f:  // Tab.
+    if (osinfo->key_win != NULL) {
+      keywin_off(osinfo->shtctl, osinfo->key_win);
+      int j = osinfo->key_win->height - 1;
+      if (j == 0)
+        j = osinfo->shtctl->top - 1;
+      osinfo->key_win = osinfo->shtctl->sheets[j];
+      keywin_on(osinfo->shtctl, osinfo->key_win);
+    }break;
+  case 0x2a:  // Left shift on.
+    osinfo->key_shift |= 1;
+    break;
+  case 0x36:  // Right shift on.
+    osinfo->key_shift |= 2;
+    break;
+  case 0xaa:  // Left shift off.
+    osinfo->key_shift &= ~1;
+    break;
+  case 0xb6:  // Right shift off.
+    osinfo->key_shift &= ~2;
+    break;
+  case 0x3b:  // F1
+    if (osinfo->key_shift != 0) {  // Shift + F1
+      TASK* task = osinfo->key_win->task;
+      if (task != NULL && task->tss.ss0 != 0) {
+        io_cli();
+        task->tss.eax = (int)&(task->tss.esp0);
+        task->tss.eip = (int)asm_end_app;
+        io_sti();
+        task_run(task, -1, 0);  // Wake to execute termination.
+      }
+    }
+    break;
+  case 0x3c:  // F2
+    if (osinfo->key_shift != 0) {  // Shift + F2 : Create console.
+      if (osinfo->key_win != NULL)
+        keywin_off(osinfo->shtctl, osinfo->key_win);
+      osinfo->key_win = open_console(osinfo->shtctl, osinfo->memtotal);
+      sheet_slide(osinfo->shtctl, osinfo->key_win, 32, 4);
+      sheet_updown(osinfo->shtctl, osinfo->key_win, osinfo->shtctl->top);
+      keywin_on(osinfo->shtctl, osinfo->key_win);
+    }
+    break;
+  case 0x57:  // F11
+    // Move most bottom (except back!) sheet to the top.
+    sheet_updown(osinfo->shtctl, osinfo->shtctl->sheets[1], osinfo->shtctl->top - 1);
+    break;
+  default:
+    if (keycode < 0x80) {  // Normal character.
+      char s[2];
+      s[0] = keytable[osinfo->key_shift ? 1 : 0][keycode];
+      if (s[0] != 0 && osinfo->key_win != NULL) {  // Normal character.
+        if ('A' <= s[0] && s[0] <= 'Z' && !osinfo->key_shift)
+          s[0] += 'a' - 'A';
+        fifo_put(&osinfo->key_win->task->fifo, s[0] + 256);
+      }
+    }
+    break;
+  }
+}
+
+static int close_button_clicked(SHEET* sht, int x, int y) {
+  return sht->bxsize - 21 <= x && x <= sht->bxsize - 5 && 5 <= 5 && y < 19;
+}
+static int title_bar_clicked(SHEET* sht, int x, int y) {
+  return 3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21;
+}
+
+static SHEET* get_window_at(OsInfo* osinfo, int mx, int my) {
+  for (int j = osinfo->shtctl->top; --j > 0; ) {
+    SHEET* sht = osinfo->shtctl->sheets[j];
+    int x = mx - sht->vx0;
+    int y = my - sht->vy0;
+    if (0 <= x && x < sht->bxsize && 0 <= y && y < sht->bysize &&
+        sht->buf[y * sht->bxsize + x] != sht->col_inv)
+      return sht;
+  }
+  return NULL;
+}
+
+static void mouse_left_clicked(OsInfo* osinfo) {
+  SHEET* sht = get_window_at(osinfo, osinfo->mx, osinfo->my);
+  if (sht == NULL)
+    return;
+
+  // Activate this sheet.
+  sheet_updown(osinfo->shtctl, sht, osinfo->shtctl->top - 1);
+  int x = osinfo->mx - sht->vx0;
+  int y = osinfo->my - sht->vy0;
+  if (close_button_clicked(sht, x, y)) {
+    // Close button clicked.
+    if ((sht->flags & 0x10) != 0) {  // Window created by application.
+      TASK* task = sht->task;
+      io_cli();
+      task->tss.eax = (int)&(task->tss.esp0);
+      task->tss.eip = (int)asm_end_app;
+      io_sti();
+      task_run(task, -1, 0);  // Wake to execute termination.
+    } else {  // Console window.
+      TASK* task = sht->task;
+      sheet_updown(osinfo->shtctl, sht, -1);
+      if (sht == osinfo->key_win) {
+        keywin_off(osinfo->shtctl, osinfo->key_win);
+        keywin_on(osinfo->shtctl, osinfo->key_win = osinfo->shtctl->sheets[osinfo->shtctl->top - 1]);
+      }
+      io_cli();
+      fifo_put(&task->fifo, 4);
+      io_sti();
+    }
+    return;
+  }
+  if (sht != osinfo->key_win) {
+    keywin_off(osinfo->shtctl, osinfo->key_win);
+    osinfo->key_win = sht;
+    keywin_on(osinfo->shtctl, osinfo->key_win);
+  }
+  if (title_bar_clicked(sht, x, y)) {
+    osinfo->mmx = osinfo->mx;  // Go to drag mode.
+    osinfo->mmy = osinfo->my;
+    osinfo->new_wx = sht->vx0;
+    osinfo->new_wy = sht->vy0;
+    osinfo->sht_dragging = sht;
+  }
+}
+
+static void handle_mouse_event(OsInfo* osinfo, int code) {
+  if (mouse_decode(&osinfo->mdec, code) == 0)
+    return;
+
+  int mtrg = osinfo->mdec.btn & ~osinfo->mobtn;
+  osinfo->mobtn = osinfo->mdec.btn;
+  // Move mouse cursor.
+  osinfo->mx += osinfo->mdec.dx;
+  osinfo->my += osinfo->mdec.dy;
+  if (osinfo->mx < 0)  osinfo->mx = 0;
+  if (osinfo->my < 0)  osinfo->my = 0;
+  if (osinfo->mx >= osinfo->binfo->scrnx - 1)  osinfo->mx = osinfo->binfo->scrnx - 1;
+  if (osinfo->my >= osinfo->binfo->scrny - 1)  osinfo->my = osinfo->binfo->scrny - 1;
+
+  osinfo->new_mx = osinfo->mx;
+  osinfo->new_my = osinfo->my;
+  if (mtrg & MOUSE_LBUTTON)
+    mouse_left_clicked(osinfo);
+  if (osinfo->mmx >= 0) {  // Drag mode.
+    if ((osinfo->mdec.btn & MOUSE_LBUTTON) == 0) {  // Mouse left button released.
+      osinfo->mmx = -1;  // Drag end.
+    } else {
+      int dx = osinfo->mx - osinfo->mmx;
+      int dy = osinfo->my - osinfo->mmy;
+      osinfo->new_wx += dx;
+      osinfo->new_wy += dy;
+      osinfo->mmx = osinfo->mx;
+      osinfo->mmy = osinfo->my;
+      osinfo->drag_moved = TRUE;
+    }
+  }
+}
+
 void HariMain(void) {
+  OsInfo osinfo;
+
   init_gdtidt();
   init_pic();
   io_sti();  // Enable CPU interrupt after IDT/PIC initialization.
 
   FIFO fifo;
   int fifobuf[128];
-  MOUSE_DEC mdec;
-  int mobtn = 0;  // Old mouse button state.
   fifo_init(&fifo, 128, fifobuf, NULL);
   *((int *) 0x0fec) = (int) &fifo;
   init_pit();
   init_keyboard(&fifo, 256);
-  enable_mouse(&fifo, 512, &mdec);
+  enable_mouse(&fifo, 512, &osinfo.mdec);
   io_out8(PIC0_IMR, 0xf8);  // Enable PIT, PIC1 and keyboard.
   io_out8(PIC1_IMR, 0xef);  // Enable mouse.
 
-  unsigned int memtotal = memtest(0x00400000, 0xbfffffff);
+  osinfo.memtotal = memtest(0x00400000, 0xbfffffff);
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
   memman_init(memman);
   memman_free(memman, (void*)0x00001000, 0x0009e000); /* 0x00001000 - 0x0009efff */
-  memman_free(memman, (void*)0x00400000, memtotal - 0x00400000);
+  memman_free(memman, (void*)0x00400000, osinfo.memtotal - 0x00400000);
 
   init_palette();
-  BOOTINFO* binfo = (BOOTINFO*)ADR_BOOTINFO;
-  SHTCTL* shtctl = shtctl_init(memman, binfo->vram, binfo->scrnx, binfo->scrny);
-  *((int*)0x0fe4) = (int)shtctl;
+
+  osinfo.binfo = (BOOTINFO*)ADR_BOOTINFO;
+  osinfo.shtctl = shtctl_init(memman, osinfo.binfo->vram, osinfo.binfo->scrnx, osinfo.binfo->scrny);
+  *((int*)0x0fe4) = (int)osinfo.shtctl;
 
   TASK* task_a = task_init(memman);
   fifo.task = task_a;
   task_run(task_a, 1, 2);
 
   // sht_back
-  SHEET* sht_back = sheet_alloc(shtctl);
-  unsigned char* buf_back = (unsigned char*)memman_alloc_4k(memman, binfo->scrnx * binfo->scrny);
-  sheet_setbuf(sht_back, buf_back, binfo->scrnx, binfo->scrny, -1);
-  init_screen8(buf_back, binfo->scrnx, binfo->scrny);
+  osinfo.sht_back = sheet_alloc(osinfo.shtctl);
+  unsigned char* buf_back = (unsigned char*)memman_alloc_4k(memman, osinfo.binfo->scrnx * osinfo.binfo->scrny);
+  sheet_setbuf(osinfo.sht_back, buf_back, osinfo.binfo->scrnx, osinfo.binfo->scrny, -1);
+  init_screen8(buf_back, osinfo.binfo->scrnx, osinfo.binfo->scrny);
 
   // sht_cons
-  SHEET* key_win = open_console(shtctl, memtotal);
+  osinfo.key_win = open_console(osinfo.shtctl, osinfo.memtotal);
 
   // sht_mouse
-  SHEET* sht_mouse = sheet_alloc(shtctl);
+  SHEET* sht_mouse = sheet_alloc(osinfo.shtctl);
   unsigned char buf_mouse[16 * 16];
   sheet_setbuf(sht_mouse, buf_mouse, 16, 16, 99);
   init_mouse_cursor8(buf_mouse, 99);
-  int mx = (binfo->scrnx - 16) / 2;
-  int my = (binfo->scrny - 28 - 16) / 2;
-  int mmx = -1, mmy = -1, new_mx = -1, new_my = 0, new_wx = 0, new_wy = 0;  // Mouse drag position.
-  char drag_moved = FALSE;
-  SHEET* sht_dragging = NULL;
+  osinfo.mx = (osinfo.binfo->scrnx - 16) / 2;
+  osinfo.my = (osinfo.binfo->scrny - 28 - 16) / 2;
+  osinfo.mmx = osinfo.mmy = osinfo.new_mx = -1;
+  osinfo.new_my = osinfo.new_wx = osinfo.new_wy = 0;
+  osinfo.mobtn = 0;
+  osinfo.drag_moved = FALSE;
+  osinfo.sht_dragging = NULL;
 
-  sheet_slide(shtctl, sht_back, 0, 0);
-  sheet_slide(shtctl, key_win, 8, 2);  // console
-  sheet_slide(shtctl, sht_mouse, mx, my);
-  sheet_updown(shtctl, sht_back, 0);
-  sheet_updown(shtctl, key_win, 1);
-  sheet_updown(shtctl, sht_mouse, 2);
+  sheet_slide(osinfo.shtctl, osinfo.sht_back, 0, 0);
+  sheet_slide(osinfo.shtctl, osinfo.key_win, 8, 2);  // console
+  sheet_slide(osinfo.shtctl, sht_mouse, osinfo.mx, osinfo.my);
+  sheet_updown(osinfo.shtctl, osinfo.sht_back, 0);
+  sheet_updown(osinfo.shtctl, osinfo.key_win, 1);
+  sheet_updown(osinfo.shtctl, sht_mouse, 2);
 
-  int key_shift = 0;
-  keywin_on(shtctl, key_win);
+  osinfo.key_shift = 0;
+  keywin_on(osinfo.shtctl, osinfo.key_win);
 
   for (;;) {
     io_cli();
 
     if (fifo_empty(&fifo)) {
-      if (new_mx >= 0) {
+      if (osinfo.new_mx >= 0) {
         io_sti();
-        sheet_slide(shtctl, sht_mouse, new_mx, new_my);
-        new_mx = -1;
+        sheet_slide(osinfo.shtctl, sht_mouse, osinfo.new_mx, osinfo.new_my);
+        osinfo.new_mx = -1;
       }
-      if (drag_moved) {
+      if (osinfo.drag_moved) {
         io_sti();
-        sheet_slide(shtctl, sht_dragging, new_wx, new_wy);
-        drag_moved = FALSE;
-        if (mmx < 0)  // Drag released.
-          sht_dragging = NULL;
+        sheet_slide(osinfo.shtctl, osinfo.sht_dragging, osinfo.new_wx, osinfo.new_wy);
+        osinfo.drag_moved = FALSE;
+        if (osinfo.mmx < 0)  // Drag released.
+          osinfo.sht_dragging = NULL;
       }
       task_sleep(task_a);
       io_sti();
@@ -209,164 +395,25 @@ void HariMain(void) {
     int i = fifo_get(&fifo);
     io_sti();
 
-    if (key_win != NULL && key_win->flags == 0) {  // Console window closed.
-      if (shtctl->top == 1) {  // No window, only mouse and background.
-        key_win = NULL;
+    if (osinfo.key_win != NULL && osinfo.key_win->flags == 0) {  // Console window closed.
+      if (osinfo.shtctl->top == 1) {  // No window, only mouse and background.
+        osinfo.key_win = NULL;
       } else {
-        keywin_on(shtctl, key_win = shtctl->sheets[shtctl->top - 1]);
+        keywin_on(osinfo.shtctl, osinfo.key_win = osinfo.shtctl->sheets[osinfo.shtctl->top - 1]);
       }
     }
     if (256 <= i && i < 512) {  // Keyboard data.
-      {
-        char s[30];
-        sprintf(s, "key:%02x", i - 256);
-        putfonts8_asc_sht(shtctl, sht_back, 0, sht_back->bysize - 28, COL8_RED, COL8_DARK_GRAY, s, strlen(s));
-      }
-
-      switch (i) {
-      case 0x0f + 256:  // Tab.
-        if (key_win != NULL) {
-          keywin_off(shtctl, key_win);
-          int j = key_win->height - 1;
-          if (j == 0)
-            j = shtctl->top - 1;
-          key_win = shtctl->sheets[j];
-          keywin_on(shtctl, key_win);
-        }break;
-      case 0x2a + 256:  // Left shift on.
-        key_shift |= 1;
-        break;
-      case 0x36 + 256:  // Right shift on.
-        key_shift |= 2;
-        break;
-      case 0xaa + 256:  // Left shift off.
-        key_shift &= ~1;
-        break;
-      case 0xb6 + 256:  // Right shift off.
-        key_shift &= ~2;
-        break;
-      case 0x3b + 256:  // F1
-        if (key_shift != 0) {  // Shift + F1
-          TASK* task = key_win->task;
-          if (task != NULL && task->tss.ss0 != 0) {
-            io_cli();
-            task->tss.eax = (int)&(task->tss.esp0);
-            task->tss.eip = (int)asm_end_app;
-            io_sti();
-            task_run(task, -1, 0);  // Wake to execute termination.
-          }
-        }
-        break;
-      case 0x3c + 256:  // F2
-        if (key_shift != 0) {  // Shift + F2 : Create console.
-          if (key_win != NULL)
-            keywin_off(shtctl, key_win);
-          key_win = open_console(shtctl, memtotal);
-          sheet_slide(shtctl, key_win, 32, 4);
-          sheet_updown(shtctl, key_win, shtctl->top);
-          keywin_on(shtctl, key_win);
-        }
-        break;
-      case 0x57 + 256:  // F11
-        // Move most bottom (except back!) sheet to the top.
-        sheet_updown(shtctl, shtctl->sheets[1], shtctl->top - 1);
-        break;
-      default:
-        if (i < 256 + 0x80) {  // Normal character.
-          char s[2];
-          s[0] = keytable[key_shift ? 1 : 0][i - 256];
-          if (s[0] != 0 && key_win != NULL) {  // Normal character.
-            if ('A' <= s[0] && s[0] <= 'Z' && !key_shift)
-              s[0] += 'a' - 'A';
-            fifo_put(&key_win->task->fifo, s[0] + 256);
-          }
-        }
-        break;
-      }
-      continue;
+      handle_key_event(&osinfo, i - 256);
     } else if (512 <= i && i < 768) {  // Mouse data.
-      if (mouse_decode(&mdec, i - 512) != 0) {
-        int mtrg = mdec.btn & ~mobtn;
-        mobtn = mdec.btn;
-        // Move mouse cursor.
-        mx += mdec.dx;
-        my += mdec.dy;
-        if (mx < 0)  mx = 0;
-        if (my < 0)  my = 0;
-        if (mx >= binfo->scrnx - 1)  mx = binfo->scrnx - 1;
-        if (my >= binfo->scrny - 1)  my = binfo->scrny - 1;
-
-        new_mx = mx;
-        new_my = my;
-        if (mtrg & MOUSE_LBUTTON) {  // Mouse left button is clicked.
-          for (int j = shtctl->top; --j > 0; ) {
-            SHEET* sht = shtctl->sheets[j];
-            int x = mx - sht->vx0;
-            int y = my - sht->vy0;
-            if (x < 0 || x >= sht->bxsize || y < 0 || y >= sht->bysize ||
-                sht->buf[y * sht->bxsize + x] == sht->col_inv)
-              continue;
-            sheet_updown(shtctl, sht, shtctl->top - 1);
-            if (sht->bxsize - 21 <= x && x <= sht->bxsize - 5 && 5 <= 5 && y < 19) {
-              // Close button clicked.
-              if ((sht->flags & 0x10) != 0) {  // Window created by application.
-                TASK* task = sht->task;
-                io_cli();
-                task->tss.eax = (int)&(task->tss.esp0);
-                task->tss.eip = (int)asm_end_app;
-                io_sti();
-                task_run(task, -1, 0);  // Wake to execute termination.
-              } else {  // Console window.
-                TASK* task = sht->task;
-                sheet_updown(shtctl, sht, -1);
-                if (sht == key_win) {
-                  keywin_off(shtctl, key_win);
-                  keywin_on(shtctl, key_win = shtctl->sheets[shtctl->top - 1]);
-                }
-                io_cli();
-                fifo_put(&task->fifo, 4);
-                io_sti();
-              }
-              break;
-            }
-            if (sht != key_win) {
-              keywin_off(shtctl, key_win);
-              key_win = sht;
-              keywin_on(shtctl, key_win);
-            }
-            if (3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21) {
-              mmx = mx;  // Go to drag mode.
-              mmy = my;
-              new_wx = sht->vx0;
-              new_wy = sht->vy0;
-              sht_dragging = sht;
-            }
-            break;
-          }
-        }
-        if (mmx >= 0) {  // Drag mode.
-          if ((mdec.btn & MOUSE_LBUTTON) == 0) {  // Mouse left button released.
-            mmx = -1;  // Drag end.
-          } else {
-            int dx = mx - mmx;
-            int dy = my - mmy;
-            new_wx += dx;
-            new_wy += dy;
-            mmx = mx;
-            mmy = my;
-            drag_moved = TRUE;
-          }
-        }
-      }
-      continue;
+      handle_mouse_event(&osinfo, i - 512);
     } else if (768 <= i && i < 1024) {  // Close console request.
-      close_console(shtctl, shtctl->sheets0 + (i - 768));
-    } else if (1024 <= i && i < 2024) {  // Close console request.
+      close_console(osinfo.shtctl, osinfo.shtctl->sheets0 + (i - 768));
+    } else if (1024 <= i && i < 2024) {  // Close console task request.
       close_constask(taskctl->tasks0 + (i - 1024));
     } else if (2024 <= i && i < 2280) {  // Close console only.
-      SHEET* sht2 = shtctl->sheets0 + (i - 2024);
+      SHEET* sht2 = osinfo.shtctl->sheets0 + (i - 2024);
       memman_free_4k(memman, sht2->buf, 256 * 165);
-      sheet_free(shtctl, sht2);
+      sheet_free(osinfo.shtctl, sht2);
     }
   }
 }
