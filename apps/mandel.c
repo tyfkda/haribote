@@ -32,10 +32,7 @@ void HariMain(void) {
   int win = api_openwin(buf, W, H, -1, "mandelbrot");
   api_boxfilwin(win, 8, 8 + 18, 8 + 256, 8 + 256 + 18, COL8_BLACK);
 
-  for (;;) {
-    drawMandelbrot(win);
-    if (api_getkey(0) == 0x0a)
-      break;
-  }
+  drawMandelbrot(win);
+  api_getkey(1);
   api_end();
 }
