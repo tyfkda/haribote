@@ -7,7 +7,7 @@ introduced in a book called "[30日でできる! OS自作入門](http://amzn.to/
 * x86, 32 bit OS
 * Boot from floppy disk
 * preemptive multi task
-* Window system
+* Window like system
 * 256 color screen mode
 
 ## Screenshots
@@ -57,7 +57,7 @@ But I changed to use Linux, and simplify required tools using Ruby.
 * 0x002600 - 0x0041ff : Root directory table
 * 0x004200 - 0x167fff : Cluster data
 
-### Memory layout
+### Haribote OS Memory layout
 * 0x00007c00 - 0x00007dff : Boot sector is loaded (512 bytes)
 * 0x00100000 - 0x00267fff : Floppy disk image (1440KB)
 * 0x0026f800 - 0x0026ffff : IDT (2KB)
