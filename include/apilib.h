@@ -74,6 +74,8 @@ int api_now(unsigned char* buf);
 void api_initmalloc(void);
 int api_cmdline(char* buf, int maxsize);
 
+void HariMain(void);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

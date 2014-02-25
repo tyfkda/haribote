@@ -31,6 +31,7 @@ DISK_FILES=\
 	$(DATADIR)/night.bmp \
 	$(OBJDIR)/mandel.hrb \
 	$(OBJDIR)/aobench.hrb \
+	$(OBJDIR)/hello+.hrb \
 
 FAT12IMG=tools/fat12img
 
