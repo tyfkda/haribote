@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     char* p = argv[1];
     
     /* ÉtÉ@ÉCÉãì«Ç›çûÇ› */
-    i = api_fopen(p);
+    i = api_fopen(p, OPEN_READ);
     fsize = api_fsize(i, 0);
     filebuf = malloc(fsize);
     api_fread(filebuf, fsize, i);

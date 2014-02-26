@@ -1,4 +1,5 @@
 #include "hrb_api.h"
+#include "apilib.h"
 #include "bootpack.h"
 #include "console.h"
 #include "file.h"
@@ -14,6 +15,28 @@
 
 static int bcd2(unsigned char x) {
   return (x >> 4) * 10 + (x & 0x0f);
+}
+
+static FILEHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
+  FILEINFO* finfoTop = (FILEINFO*)(ADR_DISKIMG + 0x002600);
+  FILEINFO* finfo = file_search(filename, finfoTop, 224);
+  if (finfo == NULL) {
+    if (!(flag & OPEN_WRITE))
+      return NULL;
+    finfo = file_create(filename, finfoTop, 224);
+    if (finfo == NULL)
+      return NULL;
+  }
+
+  FILEHANDLE* fh = task_alloc_fhandle(task);
+  if (fh == NULL)
+    return NULL;
+  fh->finfo = finfo;
+  fh->fat = task->fat;
+  fh->cluster = finfo->clustno;
+  fh->pos = 0;
+  fh->modified = FALSE;
+  return fh;
 }
 
 // This is the system call for Haribote OS.
@@ -219,22 +242,14 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   case API_FOPEN:
     {
       const char* filename = (char*)ebx + ds_base;
-      reg[7] = 0;
-      FILEINFO* finfo = file_search(filename, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
-      FILEHANDLE* fh = task_alloc_fhandle(task);
-      if (finfo != NULL && fh != NULL) {
-        fh->finfo = finfo;
-        fh->fat = task->fat;
-        fh->cluster = finfo->clustno;
-        fh->pos = 0;
-        reg[7] = (int)fh;
-      }
+      int flag = eax;
+      reg[7] = (int)_api_fopen(task, filename, flag);
     }
     break;
   case API_FCLOSE:
     {
       FILEHANDLE* fh = (FILEHANDLE*)eax;
-      fh->finfo = NULL;
+      file_close(fh);
     }
     break;
   case API_FSEEK:
@@ -263,6 +278,15 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       int size = ecx;
       int readsize = file_read(fh, dst, size, (char*)(ADR_DISKIMG + 0x003e00));
       reg[7] = readsize;
+    }
+    break;
+  case API_FWRITE:
+    {
+      FILEHANDLE* fh = (FILEHANDLE*)eax;
+      const void* src = (unsigned char*)ebx + ds_base;
+      int size = ecx;
+      int writesize = file_write(fh, src, size, (char*)(ADR_DISKIMG + 0x003e00));
+      reg[7] = writesize;
     }
     break;
   case API_CMDLINE:

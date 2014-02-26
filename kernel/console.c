@@ -156,7 +156,7 @@ static void cmd_ncst(const char* cmdline, int memtotal) {
   fifo_put(fifo, 10 + 256);  // Enter.
 }
 
-static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
+static char cmd_app(CONSOLE* cons, short* fat, const char* cmdline) {
   char name[13];
   int i;
   for (i = 0; i < 8; ++i) {
@@ -250,7 +250,7 @@ int* inthandler0d(void) {
   return &task->tss.esp0;  // Abort
 }
 
-static void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memtotal) {
+static void cons_runcmd(const char* cmdline, CONSOLE* cons, short* fat, int memtotal) {
   if (strcmp(cmdline, "mem") == 0 && cons->sheet != NULL) {
     cmd_mem(cons, memtotal);
   } else if (strcmp(cmdline, "cls") == 0 && cons->sheet != NULL) {
@@ -269,7 +269,7 @@ static void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, in
   }
 }
 
-static void handle_key_event(CONSOLE* cons, char* cmdline, const short* fat, unsigned int memtotal, unsigned char key) {
+static void handle_key_event(CONSOLE* cons, char* cmdline, short* fat, unsigned int memtotal, unsigned char key) {
   switch (key) {
   case 10:  // Enter.
     // Erase cursor and newline.

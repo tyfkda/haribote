@@ -32,6 +32,7 @@ DISK_FILES=\
 	$(OBJDIR)/mandel.hrb \
 	$(OBJDIR)/aobench.hrb \
 	$(OBJDIR)/hello+.hrb \
+	$(OBJDIR)/fwrite.hrb \
 
 FAT12IMG=tools/fat12img
 

@@ -60,11 +60,15 @@ void api_freetimer(TIMER* timer);
 
 void api_beep(int tone);
 
-int api_fopen(const char* fname);
+#define OPEN_READ  (0)
+#define OPEN_WRITE  (1)
+
+int api_fopen(const char* fname, int flag);
 void api_fclose(int fhandle);
 void api_fseek(int fhandle, int offset, int mode);
 int api_fsize(int fhandle, int mode);
 int api_fread(void* buf, int maxsize, int fhandle);
+int api_fwrite(const void* buf, int size, int fhandle);
 int api_delete(const char* fname);
 int api_now(unsigned char* buf);
 

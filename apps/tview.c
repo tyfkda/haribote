@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
   api_boxfilwin(win, 6, 27, w * 8 + 10, h * 16 + 31, 7);
   
   /* ƒtƒ@ƒCƒ‹“Ç‚İ‚İ */
-  i = api_fopen(q);
+  i = api_fopen(q, OPEN_READ);
   if (i == 0) {
     api_putstr0("file open error.\n");
     api_end();

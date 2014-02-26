@@ -29,5 +29,6 @@
 #define API_CMDLINE  (26)
 #define API_DELETE  (27)
 #define API_NOW  (28)
+#define API_FWRITE  (29)
 
 #endif

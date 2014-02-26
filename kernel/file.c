@@ -13,6 +13,15 @@ static void set_next_cluster(short* fat, short cluster, short next) {
   fat[cluster] = next;
 }
 
+void file_close(FILEHANDLE* fh) {
+  if (fh->modified) {
+    if (fh->cluster > 0)
+      set_next_cluster(fh->fat, fh->cluster, 0xfff);  // End mark.
+    fh->finfo->size = fh->pos;
+  }
+  fh->finfo = NULL;
+}
+
 void file_readfat(short* fat, unsigned char* img) {
   for (int i = 0, j = 0; i < MAX_CLUSTER; i += 2, j += 3) {
     fat[i + 0] = (img[j + 0]      | img[j + 1] << 8) & 0xfff;
@@ -20,8 +29,7 @@ void file_readfat(short* fat, unsigned char* img) {
   }
 }
 
-FILEINFO* file_search(const char* name, FILEINFO* finfo, int max) {
-  char s[12];
+static void make_file_name83(char s[12], const char* name) {
   memset(s, ' ', 11);
   int j = 0;
   for (int i = 0; j < 11 && name[i] != '\0'; ++i) {
@@ -31,6 +39,29 @@ FILEINFO* file_search(const char* name, FILEINFO* finfo, int max) {
       s[j++] = name[i];
     }
   }
+}
+
+FILEINFO* file_create(const char* name, FILEINFO* finfo, int max) {
+  char s[12];
+  make_file_name83(s, name);
+  for (int i = 0; i < max; ++i, ++finfo) {
+    if (finfo->name[0] == 0x00 || finfo->name[0] == 0xe5) {  // End of table, or deleted entry.
+      memset(finfo, 0x00, sizeof(FILEINFO));
+      memcpy(finfo->name, s, 11);
+      finfo->type = 0x20;  // Normal file.
+      return finfo;
+    }
+    if ((finfo->type & 0x18) == 0) {
+      if (strncmp((char*)finfo->name, s, 11) == 0)
+        return finfo;
+    }
+  }
+  return NULL;
+}
+
+FILEINFO* file_search(const char* name, FILEINFO* finfo, int max) {
+  char s[12];
+  make_file_name83(s, name);
   for (int i = 0; i < max; ++i, ++finfo) {
     if (finfo->name[0] == 0x00)  // End of table.
       return NULL;
@@ -51,7 +82,7 @@ void file_delete(FILEINFO* finfo, short* fat) {
   }
 }
 
-static const unsigned char* clusterData(const void* diskImage, int cluster) {
+static unsigned char* clusterData(const void* diskImage, int cluster) {
   return (unsigned char*)diskImage + cluster * CLUSTER_SIZE;
 }
 
@@ -82,7 +113,57 @@ int file_read(FILEHANDLE* fh, void* dst, int requestSize, const char* diskImage)
   return readSize;
 }
 
-void file_loadfile(FILEINFO* finfo, const short* fat, char* img, void* buf) {
+short allocate_cluster(short* fat) {
+  for (int i = 0; i < MAX_CLUSTER; ++i) {
+    if (fat[i] == 0) {
+      fat[i] = 0xfff;  // Write end mark.
+      return i;
+    }
+  }
+  return -1;
+}
+
+int file_write(FILEHANDLE* fh, const void* srcData, int requestSize, const char* diskImage) {
+  if (requestSize <= 0)
+    return 0;
+
+  fh->modified = TRUE;
+  int writeSize = 0;
+  unsigned char* src = (unsigned char*)srcData;
+  while (requestSize > 0) {
+    if (fh->pos == 0) {  // First write.
+      if (fh->finfo->clustno > 0) {  // Exist old file: overwrite.
+        fh->cluster = fh->finfo->clustno;
+      } else {  // Not exist: allocate new cluster.
+        fh->cluster = fh->finfo->clustno = allocate_cluster(fh->fat);
+        // TODO: Error check.
+      }
+    } else if ((fh->pos % CLUSTER_SIZE) == 0) {  // Forward next cluster.
+      short nextCluster = get_next_cluster(fh->fat, fh->cluster);
+      if (nextCluster < 0xff0) {  // Valid: use it.
+        fh->cluster = nextCluster;
+      } else {
+        nextCluster = allocate_cluster(fh->fat);
+        // TODO: Error check.
+        set_next_cluster(fh->fat, fh->cluster, nextCluster);
+        fh->cluster = nextCluster;
+      }
+    }
+
+    int size = CLUSTER_SIZE - (fh->pos % CLUSTER_SIZE);
+    if (requestSize < size)
+      size = requestSize;
+    unsigned char* dst = clusterData(diskImage, fh->cluster) + (fh->pos % CLUSTER_SIZE);
+    memcpy(dst, src, size);
+    fh->pos += size;
+    writeSize += size;
+    dst += size;
+    requestSize -= size;
+  }
+  return writeSize;
+}
+
+void file_loadfile(FILEINFO* finfo, short* fat, char* img, void* buf) {
   FILEHANDLE fh;
   fh.finfo = finfo;
   fh.fat = fat;
