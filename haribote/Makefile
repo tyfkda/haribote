@@ -9,7 +9,7 @@ SRCS=$(wildcard $(SRCDIR)/*.c)
 SRCS+=$(SRCDIR)/asmhead.s $(SRCDIR)/naskfunc.s
 OBJS=$(subst $(SRCDIR)/,$(OBJDIR)/,$(subst .s,.o,$(SRCS:%.c=%.o)))
 
-CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror $(INC)
+CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror -nostdinc $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
 APILIB=$(LIBDIR)/apilib.a

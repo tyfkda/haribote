@@ -1,5 +1,6 @@
 #include "apilib.h"
 #include <stdio.h>		/* sprintf */
+#include <stdlib.h>		/* strtol */
 
 #define INVALID		-0x7fffffff
 

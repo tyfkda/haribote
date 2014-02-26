@@ -1,4 +1,5 @@
 #include "stdio.h"
+#include "stdlib.h"
 
 void HariMain(void) {
   putchar('h');

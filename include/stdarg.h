@@ -1,6 +1,10 @@
 #ifndef __STDARG_H__
 #define __STDARG_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef __GNUC__
 #error stdarg is not implemented
 #endif
@@ -12,5 +16,9 @@ typedef __builtin_va_list  va_list;
 #define va_copy(dst, src)  __builtin_va_copy(dst, src)
 
 int vsprintf(char *str, const char *fmt, va_list ap);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif

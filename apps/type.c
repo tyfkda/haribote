@@ -1,5 +1,6 @@
 #include "apilib.h"
 #include "stdio.h"
+#include "stdlib.h"
 
 void HariMain() {
   char cmdline[30];

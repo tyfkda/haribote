@@ -1,5 +1,5 @@
 #include "apilib.h"
-#include "stdio.h"
+#include "stdlib.h"
 
 void HariMain(void) {
   TIMER* timer = api_alloctimer();

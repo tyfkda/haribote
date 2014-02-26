@@ -1,6 +1,10 @@
 #ifndef __API_H__
 #define __API_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define COL8_BLACK  (0)
 #define COL8_RED  (1)
 #define COL8_GREEN  (2)
@@ -68,9 +72,10 @@ int api_now(unsigned char* buf);
 int api_cmdline(char* buf, int maxsize);
 
 
-#define RAND_MAX  (0x7fff)
-int rand(void);
-
 int sprintf(char *str, const char *fmt, ...);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif

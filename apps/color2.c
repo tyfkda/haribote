@@ -1,5 +1,5 @@
 #include "apilib.h"
-#include "stdio.h"
+#include "stdlib.h"
 
 unsigned char rgb2pal(int r, int g, int b, int x, int y) {
   static int table[4] = { 3, 1, 0, 2 };

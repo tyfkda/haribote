@@ -1,5 +1,6 @@
 #include "apilib.h"
 #include "stdio.h"
+#include "stdlib.h"
 
 void HariMain() {
   unsigned char now[7];

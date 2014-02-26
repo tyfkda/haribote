@@ -1,7 +1,7 @@
-#include "stdio.h"
-#include "string.h"  // toupper
+#include "stddef.h"
+#include "stdlib.h"
 
-long strtol(char *s, char **endp, int base) {
+long strtol(const char *s, char **endp, int base) {
   char negative = FALSE;
   switch (*s) {
   case '+':  ++s; break;
@@ -23,17 +23,18 @@ long strtol(char *s, char **endp, int base) {
 
   int x = 0;
   for (;; ++s) {
-    char c = toupper(*s);
+    char c = *s;
     int h;
     if ('0' <= c && c <= '9')  h = c - '0';
     else if ('A' <= c && c <= 'Z')  h = c - ('A' - 10);
+    else if ('a' <= c && c <= 'z')  h = c - ('a' - 10);
     else break;
     if (h >= base)  break;
     x = x * base + h;
   }
 
   if (endp != NULL)
-    *endp = s;
+    *endp = (char*)s;
 
   return negative ? -x : x;
 }

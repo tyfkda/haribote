@@ -1,6 +1,6 @@
 #include "apilib.h"
 
-#include <stdio.h>
+#include "stdlib.h"
 
 char *skipspace(char *p);
 void textview(int win, int w, int h, int xskip, char *p, int tab, int lang);
