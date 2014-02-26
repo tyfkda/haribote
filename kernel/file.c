@@ -90,3 +90,15 @@ void file_loadfile(FILEINFO* finfo, const short* fat, char* img, void* buf) {
   fh.cluster = finfo->clustno;
   file_read(&fh, buf, finfo->size, img);
 }
+
+void file_seek(FILEHANDLE* fh, int offset, int origin) {
+  switch (origin) {
+  case 0:  fh->pos = offset; break;
+  case 1:  fh->pos += offset; break;
+  case 2:  fh->pos = fh->finfo->size + offset; break;
+  }
+  if (fh->pos < 0)
+    fh->pos = 0;
+  else if (fh->pos > (int)fh->finfo->size)
+    fh->pos = fh->finfo->size;
+}

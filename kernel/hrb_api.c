@@ -242,15 +242,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       FILEHANDLE* fh = (FILEHANDLE*)eax;
       int origin = ecx;
       int offset = ebx;
-      switch (origin) {
-      case 0:  fh->pos = offset; break;
-      case 1:  fh->pos += offset; break;
-      case 2:  fh->pos = fh->finfo->size + offset; break;
-      }
-      if (fh->pos < 0)
-        fh->pos = 0;
-      else if (fh->pos > (int)fh->finfo->size)
-        fh->pos = fh->finfo->size;
+      file_seek(fh, offset, origin);
     }
     break;
   case API_FSIZE:

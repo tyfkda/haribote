@@ -19,5 +19,6 @@ FILEINFO* file_search(const char* name, FILEINFO* finfo, int max);
 void file_loadfile(FILEINFO* finfo, const short* fat, char* img, void* buf);
 void file_delete(FILEINFO* finfo, short* fat);
 int file_read(FILEHANDLE* fh, void* dst, int requestSize, const char* diskImage);
+void file_seek(FILEHANDLE* fh, int offset, int origin);
 
 #endif
