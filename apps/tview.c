@@ -102,37 +102,37 @@ void HariMain(void) {
       t /= 2;
     if (i == '>' && t < 256)
       t *= 2;
-    if (i == '4') {
+    if (i == KEY_LEFT) {
       for (;;) {
         xskip -= spd_x;
         if (xskip < 0) {
           xskip = 0;
         }
-        if (api_getkey(0) != '4') { /* もう'4'を押していなければ、処理終わり */
+        if (api_getkey(0) != KEY_LEFT) { /* もう'4'を押していなければ、処理終わり */
           break;
         }
       }
     }
-    if (i == '6') {
+    if (i == KEY_RIGHT) {
       for (;;) {
         xskip += spd_x;
-        if (api_getkey(0) != '6') {
+        if (api_getkey(0) != KEY_RIGHT) {
           break;
         }
       }
     }
-    if (i == '8') {
+    if (i == KEY_UP) {
       for (;;) {
         for (j = 0; j < spd_y; j++) {
           if (p == txtbuf + 1)
             break;
           for (p--; p[-1] != 0x0a; p--); /* 一文字前に0x0aがでるまでさかのぼる */
         }
-        if (api_getkey(0) != '8')
+        if (api_getkey(0) != KEY_UP)
           break;
       }
     }
-    if (i == '2') {
+    if (i == KEY_DOWN) {
       for (;;) {
         for (j = 0; j < spd_y; j++) {
           for (q = p; *q != 0 && *q != 0x0a; q++) { }
@@ -141,7 +141,7 @@ void HariMain(void) {
           }
           p = q + 1;
         }
-        if (api_getkey(0) != '2')
+        if (api_getkey(0) != KEY_DOWN)
           break;
       }
     }
