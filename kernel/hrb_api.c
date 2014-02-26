@@ -49,7 +49,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     }break;
   case API_PUTSTRWIN:
     {
-      SHEET* sheet = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      SHEET* sheet = (SHEET*)(ebx & ~1);  // SHEET* sheet == int win;
       char refresh = (ebx & 1) == 0;
       int x = esi, y = edi, col = eax, len = ecx;
       const char* str = (const char*)ebp + ds_base;
@@ -61,7 +61,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     }break;
   case API_BOXFILWIN:
     {
-      SHEET* sheet = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      SHEET* sheet = (SHEET*)(ebx & ~1);  // SHEET* sheet == int win;
       char refresh = (ebx & 1) == 0;
       int x0 = eax, y0 = ecx, x1 = esi, y1 = edi, col = ebp;
       boxfill8(sheet->buf, sheet->bxsize, col, x0, y0, x1, y1);
@@ -93,7 +93,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     }break;
   case API_POINT:
     {
-      SHEET* sheet = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      SHEET* sheet = (SHEET*)(ebx & ~1);  // SHEET* sheet == int win;
       char refresh = (ebx & 1) == 0;
       int x = esi, y = edi, col = eax;
       sheet->buf[sheet->bxsize * y + x] = col;
@@ -111,7 +111,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     }break;
   case API_LINEWIN:
     {
-      SHEET* sheet = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      SHEET* sheet = (SHEET*)(ebx & ~1);  // SHEET* sheet == int win;
       char refresh = ebx & 1;
       int x0 = eax, y0 = ecx, x1 = esi, y1 = edi, col = ebp;
       line8(sheet->buf, sheet->bxsize, x0, y0, x1, y1, col);
