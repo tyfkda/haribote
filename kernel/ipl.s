@@ -17,7 +17,7 @@ start:
 	.word	2880		# Size of this media (must be 2880)
 	.byte	0xf0		# Media type (must be 0xf0)
 	.word	9		# FAT length
-	.word	18		# Number of sector in a track
+	.word	18		# Number of sector per track
 	.word	2		# Number of head
 	.long	0		# No partition
 	.long	0		# Drive size
