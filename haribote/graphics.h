@@ -22,6 +22,9 @@ void init_palette(void);
 void set_palette(int start, int end, unsigned char* rgb);
 void boxfill8(unsigned char* vram, int xsize, unsigned char c,
               int x0, int y0, int x1, int y1);
+void draw_shaded_box(unsigned char* buf, int xsize, int x0, int y0, int x1,
+                     int y1, unsigned char col_tl, unsigned char col_br,
+                     int col_center);
 void line8(unsigned char* vram, int xsize,
            int x0, int y0, int x1, int y1, unsigned char c);
 void init_screen8(unsigned char* vram, int x, int y);

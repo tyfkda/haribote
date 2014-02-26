@@ -57,6 +57,15 @@ void boxfill8(unsigned char* vram, int xsize, unsigned char c, int x0, int y0, i
       vram[y * xsize + x] = c;
 }
 
+void draw_shaded_box(unsigned char* buf, int xsize, int x0, int y0, int x1, int y1, unsigned char col_tl, unsigned char col_br, int col_center) {
+  boxfill8(buf, xsize, col_tl, x0, y0, x1, y0 + 1);
+  boxfill8(buf, xsize, col_tl, x0, y0 + 1, x0 + 1, y1);
+  boxfill8(buf, xsize, col_br, x1 - 1, y0, x1, y1);
+  boxfill8(buf, xsize, col_br, x0, y1 - 1, x1 - 1, y1);
+  if (col_center >= 0)
+    boxfill8(buf, xsize, col_center, x0 + 1, y0 + 1, x1 - 1, y1 - 1);
+}
+
 void line8(unsigned char* vram, int xsize,
            int x0, int y0, int x1, int y1, unsigned char c) {
   int dx = x1 - x0;
@@ -87,17 +96,10 @@ void init_screen8(unsigned char* vram, int x, int y) {
   boxfill8(vram, x, COL8_WHITE,      0, y - 27, x, y - 26);
   boxfill8(vram, x, COL8_GRAY,       0, y - 26, x, y);
 
-  boxfill8(vram, x, COL8_WHITE,      3, y - 24,    60, y - 23);
-  boxfill8(vram, x, COL8_WHITE,      2, y - 24,     3, y - 3);
-  boxfill8(vram, x, COL8_DARK_GRAY,  3, y -  4,    60, y - 3);
-  boxfill8(vram, x, COL8_DARK_GRAY, 59, y - 23,    60, y - 4);
-  boxfill8(vram, x, COL8_BLACK,      2, y -  3,    60, y - 2);
-  boxfill8(vram, x, COL8_BLACK,     60, y - 24,    61, y - 2);
+  draw_shaded_box(vram, x, 2, y - 24, 61, y - 2, COL8_WHITE, COL8_BLACK, -1);
+  draw_shaded_box(vram, x, 3, y - 23, 60, y - 3, COL8_GRAY, COL8_DARK_GRAY, -1);
 
-  boxfill8(vram, x, COL8_DARK_GRAY, x - 47, y - 24, x -  3, y - 23);
-  boxfill8(vram, x, COL8_DARK_GRAY, x - 47, y - 23, x - 46, y - 3);
-  boxfill8(vram, x, COL8_WHITE,     x - 47, y -  3, x -  3, y - 2);
-  boxfill8(vram, x, COL8_WHITE,     x -  3, y - 24, x -  2, y - 2);
+  draw_shaded_box(vram, x, x - 47, y - 24, x - 2, y - 2, COL8_DARK_GRAY, COL8_WHITE, -1);
 }
 
 void putfont8(unsigned char* vram, int xsize, int x, int y, unsigned char c, const unsigned char* font) {

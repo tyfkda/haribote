@@ -2,15 +2,6 @@
 #include "graphics.h"
 #include "sheet.h"
 
-void draw_shaded_box(unsigned char* buf, int xsize, int x0, int y0, int x1, int y1, unsigned char col_tl, unsigned char col_br, int col_center) {
-  boxfill8(buf, xsize, col_tl, x0, y0, x1, y0 + 1);
-  boxfill8(buf, xsize, col_tl, x0, y0 + 1, x0 + 1, y1);
-  boxfill8(buf, xsize, col_br, x1 - 1, y0, x1, y1);
-  boxfill8(buf, xsize, col_br, x0, y1 - 1, x1 - 1, y1);
-  if (col_center >= 0)
-    boxfill8(buf, xsize, col_center, x0 + 1, y0 + 1, x1 - 1, y1 - 1);
-}
-
 void make_wtitle8(unsigned char* buf, int xsize, const char* title, char act) {
   static const char closebtn[14][16] = {
     "OOOOOOOOOOOOOOO@",
