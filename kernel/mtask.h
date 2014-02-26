@@ -30,6 +30,7 @@ typedef struct TASK {
   int ds_base;
   void* cons_stack;
   struct FILEHANDLE* fhandle;
+  int fhandleCount;
   short* fat;
   char* cmdline;
 } TASK;
@@ -60,5 +61,6 @@ void task_switch(void);
 void task_sleep(TASK* task);
 void task_wake(TASK* task);
 int* inthandler07(int* esp);
+struct FILEHANDLE* task_alloc_fhandle(TASK* task);
 
 #endif

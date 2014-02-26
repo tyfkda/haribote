@@ -1,6 +1,7 @@
 #include "mtask.h"
 #include "bootpack.h"
 #include "dsctbl.h"
+#include "file.h"
 #include "memory.h"
 #include "stdio.h"  // NULL
 #include "timer.h"
@@ -198,4 +199,12 @@ int* inthandler07(int *esp) {
   }
   io_sti();
   return 0;
+}
+
+FILEHANDLE* task_alloc_fhandle(TASK* task) {
+  for (int i = 0; i < task->fhandleCount; ++i) {
+    if (task->fhandle[i].finfo == NULL)
+      return &task->fhandle[i];
+  }
+  return NULL;
 }

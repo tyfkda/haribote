@@ -204,7 +204,7 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
         sheet_free(shtctl, sheet);
     }
     // Close files.
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < task->fhandleCount; ++i) {
       if (task->fhandle[i].finfo != NULL) {
         //memman_free_4k(memman, task->fhandle[i].buf, task->fhandle[i].size);
         task->fhandle[i].finfo = NULL;
@@ -305,10 +305,12 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   short* fat = (short*)memman_alloc_4k(memman, sizeof(short) * 2880);
   file_readfat(fat, (unsigned char*)(ADR_DISKIMG + 0x000200));
 
-  FILEHANDLE fhandle[8];
-  for (int i = 0; i < 8; ++i)
+#define TASK_FHANDLE_COUNT  (8)
+  FILEHANDLE fhandle[TASK_FHANDLE_COUNT];
+  for (int i = 0; i < TASK_FHANDLE_COUNT; ++i)
     fhandle[i].finfo = NULL;  // Not used.
   task->fhandle = fhandle;
+  task->fhandleCount = TASK_FHANDLE_COUNT;
   task->fat = fat;
 
   char cmdline[CONSOLE_NX + 1];

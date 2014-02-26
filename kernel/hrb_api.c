@@ -217,20 +217,17 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     }
     break;
   case API_FOPEN:
-    reg[7] = 0;
-    for (int i = 0; i < 8; ++i) {
-      if (task->fhandle[i].finfo == NULL) {
-        const char* filename = (char*)ebx + ds_base;
-        FILEHANDLE* fh = &task->fhandle[i];
-        FILEINFO* finfo = file_search(filename, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
-        if (finfo != NULL) {
-          fh->finfo = finfo;
-          fh->fat = task->fat;
-          fh->cluster = finfo->clustno;
-          fh->pos = 0;
-          reg[7] = (int)fh;
-        }
-        break;
+    {
+      const char* filename = (char*)ebx + ds_base;
+      reg[7] = 0;
+      FILEINFO* finfo = file_search(filename, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
+      FILEHANDLE* fh = task_alloc_fhandle(task);
+      if (finfo != NULL && fh != NULL) {
+        fh->finfo = finfo;
+        fh->fat = task->fat;
+        fh->cluster = finfo->clustno;
+        fh->pos = 0;
+        reg[7] = (int)fh;
       }
     }
     break;
