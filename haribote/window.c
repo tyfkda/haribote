@@ -2,7 +2,7 @@
 #include "graphics.h"
 #include "sheet.h"
 
-void make_wtitle8(unsigned char* buf, int xsize, const char* title, char act) {
+static void make_wtitle8(unsigned char* buf, int xsize, const char* title, char act) {
   static const char closebtn[14][16] = {
     "OOOOOOOOOOOOOOO@",
     "OQQQQQQQQQQQQQ$@",
