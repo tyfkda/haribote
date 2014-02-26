@@ -613,6 +613,35 @@ void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memto
   }
 }
 
+static void handle_key_event(CONSOLE* cons, char* cmdline, const short* fat, unsigned int memtotal, unsigned char key) {
+  switch (key) {
+  case 10:  // Enter.
+    // Erase cursor and newline.
+    cons_putchar(cons, ' ', FALSE);
+    cmdline[cons->cur_x / 8 - 2] = '\0';
+    cons_newline(cons);
+    cons_runcmd(cmdline, cons, fat, memtotal);
+    if (cons->sheet == NULL)
+      cmd_exit(cons, fat);
+    cons_putchar(cons, '>', TRUE);
+    break;
+  case 8:  // Back space.
+    if (cons->cur_x > 16) {
+      cons_putchar(cons, ' ', FALSE);
+      cons->cur_x -= 8;
+    }
+    break;
+  default:  // Normal character.
+    if (' ' <= key && key < 0x80) {
+      if (cons->cur_x < 240) {
+        cmdline[cons->cur_x / 8 - 2] = key;
+        cons_putchar(cons, key, TRUE);
+      }
+    }
+    break;
+  }
+}
+
 void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   TASK* task = task_now();
 
@@ -655,33 +684,7 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
     int i = fifo_get(&task->fifo);
     io_sti();
     if (256 <= i && i < 512) {  // Keyboard data (from task A).
-      unsigned char key = i - 256;
-      switch (key) {
-      case 10:  // Enter.
-        // Erase cursor and newline.
-        cons_putchar(&cons, ' ', FALSE);
-        cmdline[cons.cur_x / 8 - 2] = '\0';
-        cons_newline(&cons);
-        cons_runcmd(cmdline, &cons, fat, memtotal);
-        if (cons.sheet == NULL)
-          cmd_exit(&cons, fat);
-        cons_putchar(&cons, '>', TRUE);
-        break;
-      case 8:  // Back space.
-        if (cons.cur_x > 16) {
-          cons_putchar(&cons, ' ', FALSE);
-          cons.cur_x -= 8;
-        }
-        break;
-      default:  // Normal character.
-        if (' ' <= key && key < 0x80) {
-          if (cons.cur_x < 240) {
-            cmdline[cons.cur_x / 8 - 2] = key;
-            cons_putchar(&cons, key, TRUE);
-          }
-        }
-        break;
-      }
+      handle_key_event(&cons, cmdline, fat, memtotal, i - 256);
     } else {
       switch (i) {
       case 0:
