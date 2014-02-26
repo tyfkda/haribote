@@ -9,6 +9,15 @@
 #include "timer.h"
 #include "window.h"
 
+#define X0     (8)
+#define Y0     (8 + 20)
+#define FONTW  (8)
+#define FONTH  (16)
+#define CONSOLE_NX  (40)
+#define CONSOLE_NY  (25)
+#define CONSOLE_WIDTH   (CONSOLE_NX * FONTW + 8 * 2)
+#define CONSOLE_HEIGHT  (CONSOLE_NY * FONTH + 8 * 2 + 20)
+
 static TASK* open_constask(SHTCTL* shtctl, SHEET* sht, unsigned int memtotal);
 
 void cons_putchar(CONSOLE* cons, int chr, char move) {
@@ -18,10 +27,10 @@ void cons_putchar(CONSOLE* cons, int chr, char move) {
     for (;;) {
       if (cons->sheet != NULL)
         putfonts8_asc_sht(cons->shtctl, cons->sheet, cons->cur_x, cons->cur_y, COL8_WHITE, COL8_BLACK, " ", 1);
-      cons->cur_x += 8;
-      if (cons->cur_x >= 8 + 240)
+      cons->cur_x += FONTW;
+      if (cons->cur_x >= X0 + CONSOLE_NX * FONTW)
         cons_newline(cons);
-      if (((cons->cur_x - 8) & 0x1f) == 0)
+      if (((cons->cur_x - X0) & 0x1f) == 0)
         break;
     }
     break;
@@ -34,8 +43,8 @@ void cons_putchar(CONSOLE* cons, int chr, char move) {
     if (cons->sheet != NULL)
       putfonts8_asc_sht(cons->shtctl, cons->sheet, cons->cur_x, cons->cur_y, COL8_WHITE, COL8_BLACK, s, 1);
     if (move) {
-      cons->cur_x += 8;
-      if (cons->cur_x == 8 + 240)
+      cons->cur_x += FONTW;
+      if (cons->cur_x >= X0 + CONSOLE_NX * FONTW)
         cons_newline(cons);
     }
     break;
@@ -55,18 +64,18 @@ void cons_putstr1(CONSOLE* cons, char* s, int l) {
 void cons_newline(CONSOLE* cons) {
   cons->cur_x = 8;
   SHEET* sheet = cons->sheet;
-  if (cons->cur_y < 28 + 112 || sheet == NULL) {
-    cons->cur_y += 16;
+  if (cons->cur_y < Y0 + (CONSOLE_NY - 1) * FONTH || sheet == NULL) {
+    cons->cur_y += FONTH;
     return;
   }
   unsigned char* buf = sheet->buf;
   int bxsize = sheet->bxsize;
   // Scroll.
-  for (int y = 28; y < 28 + 112; ++y)
-    memcpy(&buf[y * bxsize + 8], &buf[(y + 16) * bxsize + 8], 240);
+  for (int y = Y0; y < Y0 + CONSOLE_NY * FONTH; ++y)
+    memcpy(&buf[y * bxsize + X0], &buf[(y + FONTH) * bxsize + X0], CONSOLE_NX * FONTW);
   // Erase last line.
-  boxfill8(buf, bxsize, COL8_BLACK, 8, 28 + 112, 8 + 240, 28 + 112 + 16);
-  sheet_refresh(cons->shtctl, sheet, 8, 28, 8 + 240, 28 + 128);
+  boxfill8(buf, bxsize, COL8_BLACK, X0, Y0 + (CONSOLE_NY - 1) * FONTH, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
+  sheet_refresh(cons->shtctl, sheet, X0, Y0, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
 }
 
 static void cmd_mem(CONSOLE* cons, int memtotal) {
@@ -80,8 +89,8 @@ static void cmd_mem(CONSOLE* cons, int memtotal) {
 
 static void cmd_cls(CONSOLE* cons) {
   SHEET* sheet = cons->sheet;
-  boxfill8(sheet->buf, sheet->bxsize, COL8_BLACK, 8, 28, 8 + 240, 28 + 128);
-  sheet_refresh(cons->shtctl, sheet, 8, 28, 8 + 240, 28 + 128);
+  boxfill8(sheet->buf, sheet->bxsize, COL8_BLACK, 8, 28, 8 + CONSOLE_NX * 8, 28 + CONSOLE_NY * 16);
+  sheet_refresh(cons->shtctl, sheet, 8, 28, 8 + CONSOLE_NX * 8, 28 + CONSOLE_NY * 16);
   cons->cur_y = 28;
 }
 
@@ -273,15 +282,15 @@ static void handle_key_event(CONSOLE* cons, char* cmdline, const short* fat, uns
     cons_putchar(cons, '>', TRUE);
     break;
   case 8:  // Back space.
-    if (cons->cur_x > 16) {
+    if (cons->cur_x > X0 + FONTW) {
       cons_putchar(cons, ' ', FALSE);
-      cons->cur_x -= 8;
+      cons->cur_x -= FONTW;
     }
     break;
   default:  // Normal character.
     if (' ' <= key && key < 0x80) {
-      if (cons->cur_x < 240) {
-        cmdline[cons->cur_x / 8 - 2] = key;
+      if (cons->cur_x < X0 + (CONSOLE_NX - 1) * FONTW) {
+        cmdline[cons->cur_x / FONTW - 2] = key;
         cons_putchar(cons, key, TRUE);
       }
     }
@@ -302,14 +311,14 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   task->fhandle = fhandle;
   task->fat = fat;
 
-  char cmdline[30];
+  char cmdline[CONSOLE_NX + 1];
 
   // Show prompt.
   CONSOLE cons;
   cons.shtctl = shtctl;
   cons.sheet = sheet;
-  cons.cur_x = 8;
-  cons.cur_y = 28;
+  cons.cur_x = X0;
+  cons.cur_y = Y0;
   cons.cur_c = -1;
   task->cons = &cons;
   task->cmdline = cmdline;
@@ -385,10 +394,10 @@ static TASK* open_constask(SHTCTL* shtctl, SHEET* sht, unsigned int memtotal) {
 SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
   SHEET* sht = sheet_alloc(shtctl);
-  unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, 256 * 165);
-  sheet_setbuf(sht, buf, 256, 165, -1);
-  make_window8(buf, 256, 165, "console", FALSE);
-  make_textbox8(sht, 8, 28, 240, 128, COL8_BLACK);
+  unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, CONSOLE_WIDTH * CONSOLE_HEIGHT);
+  sheet_setbuf(sht, buf, CONSOLE_WIDTH, CONSOLE_HEIGHT, -1);
+  make_window8(buf, CONSOLE_WIDTH, CONSOLE_HEIGHT, "console", FALSE);
+  make_textbox8(sht, X0, Y0, CONSOLE_NX * 8, CONSOLE_NY * 16, COL8_BLACK);
   sht->task = open_constask(shtctl, sht, memtotal);
   sht->flags |= 0x20;
   return sht;
@@ -410,6 +419,6 @@ void close_constask(TASK* task) {
 void close_console(SHTCTL* shtctl, SHEET* sht) {
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
   close_constask(sht->task);
-  memman_free_4k(memman, sht->buf, 256 * 165);  // Warn! sheet size.
+  memman_free_4k(memman, sht->buf, CONSOLE_WIDTH * CONSOLE_HEIGHT);  // Warn! sheet size.
   sheet_free(shtctl, sht);
 }
