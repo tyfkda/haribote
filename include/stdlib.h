@@ -13,6 +13,7 @@ extern "C" {
 #define RAND_MAX  (0x7fff)
 
 void exit(int status) __attribute__((__noreturn__));
+int atexit(void (*function)(void));
 
 void* malloc(size_t size);
 void free(void* p);
