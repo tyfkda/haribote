@@ -26,16 +26,16 @@ $(OBJDIR)/%.o:	$(APILIBDIR)/%.c
 	gcc -c -o $@ $(CFLAGS) $<
 
 $(OBJDIR)/ipl.bin:	$(OBJDIR)/ipl.o
-	ld -N -e start -Ttext 0x7c00 -S --oformat binary -o $@ $<
+	ld -N -e start -Ttext 0x7c00 -s --oformat binary -o $@ $<
 
 $(OBJDIR)/haribote.sys:	$(OBJDIR)/asmhead.bin $(OBJDIR)/bootpack.bin
 	cat $^ > $@
 
 $(OBJDIR)/asmhead.bin:	$(OBJDIR)/asmhead.o
-	ld -N -e start -Ttext 0xc200 -S --oformat binary -o $@ $<
+	ld -N -e start -Ttext 0xc200 -s --oformat binary -o $@ $<
 
 $(OBJDIR)/bootpack.bin:	$(OBJS) $(APILIB)
-	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls -o $@ $^
+	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls -s -o $@ $^
 
 $(APILIB):
 	make -C ../apilib
