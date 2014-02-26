@@ -33,6 +33,7 @@ void putfont8(unsigned char* vram, int xsize, int x, int y, unsigned char c,
 void putfonts8_asc(unsigned char* vram, int xsize, int x, int y,
                    unsigned char c, const char* s);
 void init_mouse_cursor8(unsigned char* mouse, unsigned char bc);
+void convert_image8(unsigned char* buf, int bufXsize, int x0, int y0, int imgXsize, int imgYsize, const char* image, const unsigned char* table);
 void putblock8_8(unsigned char* vram, int xsize, int pxsize, int pysize,
                  int px0, int py0, const unsigned char* buf, int bxsize);
 

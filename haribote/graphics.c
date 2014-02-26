@@ -116,6 +116,20 @@ void putfonts8_asc(unsigned char* vram, int xsize, int x, int y, unsigned char c
   }
 }
 
+void convert_image8(unsigned char* buf, int bufXsize, int x0, int y0, int imgXsize, int imgYsize, const char* image, const unsigned char* table) {
+  for (int y = 0; y < imgYsize; ++y) {
+    for (int x = 0; x < imgXsize; ++x) {
+      unsigned char c = image[y * imgXsize + x];
+      for (int i = 0; ; i += 2) {
+        if (c == table[i]) {
+          buf[(y + y0) * bufXsize + x + x0] = table[i + 1];
+          break;
+        }
+      }
+    }
+  }
+}
+
 void init_mouse_cursor8(unsigned char* mouse, unsigned char bc) {
   static const char cursor[16][16] = {
     "**************..",
@@ -135,16 +149,13 @@ void init_mouse_cursor8(unsigned char* mouse, unsigned char bc) {
     "............*oo*",
     ".............***",
   };
-  for (int y = 0; y < 16; ++y) {
-    for (int x = 0; x < 16; ++x) {
-      unsigned char c = bc;
-      switch (cursor[y][x]) {
-      case '*':  c = COL8_BLACK; break;
-      case 'o':  c = COL8_WHITE; break;
-      }
-      mouse[y * 16 + x] = c;
-    }
-  }
+  unsigned char table[][2] = {
+    { '*', COL8_BLACK },
+    { 'o', COL8_WHITE },
+    { '.', bc },
+    { '\0' },
+  };
+  convert_image8(mouse, 16, 0, 0, 16, 16, &cursor[0][0], &table[0][0]);
 }
 
 void putblock8_8(unsigned char* vram, int xsize, int pxsize, int pysize,

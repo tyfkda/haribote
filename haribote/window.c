@@ -19,6 +19,12 @@ void make_wtitle8(unsigned char* buf, int xsize, const char* title, char act) {
     "O$$$$$$$$$$$$$$@",
     "@@@@@@@@@@@@@@@@",
   };
+  static const unsigned char table[][2] = {
+    { '@', COL8_BLACK },
+    { '$', COL8_DARK_GRAY },
+    { 'Q', COL8_GRAY },
+    { 'O', COL8_WHITE },
+  };
   unsigned char tc, tbc;
   if (act) {
     tc = COL8_WHITE;
@@ -29,18 +35,7 @@ void make_wtitle8(unsigned char* buf, int xsize, const char* title, char act) {
   }
   boxfill8(buf, xsize, tbc, 3, 3, xsize - 3, 21);
   putfonts8_asc(buf, xsize, 24, 4, tc, title);
-  for (int y = 0; y < 14; ++y) {
-    for (int x = 0; x < 16; ++x) {
-      unsigned char c;
-      switch (closebtn[y][x]) {
-      case '@':  c = COL8_BLACK; break;
-      case '$':  c = COL8_DARK_GRAY; break;
-      case 'Q':  c = COL8_GRAY; break;
-      default:   c = COL8_WHITE; break;
-      }
-      buf[(5 + y) * xsize + (xsize - 21 + x)] = c;
-    }
-  }
+  convert_image8(buf, xsize, xsize - 21, 5, 16, 14, &closebtn[0][0], &table[0][0]);
 }
 
 void change_wtitle8(SHTCTL* shtctl, SHEET* sheet, char act) {
