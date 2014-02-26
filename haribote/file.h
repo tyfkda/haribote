@@ -1,6 +1,12 @@
 #ifndef __FILE_H__
 #define __FILE_H__
 
+typedef struct FILEHANDLE {
+  unsigned char* buf;
+  int size;
+  int pos;
+} FILEHANDLE;
+
 typedef struct {
   unsigned char name[8], ext[3], type, reserve[10];
   unsigned short time, date, clustno;
