@@ -10,7 +10,7 @@ DISK_FILES=\
 	$(OBJDIR)/type.hrb \
 	$(OBJDIR)/del.hrb \
 	$(OBJDIR)/now.hrb \
-	haribote/ipl.s \
+	kernel/ipl.s \
 	$(OBJDIR)/hello3.hrb \
 	$(OBJDIR)/hello4.hrb \
 	$(OBJDIR)/hello5.hrb \
@@ -46,7 +46,7 @@ $(TARGET):	os lib apps
 	  $(FAT12IMG) $@ save $$filename; \
 	done
 os:
-	make -C haribote
+	make -C kernel
 
 lib:
 	make -C apilib
