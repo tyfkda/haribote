@@ -1,0 +1,33 @@
+#ifndef __HRB_API_H__
+#define __HRB_API_H__
+
+#define API_PUTCHAR  (1)
+#define API_PUTSTR0  (2)
+#define API_PUTSTR1  (3)
+#define API_END  (4)
+#define API_OPENWIN  (5)
+#define API_PUTSTRWIN  (6)
+#define API_BOXFILWIN  (7)
+#define API_INITMALLOC  (8)
+#define API_MALLOC  (9)
+#define API_FREE  (10)
+#define API_POINT  (11)
+#define API_REFRESHWIN  (12)
+#define API_LINEWIN  (13)
+#define API_CLOSEWIN  (14)
+#define API_GETKEY  (15)
+#define API_ALLOCTIMER  (16)
+#define API_INITTIMER  (17)
+#define API_SETTIMER  (18)
+#define API_FREETIMER  (19)
+#define API_BEEP  (20)
+#define API_FOPEN  (21)
+#define API_FCLOSE  (22)
+#define API_FSEEK  (23)
+#define API_FSIZE  (24)
+#define API_FREAD  (25)
+#define API_CMDLINE  (26)
+#define API_DELETE  (27)
+#define API_NOW  (28)
+
+#endif
