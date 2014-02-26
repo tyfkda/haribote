@@ -36,7 +36,5 @@ void load_tr(int tr);
 void farjmp(int eip, int cs);
 void farcall(int eip, int cs);
 void start_app(int eip, int cs, int esp, int ds, int* tss_esp0);
-struct TASK* open_constask(struct SHTCTL* shtctl, struct SHEET* sht, unsigned int memtotal);
-struct SHEET* open_console(struct SHTCTL* shtctl, unsigned int memtotal);
 
 #endif

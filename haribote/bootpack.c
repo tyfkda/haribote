@@ -73,57 +73,6 @@ static const char keytable[2][0x80] = {
 #endif
 };
 
-TASK* open_constask(SHTCTL* shtctl, SHEET* sht, unsigned int memtotal) {
-  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
-  TASK* task = task_alloc();
-  int stack_size = 64 * 1024;
-  task->cons_stack = memman_alloc_4k(memman, stack_size);
-  task->tss.esp = (int)task->cons_stack + stack_size - 4 - 4 * 3;
-  task->tss.eip = (int) &console_task;
-  task->tss.cs = 2 * 8;
-  task->tss.es = task->tss.ss = task->tss.ds = task->tss.fs = task->tss.gs = 1 * 8;
-  *((int*)(task->tss.esp + 4)) = (int)shtctl;
-  *((int*)(task->tss.esp + 8)) = (int)sht;
-  *((int*)(task->tss.esp + 12)) = (int)memtotal;
-  task_run(task, 2, 2);
-
-  int* cons_fifo = (int*)memman_alloc_4k(memman, 128 * sizeof(int));
-  fifo_init(&task->fifo, 128, cons_fifo, task);
-  return task;
-}
-
-SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
-  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
-  SHEET* sht = sheet_alloc(shtctl);
-  unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, 256 * 165);
-  sheet_setbuf(sht, buf, 256, 165, -1);
-  make_window8(buf, 256, 165, "console", FALSE);
-  make_textbox8(sht, 8, 28, 240, 128, COL8_BLACK);
-  sht->task = open_constask(shtctl, sht, memtotal);
-  sht->flags |= 0x20;
-  return sht;
-}
-
-static void close_constask(TASK* task) {
-  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
-  task_sleep(task);
-  if (task->cons_stack != NULL)
-    memman_free_4k(memman, task->cons_stack, 64 * 1024);
-  memman_free_4k(memman, task->fifo.buf, 128 * sizeof(int));
-  io_cli();
-  if (taskctl->task_fpu == task)
-    taskctl->task_fpu = NULL;
-  io_sti();
-  task_free(task);
-}
-
-static void close_console(SHTCTL* shtctl, SHEET* sht) {
-  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
-  close_constask(sht->task);
-  memman_free_4k(memman, sht->buf, 256 * 165);  // Warn! sheet size.
-  sheet_free(shtctl, sht);
-}
-
 typedef struct {
   BOOTINFO* binfo;
   SHTCTL* shtctl;

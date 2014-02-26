@@ -40,25 +40,10 @@
 #define API_DELETE  (27)
 #define API_NOW  (28)
 
+static TASK* open_constask(SHTCTL* shtctl, SHEET* sht, unsigned int memtotal);
+
 static int bcd2(unsigned char x) {
   return (x >> 4) * 10 + (x & 0x0f);
-}
-
-void cons_newline(CONSOLE* cons) {
-  cons->cur_x = 8;
-  SHEET* sheet = cons->sheet;
-  if (cons->cur_y < 28 + 112 || sheet == NULL) {
-    cons->cur_y += 16;
-    return;
-  }
-  unsigned char* buf = sheet->buf;
-  int bxsize = sheet->bxsize;
-  // Scroll.
-  for (int y = 28; y < 28 + 112; ++y)
-    memcpy(&buf[y * bxsize + 8], &buf[(y + 16) * bxsize + 8], 240);
-  // Erase last line.
-  boxfill8(buf, bxsize, COL8_BLACK, 8, 28 + 112, 8 + 240, 28 + 112 + 16);
-  sheet_refresh(cons->shtctl, sheet, 8, 28, 8 + 240, 28 + 128);
 }
 
 void cons_putchar(CONSOLE* cons, int chr, char move) {
@@ -100,6 +85,23 @@ void cons_putstr0(CONSOLE* cons, char* s) {
 void cons_putstr1(CONSOLE* cons, char* s, int l) {
   for (int i = 0; i < l; ++i)
     cons_putchar(cons, *s++, 1);
+}
+
+void cons_newline(CONSOLE* cons) {
+  cons->cur_x = 8;
+  SHEET* sheet = cons->sheet;
+  if (cons->cur_y < 28 + 112 || sheet == NULL) {
+    cons->cur_y += 16;
+    return;
+  }
+  unsigned char* buf = sheet->buf;
+  int bxsize = sheet->bxsize;
+  // Scroll.
+  for (int y = 28; y < 28 + 112; ++y)
+    memcpy(&buf[y * bxsize + 8], &buf[(y + 16) * bxsize + 8], 240);
+  // Erase last line.
+  boxfill8(buf, bxsize, COL8_BLACK, 8, 28 + 112, 8 + 240, 28 + 112 + 16);
+  sheet_refresh(cons->shtctl, sheet, 8, 28, 8 + 240, 28 + 128);
 }
 
 int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax) {
@@ -594,7 +596,7 @@ int* inthandler0d(void) {
   return &task->tss.esp0;  // Abort
 }
 
-void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memtotal) {
+static void cons_runcmd(const char* cmdline, CONSOLE* cons, const short* fat, int memtotal) {
   if (strcmp(cmdline, "mem") == 0 && cons->sheet != NULL) {
     cmd_mem(cons, memtotal);
   } else if (strcmp(cmdline, "cls") == 0 && cons->sheet != NULL) {
@@ -642,7 +644,7 @@ static void handle_key_event(CONSOLE* cons, char* cmdline, const short* fat, uns
   }
 }
 
-void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
+static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   TASK* task = task_now();
 
   MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
@@ -714,4 +716,55 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
       sheet_refresh(shtctl, cons.sheet, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
     }
   }
+}
+
+static TASK* open_constask(SHTCTL* shtctl, SHEET* sht, unsigned int memtotal) {
+  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
+  TASK* task = task_alloc();
+  int stack_size = 64 * 1024;
+  task->cons_stack = memman_alloc_4k(memman, stack_size);
+  task->tss.esp = (int)task->cons_stack + stack_size - 4 - 4 * 3;
+  task->tss.eip = (int) &console_task;
+  task->tss.cs = 2 * 8;
+  task->tss.es = task->tss.ss = task->tss.ds = task->tss.fs = task->tss.gs = 1 * 8;
+  *((int*)(task->tss.esp + 4)) = (int)shtctl;
+  *((int*)(task->tss.esp + 8)) = (int)sht;
+  *((int*)(task->tss.esp + 12)) = (int)memtotal;
+  task_run(task, 2, 2);
+
+  int* cons_fifo = (int*)memman_alloc_4k(memman, 128 * sizeof(int));
+  fifo_init(&task->fifo, 128, cons_fifo, task);
+  return task;
+}
+
+SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
+  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
+  SHEET* sht = sheet_alloc(shtctl);
+  unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, 256 * 165);
+  sheet_setbuf(sht, buf, 256, 165, -1);
+  make_window8(buf, 256, 165, "console", FALSE);
+  make_textbox8(sht, 8, 28, 240, 128, COL8_BLACK);
+  sht->task = open_constask(shtctl, sht, memtotal);
+  sht->flags |= 0x20;
+  return sht;
+}
+
+void close_constask(TASK* task) {
+  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
+  task_sleep(task);
+  if (task->cons_stack != NULL)
+    memman_free_4k(memman, task->cons_stack, 64 * 1024);
+  memman_free_4k(memman, task->fifo.buf, 128 * sizeof(int));
+  io_cli();
+  if (taskctl->task_fpu == task)
+    taskctl->task_fpu = NULL;
+  io_sti();
+  task_free(task);
+}
+
+void close_console(SHTCTL* shtctl, SHEET* sht) {
+  MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
+  close_constask(sht->task);
+  memman_free_4k(memman, sht->buf, 256 * 165);  // Warn! sheet size.
+  sheet_free(shtctl, sht);
 }
