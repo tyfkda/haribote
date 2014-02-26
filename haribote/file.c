@@ -42,20 +42,6 @@ FILEINFO* file_search(const char* name, FILEINFO* finfo, int max) {
   return NULL;
 }
 
-void file_loadfile(short clustno, int size, void* buf, const short* fat, char* img) {
-  char* p = buf;
-  for (;;) {
-    if (size <= CLUSTER_SIZE) {
-      memcpy(p, &img[clustno * CLUSTER_SIZE], size);
-      break;
-    }
-    memcpy(p, &img[clustno * CLUSTER_SIZE], CLUSTER_SIZE);
-    size -= CLUSTER_SIZE;
-    p += CLUSTER_SIZE;
-    clustno = fat[clustno];
-  }
-}
-
 void file_delete(FILEINFO* finfo, short* fat) {
   finfo->name[0] = 0xe5;  // Delete mark.
   for (short cluster = finfo->clustno; cluster < 0xff0; ) {
@@ -94,4 +80,13 @@ int file_read(FILEHANDLE* fh, void* dst, int requestSize, const char* diskImage)
     requestSize -= blockBytes;
   }
   return readSize;
+}
+
+void file_loadfile(FILEINFO* finfo, const short* fat, char* img, void* buf) {
+  FILEHANDLE fh;
+  fh.finfo = finfo;
+  fh.fat = fat;
+  fh.pos = 0;
+  fh.cluster = finfo->clustno;
+  file_read(&fh, buf, finfo->size, img);
 }

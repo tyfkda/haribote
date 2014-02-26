@@ -522,7 +522,7 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
   // File found.
   MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
   char* p = (char*)memman_alloc_4k(memman, finfo->size);
-  file_loadfile(finfo->clustno, finfo->size, p, fat, (char*)(ADR_DISKIMG + 0x003e00));
+  file_loadfile(finfo, fat, (char*)(ADR_DISKIMG + 0x003e00), p);
   if (finfo->size < 36 || strncmp(p + 4, "Hari", 4) != 0 || *p != 0x00) {
     cons_putstr0(cons, ".hrb file format error.\n");
   } else {
