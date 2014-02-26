@@ -4,6 +4,15 @@
 
 extern int main(int argc, char* argv[]);
 
+typedef void (*InitFunc)(void);
+
+extern InitFunc __preinit_array_start;
+extern InitFunc __preinit_array_end;
+extern InitFunc __init_array_start;
+extern InitFunc __init_array_end;
+extern InitFunc __fini_array_start;
+extern InitFunc __fini_array_end;
+
 static char* skipSpace(char* p) {
   for (; *p == ' '; ++p);
   return p;
@@ -36,6 +45,11 @@ void HariMain(void) {
       break;
     *p++ = '\0';
   }
+
+  for (InitFunc* pp = &__preinit_array_start; pp < &__preinit_array_end; ++pp)
+    (**pp)();
+  for (InitFunc* pp = &__init_array_start; pp < &__init_array_end; ++pp)
+    (**pp)();
 
   int result = main(argc, argv);
   exit(result);

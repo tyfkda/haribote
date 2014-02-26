@@ -32,11 +32,12 @@ protected:
   int win_;
 };
 
+static Main mainWin(123);
+
 int main() {
   puts("main start");
-  Base* win = new Main(123);
+  Base* win = &mainWin;
   win->hello();
-  delete win;
   puts("main end");
   return 0;
 }
