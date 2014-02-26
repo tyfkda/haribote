@@ -396,7 +396,7 @@ SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
   SHEET* sheet = sheet_alloc(shtctl);
   unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, CONSOLE_WIDTH * CONSOLE_HEIGHT);
   sheet_setbuf(sheet, buf, CONSOLE_WIDTH, CONSOLE_HEIGHT, -1);
-  make_window8(buf, CONSOLE_WIDTH, CONSOLE_HEIGHT, "console", FALSE);
+  make_window8(sheet, "console", FALSE);
   make_textbox8(sheet, X0, Y0, CONSOLE_NX * 8, CONSOLE_NY * 16, COL8_BLACK);
   sheet->task = open_constask(shtctl, sheet, memtotal);
   sheet->flags |= 0x20;

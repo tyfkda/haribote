@@ -35,7 +35,14 @@ static void make_wtitle8(unsigned char* buf, int xsize, const char* title, char 
   }
   boxfill8(buf, xsize, tbc, 3, 3, xsize - 3, 21);
   putfonts8_asc(buf, xsize, 24, 4, tc, title);
+  putfonts8_asc(buf, xsize, 25, 4, tc, title);
   convert_image8(buf, xsize, xsize - 21, 5, 16, 14, &closebtn[0][0], &table[0][0]);
+}
+
+void make_window8(struct SHEET* sheet, const char* title, char act) {
+  draw_shaded_box(sheet->buf, sheet->bxsize, 0, 0, sheet->bxsize, sheet->bysize, COL8_GRAY, COL8_BLACK, -1);
+  draw_shaded_box(sheet->buf, sheet->bxsize, 1, 1, sheet->bxsize - 1, sheet->bysize - 1, COL8_WHITE, COL8_DARK_GRAY, COL8_GRAY);
+  make_wtitle8(sheet->buf, sheet->bxsize, title, act);
 }
 
 void change_wtitle8(SHTCTL* shtctl, SHEET* sheet, char act) {
@@ -66,12 +73,6 @@ void change_wtitle8(SHTCTL* shtctl, SHEET* sheet, char act) {
     }
   }
   sheet_refresh(shtctl, sheet, 3, 3, xsize, 21);
-}
-
-void make_window8(unsigned char* buf, int xsize, int ysize, const char* title, char act) {
-  draw_shaded_box(buf, xsize, 0, 0, xsize, ysize, COL8_GRAY, COL8_BLACK, -1);
-  draw_shaded_box(buf, xsize, 1, 1, xsize - 1, ysize - 1, COL8_WHITE, COL8_DARK_GRAY, COL8_GRAY);
-  make_wtitle8(buf, xsize, title, act);
 }
 
 void make_textbox8(SHEET* sheet, int x0, int y0, int sx, int sy, int c) {
