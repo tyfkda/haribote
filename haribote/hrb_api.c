@@ -38,36 +38,36 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       int xsize = esi, ysize = edi, col_inv = eax;
       const char* title = (const char*)ecx + ds_base;
       SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-      SHEET* sht = sheet_alloc(shtctl);
-      sht->task = task;
-      sht->flags |= 0x10;
-      reg[7] = (int)sht;  // Set return value: SHEET* sheet == int win;
-      sheet_setbuf(sht, buf, xsize, ysize, col_inv);
+      SHEET* sheet = sheet_alloc(shtctl);
+      sheet->task = task;
+      sheet->flags |= 0x10;
+      reg[7] = (int)sheet;  // Set return value: SHEET* sheet == int win;
+      sheet_setbuf(sheet, buf, xsize, ysize, col_inv);
       make_window8(buf, xsize, ysize, title, FALSE);
-      sheet_slide(shtctl, sht, (shtctl->xsize - xsize) / 2, (shtctl->ysize - ysize) / 2);
-      sheet_updown(shtctl, sht, shtctl->top);
+      sheet_slide(shtctl, sheet, (shtctl->xsize - xsize) / 2, (shtctl->ysize - ysize) / 2);
+      sheet_updown(shtctl, sheet, shtctl->top);
     }break;
   case API_PUTSTRWIN:
     {
-      SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      SHEET* sheet = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
       char refresh = (ebx & 1) == 0;
       int x = esi, y = edi, col = eax, len = ecx;
       const char* str = (const char*)ebp + ds_base;
-      putfonts8_asc(sht->buf, sht->bxsize, x, y, col, str);
+      putfonts8_asc(sheet->buf, sheet->bxsize, x, y, col, str);
       if (refresh) {
         SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-        sheet_refresh(shtctl, sht, x, y, x + len * 8, y + 16);
+        sheet_refresh(shtctl, sheet, x, y, x + len * 8, y + 16);
       }
     }break;
   case API_BOXFILWIN:
     {
-      SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      SHEET* sheet = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
       char refresh = (ebx & 1) == 0;
       int x0 = eax, y0 = ecx, x1 = esi, y1 = edi, col = ebp;
-      boxfill8(sht->buf, sht->bxsize, col, x0, y0, x1, y1);
+      boxfill8(sheet->buf, sheet->bxsize, col, x0, y0, x1, y1);
       if (refresh) {
         SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-        sheet_refresh(shtctl, sht, x0, y0, x1, y1);
+        sheet_refresh(shtctl, sheet, x0, y0, x1, y1);
       }
     }break;
   case API_INITMALLOC:
@@ -93,42 +93,42 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     }break;
   case API_POINT:
     {
-      SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      SHEET* sheet = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
       char refresh = (ebx & 1) == 0;
       int x = esi, y = edi, col = eax;
-      sht->buf[sht->bxsize * y + x] = col;
+      sheet->buf[sheet->bxsize * y + x] = col;
       if (refresh) {
         SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-        sheet_refresh(shtctl, sht, x, y, x + 1, y + 1);
+        sheet_refresh(shtctl, sheet, x, y, x + 1, y + 1);
       }
     }break;
   case API_REFRESHWIN:
     {
-      SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
+      SHEET* sheet = (SHEET*)ebx;  // SHEET* sheet == int win;
       int x0 = eax, y0 = ecx, x1 = esi, y1 = edi;
       SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-      sheet_refresh(shtctl, sht, x0, y0, x1, y1);
+      sheet_refresh(shtctl, sheet, x0, y0, x1, y1);
     }break;
   case API_LINEWIN:
     {
-      SHEET* sht = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
+      SHEET* sheet = (SHEET*)(ebx & -2);  // SHEET* sheet == int win;
       char refresh = ebx & 1;
       int x0 = eax, y0 = ecx, x1 = esi, y1 = edi, col = ebp;
-      line8(sht->buf, sht->bxsize, x0, y0, x1, y1, col);
+      line8(sheet->buf, sheet->bxsize, x0, y0, x1, y1, col);
       if (refresh) {
         if (x0 > x1)
           SWAP(int, x0, x1);
         if (y0 > y1)
           SWAP(int, y0, y1);
         SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-        sheet_refresh(shtctl, sht, x0, y0, x1, y1);
+        sheet_refresh(shtctl, sheet, x0, y0, x1, y1);
       }
     }break;
   case API_CLOSEWIN:
     {
-      SHEET* sht = (SHEET*)ebx;  // SHEET* sheet == int win;
+      SHEET* sheet = (SHEET*)ebx;  // SHEET* sheet == int win;
       SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-      sheet_free(shtctl, sht);
+      sheet_free(shtctl, sheet);
     }break;
   case API_GETKEY:
     {

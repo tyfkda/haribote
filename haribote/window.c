@@ -43,7 +43,7 @@ void make_wtitle8(unsigned char* buf, int xsize, const char* title, char act) {
   }
 }
 
-void change_wtitle8(SHTCTL* shtctl, SHEET* sht, char act) {
+void change_wtitle8(SHTCTL* shtctl, SHEET* sheet, char act) {
   int tc_new, tbc_new, tc_old, tbc_old;
   if (act) {
     tc_new = COL8_WHITE;
@@ -57,8 +57,8 @@ void change_wtitle8(SHTCTL* shtctl, SHEET* sht, char act) {
     tbc_old = COL8_DARK_BLUE;
   }
 
-  unsigned char* buf = sht->buf;
-  int xsize = sht->bxsize;
+  unsigned char* buf = sheet->buf;
+  int xsize = sheet->bxsize;
   for (int y = 3; y < 20; ++y) {
     for (int x = 3; x < xsize - 3; ++x) {
       unsigned char c = buf[y * xsize + x];
@@ -70,7 +70,7 @@ void change_wtitle8(SHTCTL* shtctl, SHEET* sht, char act) {
       buf[y * xsize + x] = c;
     }
   }
-  sheet_refresh(shtctl, sht, 3, 3, xsize, 21);
+  sheet_refresh(shtctl, sheet, 3, 3, xsize, 21);
 }
 
 void make_window8(unsigned char* buf, int xsize, int ysize, const char* title, char act) {
@@ -79,14 +79,14 @@ void make_window8(unsigned char* buf, int xsize, int ysize, const char* title, c
   make_wtitle8(buf, xsize, title, act);
 }
 
-void make_textbox8(SHEET* sht, int x0, int y0, int sx, int sy, int c) {
+void make_textbox8(SHEET* sheet, int x0, int y0, int sx, int sy, int c) {
   int x1 = x0 + sx, y1 = y0 + sy;
-  draw_shaded_box(sht->buf, sht->bxsize, x0 - 2, y0 - 2, x1 + 2, y1 + 2, COL8_GRAY, COL8_WHITE, -1);
-  draw_shaded_box(sht->buf, sht->bxsize, x0 - 1, y0 - 1, x1 + 1, y1 + 1, COL8_DARK_GRAY, COL8_GRAY, c);
+  draw_shaded_box(sheet->buf, sheet->bxsize, x0 - 2, y0 - 2, x1 + 2, y1 + 2, COL8_GRAY, COL8_WHITE, -1);
+  draw_shaded_box(sheet->buf, sheet->bxsize, x0 - 1, y0 - 1, x1 + 1, y1 + 1, COL8_DARK_GRAY, COL8_GRAY, c);
 }
 
-void putfonts8_asc_sht(SHTCTL* shtctl, SHEET* sht, int x, int y, int c, int b, const char* s, int l) {
-  boxfill8(sht->buf, sht->bxsize, b, x, y, x + l * 8, y + 16);
-  putfonts8_asc(sht->buf, sht->bxsize, x, y, c, s);
-  sheet_refresh(shtctl, sht, x, y, x + l * 8, y + 16);
+void putfonts8_asc_sht(SHTCTL* shtctl, SHEET* sheet, int x, int y, int c, int b, const char* s, int l) {
+  boxfill8(sheet->buf, sheet->bxsize, b, x, y, x + l * 8, y + 16);
+  putfonts8_asc(sheet->buf, sheet->bxsize, x, y, c, s);
+  sheet_refresh(shtctl, sheet, x, y, x + l * 8, y + 16);
 }

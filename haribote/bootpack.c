@@ -152,47 +152,47 @@ static void handle_key_event(OsInfo* osinfo, int keycode) {
   }
 }
 
-static int close_button_clicked(SHEET* sht, int x, int y) {
-  return sht->bxsize - 21 <= x && x <= sht->bxsize - 5 && 5 <= 5 && y < 19;
+static int close_button_clicked(SHEET* sheet, int x, int y) {
+  return sheet->bxsize - 21 <= x && x <= sheet->bxsize - 5 && 5 <= 5 && y < 19;
 }
-static int title_bar_clicked(SHEET* sht, int x, int y) {
-  return 3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21;
+static int title_bar_clicked(SHEET* sheet, int x, int y) {
+  return 3 <= x && x < sheet->bxsize - 3 && 3 <= y && y < 21;
 }
 
 static SHEET* get_window_at(OsInfo* osinfo, int mx, int my) {
   for (int j = osinfo->shtctl->top; --j > 0; ) {
-    SHEET* sht = osinfo->shtctl->sheets[j];
-    int x = mx - sht->vx0;
-    int y = my - sht->vy0;
-    if (0 <= x && x < sht->bxsize && 0 <= y && y < sht->bysize &&
-        sht->buf[y * sht->bxsize + x] != sht->col_inv)
-      return sht;
+    SHEET* sheet = osinfo->shtctl->sheets[j];
+    int x = mx - sheet->vx0;
+    int y = my - sheet->vy0;
+    if (0 <= x && x < sheet->bxsize && 0 <= y && y < sheet->bysize &&
+        sheet->buf[y * sheet->bxsize + x] != sheet->col_inv)
+      return sheet;
   }
   return NULL;
 }
 
 static void mouse_left_clicked(OsInfo* osinfo) {
-  SHEET* sht = get_window_at(osinfo, osinfo->mx, osinfo->my);
-  if (sht == NULL)
+  SHEET* sheet = get_window_at(osinfo, osinfo->mx, osinfo->my);
+  if (sheet == NULL)
     return;
 
   // Activate this sheet.
-  sheet_updown(osinfo->shtctl, sht, osinfo->shtctl->top - 1);
-  int x = osinfo->mx - sht->vx0;
-  int y = osinfo->my - sht->vy0;
-  if (close_button_clicked(sht, x, y)) {
+  sheet_updown(osinfo->shtctl, sheet, osinfo->shtctl->top - 1);
+  int x = osinfo->mx - sheet->vx0;
+  int y = osinfo->my - sheet->vy0;
+  if (close_button_clicked(sheet, x, y)) {
     // Close button clicked.
-    if ((sht->flags & 0x10) != 0) {  // Window created by application.
-      TASK* task = sht->task;
+    if ((sheet->flags & 0x10) != 0) {  // Window created by application.
+      TASK* task = sheet->task;
       io_cli();
       task->tss.eax = (int)&(task->tss.esp0);
       task->tss.eip = (int)asm_end_app;
       io_sti();
       task_run(task, -1, 0);  // Wake to execute termination.
     } else {  // Console window.
-      TASK* task = sht->task;
-      sheet_updown(osinfo->shtctl, sht, -1);
-      if (sht == osinfo->key_win) {
+      TASK* task = sheet->task;
+      sheet_updown(osinfo->shtctl, sheet, -1);
+      if (sheet == osinfo->key_win) {
         keywin_off(osinfo->shtctl, osinfo->key_win);
         keywin_on(osinfo->shtctl, osinfo->key_win = osinfo->shtctl->sheets[osinfo->shtctl->top - 1]);
       }
@@ -202,17 +202,17 @@ static void mouse_left_clicked(OsInfo* osinfo) {
     }
     return;
   }
-  if (sht != osinfo->key_win) {
+  if (sheet != osinfo->key_win) {
     keywin_off(osinfo->shtctl, osinfo->key_win);
-    osinfo->key_win = sht;
+    osinfo->key_win = sheet;
     keywin_on(osinfo->shtctl, osinfo->key_win);
   }
-  if (title_bar_clicked(sht, x, y)) {
+  if (title_bar_clicked(sheet, x, y)) {
     osinfo->mmx = osinfo->mx;  // Go to drag mode.
     osinfo->mmy = osinfo->my;
-    osinfo->new_wx = sht->vx0;
-    osinfo->new_wy = sht->vy0;
-    osinfo->sht_dragging = sht;
+    osinfo->new_wx = sheet->vx0;
+    osinfo->new_wy = sheet->vy0;
+    osinfo->sht_dragging = sheet;
   }
 }
 
@@ -354,9 +354,9 @@ void HariMain(void) {
     } else if (1024 <= i && i < 2024) {  // Close console task request.
       close_constask(taskctl->tasks0 + (i - 1024));
     } else if (2024 <= i && i < 2280) {  // Close console only.
-      SHEET* sht2 = osinfo.shtctl->sheets0 + (i - 2024);
-      memman_free_4k(memman, sht2->buf, 256 * 165);
-      sheet_free(osinfo.shtctl, sht2);
+      SHEET* sheet2 = osinfo.shtctl->sheets0 + (i - 2024);
+      memman_free_4k(memman, sheet2->buf, 256 * 165);
+      sheet_free(osinfo.shtctl, sheet2);
     }
   }
 }

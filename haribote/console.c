@@ -18,7 +18,7 @@
 #define CONSOLE_WIDTH   (CONSOLE_NX * FONTW + 8 * 2)
 #define CONSOLE_HEIGHT  (CONSOLE_NY * FONTH + 8 * 2 + 20)
 
-static TASK* open_constask(SHTCTL* shtctl, SHEET* sht, unsigned int memtotal);
+static TASK* open_constask(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal);
 
 void cons_putchar(CONSOLE* cons, int chr, char move) {
   char s[2] = { chr, '\0' };
@@ -134,12 +134,12 @@ static void cmd_exit(CONSOLE* cons, const short* fat) {
 
 static void cmd_start(const char* cmdline, int memtotal) {
   SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-  SHEET* sht = open_console(shtctl, memtotal);
-  sheet_slide(shtctl, sht, 32, 4);
-  sheet_updown(shtctl, sht, shtctl->top);
+  SHEET* sheet = open_console(shtctl, memtotal);
+  sheet_slide(shtctl, sheet, 32, 4);
+  sheet_updown(shtctl, sheet, shtctl->top);
 
   // Send key command.
-  FIFO* fifo = &sht->task->fifo;
+  FIFO* fifo = &sheet->task->fifo;
   for (int i = 6; cmdline[i] != 0; ++i)
     fifo_put(fifo, cmdline[i] + 256);
   fifo_put(fifo, 10 + 256);  // Enter.
@@ -199,9 +199,9 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
     // Free sheets which are opened by the task.
     SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
     for (int i = 0; i < MAX_SHEETS; ++i) {
-      SHEET* sht = &shtctl->sheets0[i];
-      if ((sht->flags & 0x11) == 0x11 && sht->task == task)
-        sheet_free(shtctl, sht);
+      SHEET* sheet = &shtctl->sheets0[i];
+      if ((sheet->flags & 0x11) == 0x11 && sheet->task == task)
+        sheet_free(shtctl, sheet);
     }
     // Close files.
     for (int i = 0; i < 8; ++i) {
@@ -372,7 +372,7 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   }
 }
 
-static TASK* open_constask(SHTCTL* shtctl, SHEET* sht, unsigned int memtotal) {
+static TASK* open_constask(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
   TASK* task = task_alloc();
   int stack_size = 64 * 1024;
@@ -382,7 +382,7 @@ static TASK* open_constask(SHTCTL* shtctl, SHEET* sht, unsigned int memtotal) {
   task->tss.cs = 2 * 8;
   task->tss.es = task->tss.ss = task->tss.ds = task->tss.fs = task->tss.gs = 1 * 8;
   *((int*)(task->tss.esp + 4)) = (int)shtctl;
-  *((int*)(task->tss.esp + 8)) = (int)sht;
+  *((int*)(task->tss.esp + 8)) = (int)sheet;
   *((int*)(task->tss.esp + 12)) = (int)memtotal;
   task_run(task, 2, 2);
 
@@ -393,14 +393,14 @@ static TASK* open_constask(SHTCTL* shtctl, SHEET* sht, unsigned int memtotal) {
 
 SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
-  SHEET* sht = sheet_alloc(shtctl);
+  SHEET* sheet = sheet_alloc(shtctl);
   unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, CONSOLE_WIDTH * CONSOLE_HEIGHT);
-  sheet_setbuf(sht, buf, CONSOLE_WIDTH, CONSOLE_HEIGHT, -1);
+  sheet_setbuf(sheet, buf, CONSOLE_WIDTH, CONSOLE_HEIGHT, -1);
   make_window8(buf, CONSOLE_WIDTH, CONSOLE_HEIGHT, "console", FALSE);
-  make_textbox8(sht, X0, Y0, CONSOLE_NX * 8, CONSOLE_NY * 16, COL8_BLACK);
-  sht->task = open_constask(shtctl, sht, memtotal);
-  sht->flags |= 0x20;
-  return sht;
+  make_textbox8(sheet, X0, Y0, CONSOLE_NX * 8, CONSOLE_NY * 16, COL8_BLACK);
+  sheet->task = open_constask(shtctl, sheet, memtotal);
+  sheet->flags |= 0x20;
+  return sheet;
 }
 
 void close_constask(TASK* task) {
@@ -416,9 +416,9 @@ void close_constask(TASK* task) {
   task_free(task);
 }
 
-void close_console(SHTCTL* shtctl, SHEET* sht) {
+void close_console(SHTCTL* shtctl, SHEET* sheet) {
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
-  close_constask(sht->task);
-  memman_free_4k(memman, sht->buf, CONSOLE_WIDTH * CONSOLE_HEIGHT);  // Warn! sheet size.
-  sheet_free(shtctl, sht);
+  close_constask(sheet->task);
+  memman_free_4k(memman, sheet->buf, CONSOLE_WIDTH * CONSOLE_HEIGHT);  // Warn! sheet size.
+  sheet_free(shtctl, sheet);
 }
