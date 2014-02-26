@@ -91,14 +91,31 @@ void file_loadfile(FILEINFO* finfo, const short* fat, char* img, void* buf) {
   file_read(&fh, buf, finfo->size, img);
 }
 
-void file_seek(FILEHANDLE* fh, int offset, int origin) {
-  switch (origin) {
-  case 0:  fh->pos = offset; break;
-  case 1:  fh->pos += offset; break;
-  case 2:  fh->pos = fh->finfo->size + offset; break;
+static int calc_cluster(FILEHANDLE* fh, int newpos) {
+  int clusterCount = newpos / CLUSTER_SIZE - fh->pos / CLUSTER_SIZE;
+  int cluster = fh->cluster;
+  if (newpos < fh->pos) {  // If the new position is backward,
+    // Then search target cluster from the top.
+    cluster = fh->finfo->clustno;
+    clusterCount = newpos / CLUSTER_SIZE;
   }
-  if (fh->pos < 0)
-    fh->pos = 0;
-  else if (fh->pos > (int)fh->finfo->size)
-    fh->pos = fh->finfo->size;
+
+  for (int i = 0; i < clusterCount; ++i)
+    cluster = get_next_fat(fh->fat, cluster);
+  return cluster;
+}
+
+void file_seek(FILEHANDLE* fh, int offset, int origin) {
+  int newpos = fh->pos;
+  switch (origin) {
+  case 0:  newpos = offset; break;
+  case 1:  newpos += offset; break;
+  case 2:  newpos = fh->finfo->size + offset; break;
+  }
+  if (newpos < 0)
+    newpos = 0;
+  else if (newpos > (int)fh->finfo->size)
+    newpos = fh->finfo->size;
+  fh->cluster = calc_cluster(fh, newpos);
+  fh->pos = newpos;
 }
