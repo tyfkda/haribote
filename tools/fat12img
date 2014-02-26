@@ -46,6 +46,12 @@ def writeopen(filename, &block)
   end
 end
 
+def calc_timestamp(time)
+  d = ((time.year - 1980) << 9) | ((time.month - 1) << 5) | (time.day - 1)
+  t = (time.hour << 11) | (time.min << 5) | (time.sec / 2)
+  return d, t
+end
+
 class Fat
   attr_accessor :fat
 
@@ -145,6 +151,20 @@ class FileInfo
               @cluster,
               @size]).pack('C11vvvV'))
   end
+
+  def get_date
+    year = ((@date >> 9) & 0x7f) + 1980
+    mon = ((@date >> 5) & 0x0f) + 1
+    day = (@date & 0x1f) + 1
+    return year, mon, day
+  end
+
+  def get_time
+    hour = ((@time >> 11) & 0x1f)
+    min = ((@time >> 5) & 0x3f)
+    sec = (@time & 0x1f) * 2
+    return hour, min, sec
+  end
 end
 
 class DirInfo
@@ -189,7 +209,7 @@ class DirInfo
   end
 
   def add(index, filename, size, cluster)
-    time = date = 0
+    date, time = calc_timestamp(Time.now)
     @fileinfos[index] = FileInfo.new(filename, FILE_NORMAL, time, date, cluster, size)
   end
 
@@ -308,7 +328,9 @@ def main
       m = dirinfo.get(i)
       break if m === nil
       if m
-        puts(sprintf("%-8s.%-3s %7d", m.filename[0...8], m.filename[8...11], m.size))
+        year, mon, day = m.get_date
+        hour, min, sec = m.get_time
+        puts(sprintf("%-8s.%-3s %7d %04d/%02d/%02d %02d:%02d:%02d", m.filename[0...8], m.filename[8...11], m.size, year, mon, day, hour, min, sec))
       end
     end
   when 'save'
