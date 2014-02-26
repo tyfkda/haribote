@@ -1,5 +1,5 @@
 
-SRCDIR=.
+SRCDIR=apisrc
 INC=-I ../include
 OBJDIR=../obj
 LIBDIR=../lib
