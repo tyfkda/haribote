@@ -29,7 +29,6 @@ DISK_FILES=\
 	$(OBJDIR)/gview.hrb \
 	$(DATADIR)/fujisan.jpg \
 	$(DATADIR)/night.bmp \
-	$(OBJDIR)/sincurve.hrb \
 	$(OBJDIR)/mandel.hrb \
 	$(OBJDIR)/aobench.hrb \
 
