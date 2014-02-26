@@ -44,8 +44,5 @@ $(OBJDIR)/gview.hrb:	$(OBJDIR)/gview.o bmp.obj $(APPLIBS) $(CRT0)
 #$(OBJDIR)/bmp.o:	$(SRCDIR)/bmp.nasm
 #	as $< -o $@
 
-$(OBJDIR)/aobench.hrb:	$(OBJDIR)/aobench.o $(APPLIBS) $(CRT0)
-	ld --defsym heap_size=4096K -T $(LKSCRIPT) $(LKOPT) $(CRT0) -o $@ $< $(APPLIBS)
-
 $(APILIB):
 	make -C ../apilib

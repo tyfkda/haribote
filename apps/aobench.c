@@ -230,20 +230,11 @@ clamp(double f)
 
 
 void
-render(unsigned char *img, int w, int h, int nsubsamples)
+render(double* fimg, int y, int w, int h, int nsubsamples)
 {
-  int x, y;
+  int x;
   int u, v;
 
-  double *fimg = (double *)malloc(sizeof(double) * w * h * 3);
-  if (fimg == NULL) {
-    puts("malloc failed");
-    return;
-  }
-
-  memset((void *)fimg, 0, sizeof(double) * w * h * 3);
-
-  for (y = 0; y < h; y++) {
     for (x = 0; x < w; x++) {
             
       for (v = 0; v < nsubsamples; v++) {
@@ -275,24 +266,18 @@ render(unsigned char *img, int w, int h, int nsubsamples)
             vec col;
             ambient_occlusion(&col, &isect);
 
-            fimg[3 * (y * w + x) + 0] += col.x;
-            fimg[3 * (y * w + x) + 1] += col.y;
-            fimg[3 * (y * w + x) + 2] += col.z;
+            fimg[3 * x + 0] += col.x;
+            fimg[3 * x + 1] += col.y;
+            fimg[3 * x + 2] += col.z;
           }
 
         }
       }
 
-      fimg[3 * (y * w + x) + 0] /= (double)(nsubsamples * nsubsamples);
-      fimg[3 * (y * w + x) + 1] /= (double)(nsubsamples * nsubsamples);
-      fimg[3 * (y * w + x) + 2] /= (double)(nsubsamples * nsubsamples);
-        
-      img[3 * (y * w + x) + 0] = clamp(fimg[3 *(y * w + x) + 0]);
-      img[3 * (y * w + x) + 1] = clamp(fimg[3 *(y * w + x) + 1]);
-      img[3 * (y * w + x) + 2] = clamp(fimg[3 *(y * w + x) + 2]);
+      fimg[3 * x + 0] /= (double)(nsubsamples * nsubsamples);
+      fimg[3 * x + 1] /= (double)(nsubsamples * nsubsamples);
+      fimg[3 * x + 2] /= (double)(nsubsamples * nsubsamples);
     }
-  }
-
 }
 
 void
@@ -323,23 +308,6 @@ init_scene()
 
 }
 
-#if 0
-void
-saveppm(const char *fname, int w, int h, unsigned char *img)
-{
-  FILE *fp;
-
-  fp = fopen(fname, "wb");
-  assert(fp);
-
-  fprintf(fp, "P6\n");
-  fprintf(fp, "%d %d\n", w, h);
-  fprintf(fp, "255\n");
-  fwrite(img, w * h * 3, 1, fp);
-  fclose(fp);
-}
-#endif
-
 #define W  (WIDTH + 16)
 #define H  (HEIGHT + 16 + 18)
 
@@ -364,17 +332,18 @@ int main()
 {
   int win = api_openwin(buf, W, H, -1, "aobench");
 
-  unsigned char *img = (unsigned char *)malloc(WIDTH * HEIGHT * 3);
-
   init_scene();
 
-  render(img, WIDTH, HEIGHT, NSUBSAMPLES);
   for (int i = 0; i < HEIGHT; ++i) {
+    double fimg[WIDTH * 3];
+    for (int j = 0; j < WIDTH * 3; ++j)
+      fimg[j] = 0;
+    render(fimg, i, WIDTH, HEIGHT, NSUBSAMPLES);
+
     for (int j = 0; j < WIDTH; ++j) {
-      unsigned char* p = &img[((i * WIDTH) + j) * 3];
-      unsigned char r = p[0];
-      unsigned char g = p[1];
-      unsigned char b = p[2];
+      unsigned char r = clamp(fimg[3 * j + 0]);
+      unsigned char g = clamp(fimg[3 * j + 1]);
+      unsigned char b = clamp(fimg[3 * j + 2]);
       api_point(win | 1, j + 8, i + 8 + 18, rgb2pal(r, g, b, j, i));
     }
     api_refreshwin(win, 8, i + 8 + 18, 8 + 256, i + 8 + 19);
