@@ -304,17 +304,16 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   case API_FOPEN:
     reg[7] = 0;
     for (int i = 0; i < 8; ++i) {
-      if (task->fhandle[i].buf == NULL) {
+      if (task->fhandle[i].finfo == NULL) {
         const char* filename = (char*)ebx + ds_base;
         FILEHANDLE* fh = &task->fhandle[i];
         FILEINFO* finfo = file_search(filename, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
         if (finfo != NULL) {
-          MEMMAN* memman = (MEMMAN*)MEMMAN_ADDR;
-          reg[7] = (int)fh;
-          fh->buf = memman_alloc_4k(memman, finfo->size);
-          fh->size = finfo->size;
+          fh->finfo = finfo;
+          fh->fat = task->fat;
+          fh->cluster = finfo->clustno;
           fh->pos = 0;
-          file_loadfile(finfo->clustno, finfo->size, fh->buf, task->fat, (char*)(ADR_DISKIMG + 0x003e00));
+          reg[7] = (int)fh;
         }
         break;
       }
@@ -323,9 +322,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   case API_FCLOSE:
     {
       FILEHANDLE* fh = (FILEHANDLE*)eax;
-      MEMMAN* memman = (MEMMAN*)MEMMAN_ADDR;
-      memman_free_4k(memman, fh->buf, fh->size);
-      fh->buf = NULL;
+      fh->finfo = NULL;
     }
     break;
   case API_FSEEK:
@@ -336,12 +333,12 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       switch (origin) {
       case 0:  fh->pos = offset; break;
       case 1:  fh->pos += offset; break;
-      case 2:  fh->pos = fh->size + offset; break;
+      case 2:  fh->pos = fh->finfo->size + offset; break;
       }
       if (fh->pos < 0)
         fh->pos = 0;
-      else if (fh->pos > fh->size)
-        fh->pos = fh->size;
+      else if (fh->pos > (int)fh->finfo->size)
+        fh->pos = fh->finfo->size;
     }
     break;
   case API_FSIZE:
@@ -349,9 +346,9 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       FILEHANDLE* fh = (FILEHANDLE*)eax;
       int mode = ecx;
       switch (mode) {
-      case 0:  reg[7] = fh->size; break;
+      case 0:  reg[7] = fh->finfo->size; break;
       case 1:  reg[7] = fh->pos; break;
-      case 2:  reg[7] = fh->pos - fh->size; break;
+      case 2:  reg[7] = fh->pos - fh->finfo->size; break;
       }
     }
     break;
@@ -360,11 +357,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       FILEHANDLE* fh = (FILEHANDLE*)eax;
       unsigned char* dst = (unsigned char*)ebx + ds_base;
       int size = ecx;
-      unsigned char* src = &fh->buf[fh->pos];
-
-      int readsize = (size > fh->size - fh->pos) ? fh->size - fh->pos : size;
-      memcpy(dst, src, readsize);
-      fh->pos += readsize;
+      int readsize = file_read(fh, dst, size, (char*)(ADR_DISKIMG + 0x003e00));
       reg[7] = readsize;
     }
     break;
@@ -556,9 +549,9 @@ static char cmd_app(CONSOLE* cons, const short* fat, const char* cmdline) {
     }
     // Close files.
     for (int i = 0; i < 8; ++i) {
-      if (task->fhandle[i].buf != NULL) {
-        memman_free_4k(memman, task->fhandle[i].buf, task->fhandle[i].size);
-        task->fhandle[i].buf = NULL;
+      if (task->fhandle[i].finfo != NULL) {
+        //memman_free_4k(memman, task->fhandle[i].buf, task->fhandle[i].size);
+        task->fhandle[i].finfo = NULL;
       }
     }
     timer_cancelall(&task->fifo);
@@ -629,7 +622,7 @@ void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
 
   FILEHANDLE fhandle[8];
   for (int i = 0; i < 8; ++i)
-    fhandle[i].buf = NULL;  // Not used.
+    fhandle[i].finfo = NULL;  // Not used.
   task->fhandle = fhandle;
   task->fat = fat;
 

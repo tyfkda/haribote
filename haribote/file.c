@@ -64,3 +64,34 @@ void file_delete(FILEINFO* finfo, short* fat) {
     cluster = next;
   }
 }
+
+static const unsigned char* clusterData(const void* diskImage, int cluster) {
+  return (unsigned char*)diskImage + cluster * CLUSTER_SIZE;
+}
+
+int file_read(FILEHANDLE* fh, void* dst, int requestSize, const char* diskImage) {
+  int readSize = 0;
+  unsigned char* p = dst;
+  while (requestSize > 0) {
+    if (fh->pos >= (int)fh->finfo->size)
+      break;
+    char forward = TRUE;
+    int nextClusterPos = (fh->pos + CLUSTER_SIZE) & -CLUSTER_SIZE;
+    if (nextClusterPos > (int)fh->finfo->size)
+      nextClusterPos = fh->finfo->size;
+    int blockBytes = nextClusterPos - fh->pos;
+    if (blockBytes > requestSize) {
+      blockBytes = requestSize;
+      forward = FALSE;
+    }
+    const unsigned char* src = clusterData(diskImage, fh->cluster) + (fh->pos % CLUSTER_SIZE);
+    memcpy(p, src, blockBytes);
+    p += blockBytes;
+    fh->pos += blockBytes;
+    if (forward)
+      fh->cluster = get_next_fat(fh->fat, fh->cluster);
+    readSize += blockBytes;
+    requestSize -= blockBytes;
+  }
+  return readSize;
+}
