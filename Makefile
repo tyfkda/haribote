@@ -7,6 +7,8 @@ DATADIR=data
 # Files included in the disk image.
 DISK_FILES=\
 	$(OBJDIR)/haribote.sys \
+	$(OBJDIR)/type.hrb \
+	$(OBJDIR)/del.hrb \
 	haribote/ipl.s \
 	$(OBJDIR)/hello3.hrb \
 	$(OBJDIR)/hello4.hrb \
@@ -19,7 +21,6 @@ DISK_FILES=\
 	$(OBJDIR)/beepdown.hrb \
 	$(OBJDIR)/color.hrb \
 	$(OBJDIR)/color2.hrb \
-	$(OBJDIR)/type.hrb \
 	$(OBJDIR)/bball.hrb \
 	$(OBJDIR)/invader.hrb \
 	$(OBJDIR)/calc.hrb \

@@ -36,7 +36,7 @@ typedef struct TASK {
   int ds_base;
   void* cons_stack;
   FILEHANDLE* fhandle;
-  const short* fat;
+  short* fat;
   char* cmdline;
 } TASK;
 

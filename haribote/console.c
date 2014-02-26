@@ -37,6 +37,7 @@
 #define API_FSIZE  (24)
 #define API_FREAD  (25)
 #define API_CMDLINE  (26)
+#define API_DELETE  (27)
 
 void cons_newline(CONSOLE* cons) {
   cons->cur_x = 8;
@@ -371,6 +372,18 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       for (i = 0; i < maxsize && (*buf++ = *src++) != '\0'; ++i)
         ;
       reg[7] = i;
+    }
+    break;
+  case API_DELETE:
+    {
+      const char* filename = (char*)ebx + ds_base;
+      FILEINFO* finfo = file_search(filename, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
+      if (finfo == NULL) {
+        reg[7] = FALSE;
+        break;
+      }
+      file_delete(finfo, task->fat);
+      reg[7] = TRUE;
     }
     break;
   }

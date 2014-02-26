@@ -10,5 +10,6 @@ typedef struct {
 void file_readfat(short* fat, unsigned char* img);
 FILEINFO* file_search(const char* name, FILEINFO* finfo, int max);
 void file_loadfile(short clustno, int size, void* buf, const short* fat, char* img);
+void file_delete(FILEINFO* finfo, short* fat);
 
 #endif

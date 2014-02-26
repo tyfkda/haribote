@@ -5,6 +5,14 @@
 #define MAX_CLUSTER  (2880)
 #define CLUSTER_SIZE  (512)
 
+static short get_next_fat(const short* fat, short cluster) {
+  return fat[cluster];
+}
+
+static void set_next_fat(short* fat, short cluster, short next) {
+  fat[cluster] = next;
+}
+
 void file_readfat(short* fat, unsigned char* img) {
   for (int i = 0, j = 0; i < MAX_CLUSTER; i += 2, j += 3) {
     fat[i + 0] = (img[j + 0]      | img[j + 1] << 8) & 0xfff;
@@ -45,5 +53,14 @@ void file_loadfile(short clustno, int size, void* buf, const short* fat, char* i
     size -= CLUSTER_SIZE;
     p += CLUSTER_SIZE;
     clustno = fat[clustno];
+  }
+}
+
+void file_delete(FILEINFO* finfo, short* fat) {
+  finfo->name[0] = 0xe5;  // Delete mark.
+  for (short cluster = finfo->clustno; cluster < 0xff0; ) {
+    short next = get_next_fat(fat, cluster);
+    set_next_fat(fat, cluster, 0x000);  // Free
+    cluster = next;
   }
 }

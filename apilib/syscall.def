@@ -30,5 +30,6 @@
 .equ	API_FSIZE, 24
 .equ	API_FREAD, 25
 .equ	API_CMDLINE, 26
+.equ	API_DELETE, 27
 
 #eof
