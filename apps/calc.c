@@ -1,19 +1,24 @@
 #include "apilib.h"
 #include <stdio.h>		/* sprintf */
 #include <stdlib.h>		/* strtol */
+#include "string.h"
 
 #define INVALID		-0x7fffffff
 
 char *skipspace(char *p);
 int getnum(char **pp, int priority);
 
-int main() {
-  int i;
-  char s[30], *p;
-  
-  api_cmdline(s, 30);
-  for (p = s; *p > ' '; p++) { }	/* スペースが来るまで読み飛ばす */
-  i = getnum(&p, 9);
+int main(int argc, char* argv[]) {
+  char s[256], *p = s;
+  for (int i = 1; i < argc; ++i) {
+    if (i > 1)
+      *p++ = ' ';
+    strcpy(p, argv[i]);
+    p += strlen(argv[i]);
+  }
+
+  p = s;
+  int i = getnum(&p, 9);
   if (i == INVALID) {
     api_putstr0("error!\n");
   } else {

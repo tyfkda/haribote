@@ -49,7 +49,6 @@ void api_point(int win, int x, int y, int col);
 void api_refreshwin(int win, int x0, int y0, int x1, int y1);
 void api_linewin(int win, int x0, int y0, int x1, int y1, int col);
 int api_getkey(int mode);
-void api_initmalloc(void);
 void* api_malloc(int size);
 void api_free(void* addr, int size);
 
@@ -69,6 +68,10 @@ int api_fread(void* buf, int maxsize, int fhandle);
 int api_delete(const char* fname);
 int api_now(unsigned char* buf);
 
+
+
+// Do not use in application.
+void api_initmalloc(void);
 int api_cmdline(char* buf, int maxsize);
 
 #ifdef __cplusplus

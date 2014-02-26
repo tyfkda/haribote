@@ -1,16 +1,13 @@
 #include "apilib.h"
 #include "stdio.h"
 
-int main() {
-  char cmdline[30];
-  api_cmdline(cmdline, sizeof(cmdline));
-  char* p;
-  for (p = cmdline; *p > ' '; ++p);
-  for (; *p == ' '; ++p);
-
-  if (!api_delete(p)) {
-    printf("File not found: %s\n", p);
-    return 1;
+int main(int argc, char* argv[]) {
+  for (int i = 1; i < argc; ++i) {
+    const char* filename = argv[i];
+    if (!api_delete(filename)) {
+      printf("File not found: %s\n", filename);
+      return 1;
+    }
   }
   return 0;
 }

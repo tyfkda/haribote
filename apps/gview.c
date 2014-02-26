@@ -26,8 +26,7 @@ void error(char *s);
 static struct DLL_STRPICENV env;
 static unsigned char winbuf[1040 * 805];
 
-int main() {
-  char s[32];
+int main(int argc, char* argv[]) {
   int win, i, j, fsize, xsize, info[8];
   RGB *q;
   
@@ -35,10 +34,8 @@ int main() {
 
   /* コマンドライン解析 */
   {
-    char* p;
-    api_cmdline(s, 30);
-    for (p = s; *p > ' '; p++) { }	/* スペースが来るまで読み飛ばす */
-    for (; *p == ' '; p++) { }	/* スペースを読み飛ばす */
+    (void)argc;
+    char* p = argv[1];
     
     /* ファイル読み込み */
     i = api_fopen(p);

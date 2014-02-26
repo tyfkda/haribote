@@ -30,17 +30,17 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.s
 	as $< -o $@
 $(OBJDIR)/%.o:	$(SRCDIR)/%.c
 	gcc -c -o $@ $(CFLAGS) $<
-$(OBJDIR)/%.hrb:	$(OBJDIR)/%.o $(APPLIBS)
+$(OBJDIR)/%.hrb:	$(OBJDIR)/%.o $(APPLIBS) $(CRT0)
 	$(LKAPP) -o $@ $< $(APPLIBS)
 
 $(OBJDIR)/gview.o:	$(SRCDIR)/gview.c $(SRCDIR)/jpeg.ccc
-$(OBJDIR)/gview.hrb:	$(OBJDIR)/gview.o $(APPLIBS) bmp.obj
-	$(LKAPP) -o $@ $^
+$(OBJDIR)/gview.hrb:	$(OBJDIR)/gview.o bmp.obj $(APPLIBS) $(CRT0)
+	$(LKAPP) -o $@ $< bmp.obj $(APPLIBS)
 #$(OBJDIR)/bmp.o:	$(SRCDIR)/bmp.nasm
 #	as $< -o $@
 
-$(OBJDIR)/aobench.hrb:	$(OBJDIR)/aobench.o $(APPLIBS)
-	ld --defsym heap_size=4096K -T $(LKSCRIPT) $(LKOPT) $(CRT0) -o $@ $^
+$(OBJDIR)/aobench.hrb:	$(OBJDIR)/aobench.o $(APPLIBS) $(CRT0)
+	ld --defsym heap_size=4096K -T $(LKSCRIPT) $(LKOPT) $(CRT0) -o $@ $< $(APPLIBS)
 
 $(APILIB):
 	make -C ../apilib

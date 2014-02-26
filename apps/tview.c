@@ -1,4 +1,5 @@
 #include "apilib.h"
+#include "stdio.h"
 #include "stdlib.h"
 
 char *skipspace(char *p);
@@ -11,19 +12,17 @@ static char txtbuf[240 * 1024];
 
 static int api_getlang()  { return 0; }
 
-int main() {
+int main(int argc, char* argv[]) {
   int w = 30, h = 10, t = 4, spd_x = 1, spd_y = 1;
   int win, i, j, lang = api_getlang(), xskip = 0;
-  char s[30], *p, *q = 0, *r = 0;
   
   /* コマンドライン解析 */
-  api_cmdline(s, 30);
-  for (p = s; *p > ' '; p++);	/* スペースが来るまで読み飛ばす */
-  for (; *p != 0; ) {
-    p = skipspace(p);
+  char* q = NULL;
+  for (int i = 1; i < argc; ++i) {
+    char* p = argv[i];
     if (*p == '-') {
       if (p[1] == 'w') {
-        w = strtol(p + 2, &p, 0);
+        w = strtol(p + 2, NULL, 0);
         if (w < 20) {
           w = 20;
         }
@@ -31,7 +30,7 @@ int main() {
           w = 126;
         }
       } else if (p[1] == 'h') {
-        h = strtol(p + 2, &p, 0);
+        h = strtol(p + 2, NULL, 0);
         if (h < 1) {
           h = 1;
         }
@@ -39,7 +38,7 @@ int main() {
           h = 45;
         }
       } else if (p[1] == 't') {
-        t = strtol(p + 2, &p, 0);
+        t = strtol(p + 2, NULL, 0);
         if (t < 1) {
           t = 4;
         }
@@ -49,11 +48,9 @@ int main() {
         api_end();
       }
     } else {	/* ファイル名発見 */
-      if (q != 0)
+      if (q != NULL)
         goto err;
       q = p;
-      for (; *p > ' '; p++) { }	/* スペースが来るまで読み飛ばす */
-      r = p;
     }
   }
   if (q == 0)
@@ -64,7 +61,6 @@ int main() {
   api_boxfilwin(win, 6, 27, w * 8 + 10, h * 16 + 31, 7);
   
   /* ファイル読み込み */
-  *r = 0;
   i = api_fopen(q);
   if (i == 0) {
     api_putstr0("file open error.\n");
@@ -78,7 +74,7 @@ int main() {
   api_fclose(i);
   txtbuf[j + 1] = 0;
   q = txtbuf + 1;
-  for (p = txtbuf + 1; *p != 0; p++) {	/* 処理を簡単にするために0x0dのコードを消す */
+  for (char* p = txtbuf + 1; *p != 0; p++) {	/* 処理を簡単にするために0x0dのコードを消す */
     if (*p != 0x0d) {
       *q = *p;
       q++;
@@ -87,7 +83,7 @@ int main() {
   *q = 0;
   
   /* メイン */
-  p = txtbuf + 1;
+  char* p = txtbuf + 1;
   for (;;) {
     textview(win, w, h, xskip, p, t, lang);
     i = api_getkey(1);
