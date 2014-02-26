@@ -71,9 +71,6 @@ int api_now(unsigned char* buf);
 
 int api_cmdline(char* buf, int maxsize);
 
-
-int sprintf(char *str, const char *fmt, ...);
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif
