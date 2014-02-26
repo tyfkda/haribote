@@ -1,12 +1,11 @@
 #include "stdio.h"
-#include "stdlib.h"
 
-void HariMain(void) {
+int main() {
   putchar('h');
   putchar('e');
   putchar('l');
   putchar('l');
   putchar('o');
   putchar('\n');
-  exit(0);
+  return 0;
 }

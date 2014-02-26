@@ -1,6 +1,6 @@
-.globl	HariMain
+.globl	main
 
-HariMain:
+main:
 	mov	$4, %ax			# 1005 * 8 for GDT
 	mov	%ax, %ds
 	cmpl	$0x69726148, %ds:(0x0004)	# Confirm ID (Hari)
@@ -16,5 +16,5 @@ crackloop:
 	cmp	$0, %ecx
 	jne	crackloop
 fin:
-	mov	$4, %edx
-	int	$0x40
+	mov	$0, %eax
+	ret

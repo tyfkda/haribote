@@ -42,7 +42,7 @@ static unsigned char charset[16 * 8] = {
 
 static unsigned char winbuf[336 * 261];
 
-void HariMain(void) {
+int main() {
   int win, i, j, fx, laserwait, lx = 0, ly;
   int ix, iy, movewait0, movewait, idir;
   int invline, score, high, point;
@@ -190,6 +190,8 @@ void HariMain(void) {
   for (i = 1; i < 14; i++)
     putstr(win, winbuf, 0, i, 0, "                                        ");
   goto restart;
+
+  return 0;
 }
 
 void putstr(int win, unsigned char *winbuf, int x, int y, int col, const char *s) {

@@ -1,8 +1,6 @@
 #include "apilib.h"
-#include "stdlib.h"
 
-void HariMain(void) {
-  api_initmalloc();
+int main() {
   unsigned char* buf = api_malloc(160 * 100);
   int win = api_openwin(buf, 160, 100, -1, "lines");
   for (int i = 0; i < 8; ++i) {
@@ -15,5 +13,5 @@ void HariMain(void) {
     if (api_getkey(1) == 0x0a)  // Enter
       break;
   api_closewin(win);
-  exit(0);
+  return 0;
 }

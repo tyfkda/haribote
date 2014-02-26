@@ -1,9 +1,7 @@
 #include "apilib.h"
 #include "stdio.h"
-#include "stdlib.h"
 
-void HariMain(void) {
-  api_initmalloc();
+int main() {
   unsigned char* buf = api_malloc(150 * 50);
   int win = api_openwin(buf, 150, 50, -1, "noodle");
   TIMER* timer = api_alloctimer();
@@ -25,5 +23,5 @@ void HariMain(void) {
       }
     }
   }
-  exit(0);
+  return 0;
 }

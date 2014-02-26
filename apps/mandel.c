@@ -1,5 +1,4 @@
 #include "apilib.h"
-//#include <math.h>
 
 #define W  (256 + 16)
 #define H  (256 + 16 + 18)
@@ -28,11 +27,11 @@ static void drawMandelbrot(int win) {
 
 static unsigned char buf[W * H];
 
-void HariMain(void) {
+int main() {
   int win = api_openwin(buf, W, H, -1, "mandelbrot");
   api_boxfilwin(win, 8, 8 + 18, 8 + 256, 8 + 256 + 18, COL8_BLACK);
 
   drawMandelbrot(win);
   api_getkey(1);
-  api_end();
+  return 0;
 }

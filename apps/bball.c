@@ -1,7 +1,6 @@
 #include "apilib.h"
-#include "stdlib.h"
 
-void HariMain(void) {
+int main() {
   struct POINT {
     int x, y;
   };
@@ -29,5 +28,6 @@ void HariMain(void) {
   for (;;)
     if (api_getkey(1) == 0x0a)
       break;
-  exit(0);
+
+  return 0;
 }

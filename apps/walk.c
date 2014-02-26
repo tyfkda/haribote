@@ -1,8 +1,6 @@
 #include "apilib.h"
-#include "stdlib.h"
 
-void HariMain(void) {
-  api_initmalloc();
+int main() {
   unsigned char* buf = api_malloc(160 * 100);
   int win = api_openwin(buf, 160, 100, -1, "walk");
   api_boxfilwin(win, 4, 24, 155, 95, 0);
@@ -19,5 +17,5 @@ void HariMain(void) {
     api_putstrwin(win, x, y, 3, 1, "*");  // Erase
   }
   api_closewin(win);
-  exit(0);
+  return 0;
 }

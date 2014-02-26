@@ -1,8 +1,7 @@
 #include "apilib.h"
 #include "stdio.h"
-#include "stdlib.h"
 
-void HariMain() {
+int main() {
   char cmdline[30];
   api_cmdline(cmdline, sizeof(cmdline));
   char* p;
@@ -11,7 +10,7 @@ void HariMain() {
 
   if (!api_delete(p)) {
     printf("File not found: %s\n", p);
-    exit(1);
+    return 1;
   }
-  exit(0);
+  return 0;
 }

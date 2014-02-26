@@ -360,11 +360,10 @@ unsigned char rgb2pal(int r, int g, int b, int x, int y) {
   return 16 + r + g * 6 + b * 36;
 }
 
-void HariMain()
+int main()
 {
   int win = api_openwin(buf, W, H, -1, "aobench");
 
-  api_initmalloc();
   unsigned char *img = (unsigned char *)malloc(WIDTH * HEIGHT * 3);
 
   init_scene();
@@ -382,5 +381,5 @@ void HariMain()
   }
 
   api_getkey(1);
-  api_end();
+  return 0;
 }

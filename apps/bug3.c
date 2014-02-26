@@ -1,6 +1,7 @@
 #include "stdio.h"
 
-void HariMain(void) {
+int main() {
   for (;;)
     putchar('a');
+  return 0;
 }

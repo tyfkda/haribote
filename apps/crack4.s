@@ -1,6 +1,6 @@
-.globl	HariMain
+.globl	main
 
-HariMain:
+main:
 	cli
 fin:
 	hlt

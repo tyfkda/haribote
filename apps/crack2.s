@@ -1,8 +1,8 @@
-.globl	HariMain
+.globl	main
 
-HariMain:
+main:
 	mov	$1 * 8, %eax
 	mov	%ax, %ds
 	movb	$0, (0x102600)
-	mov	$4, %edx
-	int	$0x40
+	mov	$0, %eax
+	ret

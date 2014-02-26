@@ -1,7 +1,6 @@
 #include "stdio.h"
-#include "stdlib.h"
 
-void HariMain(void) {
+int main() {
   char a[100];
   a[10] = 'A';  // ok
   putchar(a[10]);
@@ -9,5 +8,5 @@ void HariMain(void) {
   putchar(a[102]);
   a[123] = 'C';  // ng
   putchar(a[123]);
-  exit(0);
+  return 0;
 }

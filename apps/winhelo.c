@@ -1,8 +1,6 @@
 #include "apilib.h"
-#include "stdlib.h"
 
-void HariMain(void) {
-  api_initmalloc();
+int main() {
   unsigned char buf[150 * 50];
   int win = api_openwin(buf, 150, 50, -1, "hello");
   api_boxfilwin(win, 8, 36, 141, 43, 3);
@@ -12,5 +10,5 @@ void HariMain(void) {
     if (api_getkey(1) == 0x0a)  // Enter
       break;
   api_closewin(win);
-  exit(0);
+  return 0;
 }

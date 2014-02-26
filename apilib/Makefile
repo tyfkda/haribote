@@ -8,11 +8,12 @@ SRCS=$(wildcard $(SRCDIR)/*.c) $(wildcard $(SRCDIR)/*.s)
 OBJS=$(subst $(SRCDIR)/,$(OBJDIR)/,$(subst .s,.o,$(SRCS:%.c=%.o)))
 
 APILIB=$(LIBDIR)/apilib.a
+CRT0=$(LIBDIR)/crt0.o
 
 CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
-all:	$(APILIB)
+all:	$(APILIB) $(CRT0)
 
 .SUFFIXS:	.c .s .o
 
@@ -23,3 +24,6 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.c
 
 $(APILIB):	$(OBJS)
 	ar r $@ $^
+
+$(CRT0):	crt0/crt0.c
+	gcc -c -o $@ $(CFLAGS) $<

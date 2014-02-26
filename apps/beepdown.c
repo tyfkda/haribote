@@ -1,7 +1,6 @@
 #include "apilib.h"
-#include "stdlib.h"
 
-void HariMain(void) {
+int main() {
   TIMER* timer = api_alloctimer();
   api_inittimer(timer, 128);
   for (int i = 20000000; i >= 20000; i -= i / 100) {
@@ -12,5 +11,5 @@ void HariMain(void) {
       break;
   }
   api_beep(0);
-  exit(0);
+  return 0;
 }

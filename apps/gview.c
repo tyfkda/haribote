@@ -26,13 +26,12 @@ void error(char *s);
 static struct DLL_STRPICENV env;
 static unsigned char winbuf[1040 * 805];
 
-void HariMain(void) {
+int main() {
   char s[32];
   int win, i, j, fsize, xsize, info[8];
   RGB *q;
   
   unsigned char* filebuf = NULL;
-  api_initmalloc();
 
   /* コマンドライン解析 */
   {
@@ -107,7 +106,7 @@ void HariMain(void) {
       free(filebuf);
       free(picbuf);
 
-      api_end();
+      return 0;
     }
   }
 }

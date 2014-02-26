@@ -1,6 +1,4 @@
-#include "stdlib.h"
-
-void HariMain(void) {
+int main() {
   *((char*)0x00102600) = 0;
-  exit(0);
+  return 0;
 }

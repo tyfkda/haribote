@@ -32,8 +32,6 @@ DISK_FILES=\
 	$(OBJDIR)/mandel.hrb \
 	$(OBJDIR)/aobench.hrb \
 
-APILIB=$(LIBDIR)/apilib.a
-
 FAT12IMG=tools/fat12img
 
 all:	$(TARGET)
@@ -56,5 +54,5 @@ apps:
 	make -C apps
 
 clean:
-	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.hrb $(OBJDIR)/*.map $(TARGET)
-	rm -f $(APILIB)
+	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.hrb \
+	  $(OBJDIR)/*.map $(TARGET) $(LIBDIR)/*.a $(LIBDIR)/*.o

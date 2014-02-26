@@ -7,7 +7,7 @@
 char *skipspace(char *p);
 int getnum(char **pp, int priority);
 
-void HariMain(void) {
+int main() {
   int i;
   char s[30], *p;
   
@@ -20,7 +20,7 @@ void HariMain(void) {
     sprintf(s, "= %d = 0x%x\n", i, i);
     api_putstr0(s);
   }
-  api_end();
+  return 0;
 }
 
 char *skipspace(char *p) {

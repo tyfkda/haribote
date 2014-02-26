@@ -1,5 +1,4 @@
 #include "apilib.h"
-
 #include "stdlib.h"
 
 char *skipspace(char *p);
@@ -12,7 +11,7 @@ static char txtbuf[240 * 1024];
 
 static int api_getlang()  { return 0; }
 
-void HariMain(void) {
+int main() {
   int w = 30, h = 10, t = 4, spd_x = 1, spd_y = 1;
   int win, i, j, lang = api_getlang(), xskip = 0;
   char s[30], *p, *q = 0, *r = 0;
@@ -146,6 +145,7 @@ void HariMain(void) {
       }
     }
   }
+  return 0;
 }
 
 char *skipspace(char *p) {
