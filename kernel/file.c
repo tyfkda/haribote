@@ -5,11 +5,11 @@
 #define MAX_CLUSTER  (2880)
 #define CLUSTER_SIZE  (512)
 
-static short get_next_fat(const short* fat, short cluster) {
+static short get_next_cluster(const short* fat, short cluster) {
   return fat[cluster];
 }
 
-static void set_next_fat(short* fat, short cluster, short next) {
+static void set_next_cluster(short* fat, short cluster, short next) {
   fat[cluster] = next;
 }
 
@@ -45,8 +45,8 @@ FILEINFO* file_search(const char* name, FILEINFO* finfo, int max) {
 void file_delete(FILEINFO* finfo, short* fat) {
   finfo->name[0] = 0xe5;  // Delete mark.
   for (short cluster = finfo->clustno; cluster < 0xff0; ) {
-    short next = get_next_fat(fat, cluster);
-    set_next_fat(fat, cluster, 0x000);  // Free
+    short next = get_next_cluster(fat, cluster);
+    set_next_cluster(fat, cluster, 0x000);  // Free
     cluster = next;
   }
 }
@@ -75,7 +75,7 @@ int file_read(FILEHANDLE* fh, void* dst, int requestSize, const char* diskImage)
     p += blockBytes;
     fh->pos += blockBytes;
     if (forward)
-      fh->cluster = get_next_fat(fh->fat, fh->cluster);
+      fh->cluster = get_next_cluster(fh->fat, fh->cluster);
     readSize += blockBytes;
     requestSize -= blockBytes;
   }
@@ -101,7 +101,7 @@ static int calc_cluster(FILEHANDLE* fh, int newpos) {
   }
 
   for (int i = 0; i < clusterCount; ++i)
-    cluster = get_next_fat(fh->fat, cluster);
+    cluster = get_next_cluster(fh->fat, cluster);
   return cluster;
 }
 
