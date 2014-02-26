@@ -9,6 +9,7 @@ DISK_FILES=\
 	$(OBJDIR)/haribote.sys \
 	$(OBJDIR)/type.hrb \
 	$(OBJDIR)/del.hrb \
+	$(OBJDIR)/now.hrb \
 	haribote/ipl.s \
 	$(OBJDIR)/hello3.hrb \
 	$(OBJDIR)/hello4.hrb \

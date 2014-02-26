@@ -38,6 +38,11 @@
 #define API_FREAD  (25)
 #define API_CMDLINE  (26)
 #define API_DELETE  (27)
+#define API_NOW  (28)
+
+static int bcd2(unsigned char x) {
+  return (x >> 4) * 10 + (x & 0x0f);
+}
 
 void cons_newline(CONSOLE* cons) {
   cons->cur_x = 8;
@@ -384,6 +389,40 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       }
       file_delete(finfo, task->fat);
       reg[7] = TRUE;
+    }
+  case API_NOW:
+    {
+      unsigned char* buf = (unsigned char*)ebx + ds_base;
+      unsigned char t[7];
+      static const unsigned char adr[7] = { 0x00, 0x02, 0x04, 0x07, 0x08, 0x09, 0x32 };
+      static const unsigned char max[7] = { 0x60, 0x59, 0x23, 0x31, 0x12, 0x99, 0x99 };
+      for (;;) { /* 読み込みが成功するまで繰り返す */
+        char err = 0;
+        for (int i = 0; i < 7; i++) {
+          io_out8(0x70, adr[i]);
+          t[i] = io_in8(0x71);
+        }
+        for (int i = 0; i < 7; i++) {
+          io_out8(0x70, adr[i]);
+          if (t[i] != io_in8(0x71) || (t[i] & 0x0f) > 9 || t[i] > max[i])
+            err = 1;
+        }
+        if (err == 0)
+          break;
+      }
+      short year = bcd2(t[6]) * 100 + bcd2(t[5]);
+      unsigned char month = bcd2(t[4]);
+      unsigned char day = bcd2(t[3]);
+      unsigned char hour = bcd2(t[2]);
+      unsigned char minute = bcd2(t[1]);
+      unsigned char second = bcd2(t[0]);
+      buf[0] = year >> 8;
+      buf[1] = year;
+      buf[2] = month;
+      buf[3] = day;
+      buf[4] = hour;
+      buf[5] = minute;
+      buf[6] = second;
     }
     break;
   }

@@ -63,6 +63,7 @@ void api_fseek(int fhandle, int offset, int mode);
 int api_fsize(int fhandle, int mode);
 int api_fread(void* buf, int maxsize, int fhandle);
 int api_delete(const char* fname);
+int api_now(unsigned char* buf);
 
 int api_cmdline(char* buf, int maxsize);
 
