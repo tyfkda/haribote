@@ -142,12 +142,6 @@ typedef struct {
 } OsInfo;
 
 static void handle_key_event(OsInfo* osinfo, int keycode) {
-  {
-    char s[30];
-    sprintf(s, "key:%02x", keycode);
-    putfonts8_asc_sht(osinfo->shtctl, osinfo->sht_back, 0, osinfo->sht_back->bysize - 28, COL8_RED, COL8_DARK_GRAY, s, strlen(s));
-  }
-
   switch (keycode) {
   case 0x0f:  // Tab.
     if (osinfo->key_win != NULL) {
