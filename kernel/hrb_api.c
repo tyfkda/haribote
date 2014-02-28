@@ -39,6 +39,33 @@ static FILEHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
   return fh;
 }
 
+// Reads real time clock, and returns the result into array t.
+// 0 = sec, 1 = min, 2 = hour, 3 = day, 4 = month, 5..6 = year
+// Each value is represented in BCD. e.g. 12 = 0x12
+static void read_rtc(unsigned char t[7]) {
+  static const unsigned char adr[7] = { 0x00, 0x02, 0x04, 0x07, 0x08, 0x09, 0x32 };
+  static const unsigned char max[7] = { 0x60, 0x59, 0x23, 0x31, 0x12, 0x99, 0x99 };
+  for (int i = 0; i < 7; i++) {
+    io_out8(0x70, adr[i]);
+    unsigned char v = io_in8(0x71);
+    if (!((v & 0x0f) <= 9 && v <= max[i]))
+      v = -1;
+    t[i] = v;
+  }
+  char err = FALSE;
+  do {
+    for (int i = 0; i < 7; i++) {
+      io_out8(0x70, adr[i]);
+      unsigned char v = io_in8(0x71);
+      if (t[i] != v) {
+        if ((v & 0x0f) <= 9 && v <= max[i])
+          t[i] = v;
+        err = TRUE;
+      }
+    }
+  } while (err);
+}
+
 // This is the system call for Haribote OS.
 // Called from assembler.
 int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax) {
@@ -315,22 +342,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     {
       unsigned char* buf = (unsigned char*)ebx + ds_base;
       unsigned char t[7];
-      static const unsigned char adr[7] = { 0x00, 0x02, 0x04, 0x07, 0x08, 0x09, 0x32 };
-      static const unsigned char max[7] = { 0x60, 0x59, 0x23, 0x31, 0x12, 0x99, 0x99 };
-      for (;;) { /* 読み込みが成功するまで繰り返す */
-        char err = 0;
-        for (int i = 0; i < 7; i++) {
-          io_out8(0x70, adr[i]);
-          t[i] = io_in8(0x71);
-        }
-        for (int i = 0; i < 7; i++) {
-          io_out8(0x70, adr[i]);
-          if (t[i] != io_in8(0x71) || (t[i] & 0x0f) > 9 || t[i] > max[i])
-            err = 1;
-        }
-        if (err == 0)
-          break;
-      }
+      read_rtc(t);
       short year = bcd2(t[6]) * 100 + bcd2(t[5]);
       unsigned char month = bcd2(t[4]);
       unsigned char day = bcd2(t[3]);
