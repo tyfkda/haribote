@@ -33,6 +33,9 @@ entry:
 	movw	$0x7c00, %sp
 	movw    %ax, %ds
 
+	mov	$boot_msg, %si
+	call	putmsg
+
 	# Read disk
 	movw	$0x0820, %ax
 	movw	%ax, %es
@@ -126,24 +129,28 @@ next:
 error:
 	mov	$0, %ax
 	mov	%ax, %es
-	movw	$msg, %si
-putloop:
-	movb	0(%si),	%al
-	add	$1, %si
-	cmpb	$0, %al
-	je	fin
-	movb	$0x0e, %ah      # put one char
-	movw	$15, %bx        # color code
-	int	$0x10           # call video bios
-	jmp	putloop
-
+	mov	$disk_error_msg, %si
+	call	putmsg
 fin:
 	hlt
 	jmp	fin
-	
-msg:
-	.ascii	"Disk read error"
-	.byte	0x00
+
+putmsg:
+	lodsb			# %al = (%si), %si += 1
+	or	%al, %al
+	jz	.done
+	movb	$0x0e, %ah	# put one char
+	movw	$15, %bx	# color code
+	int	$0x10		# call video bios
+	jmp	putmsg
+.done:
+	ret
+
+boot_msg:
+	.string	"Booting Haribote-OS...\n\r"
+
+disk_error_msg:
+	.string	"Disk read error"
 
 .org 510
 	.byte	0x55, 0xaa

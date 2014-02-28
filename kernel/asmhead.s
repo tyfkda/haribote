@@ -116,13 +116,13 @@ pipelineflash:
 	mov	$bootpack, %esi	# source
 	mov	$BOTPAK, %edi	# destination
 	mov	$512*1024/4, %ecx
-	call	memcpy
+	call	memcpy4
 
 	# Copy disk data
 	mov	$0x7c00, %esi
 	mov	$DSKCAC, %edi
 	mov	$512/4, %ecx
-	call	memcpy
+	call	memcpy4
 
 	mov	$DSKCAC0+512, %esi	# source
 	mov	$DSKCAC+512, %edi	# destination
@@ -130,7 +130,7 @@ pipelineflash:
 	movb	(CYLS), %cl
 	imul	$512*18*2/4, %ecx
 	sub	$512/4, %ecx
-	call	memcpy
+	call	memcpy4
 
 	# boot bootpack
 	mov	$BOTPAK, %ebx
@@ -141,7 +141,7 @@ pipelineflash:
 	mov	20(%ebx), %esi	# source
 	add	%ebx, %esi
 	mov	12(%ebx), %edi	# destination
-	call	memcpy
+	call	memcpy4
 skip:
 	mov	12(%ebx), %esp
 	ljmp	$2*8, $0x0000001b
@@ -153,13 +153,13 @@ waitkbdout:
 	jnz	waitkbdout
 	ret
 
-memcpy:
+memcpy4:
 	mov	(%esi), %eax
 	add	$4, %esi
 	mov	%eax, (%edi)
 	add	$4, %edi
 	sub	$1, %ecx
-	jnz	memcpy
+	jnz	memcpy4
 	ret
 
 	.align	16
