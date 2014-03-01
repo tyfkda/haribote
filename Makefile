@@ -11,27 +11,15 @@ DISK_FILES=\
 	$(OBJDIR)/del.hrb \
 	$(OBJDIR)/now.hrb \
 	kernel/ipl.s \
-	$(OBJDIR)/hello3.hrb \
-	$(OBJDIR)/hello4.hrb \
-	$(OBJDIR)/hello5.hrb \
-	$(OBJDIR)/winhelo.hrb \
-	$(OBJDIR)/stars.hrb \
-	$(OBJDIR)/lines.hrb \
-	$(OBJDIR)/walk.hrb \
-	$(OBJDIR)/noodle.hrb \
-	$(OBJDIR)/beepdown.hrb \
-	$(OBJDIR)/color.hrb \
 	$(OBJDIR)/color2.hrb \
 	$(OBJDIR)/bball.hrb \
 	$(OBJDIR)/invader.hrb \
-	$(OBJDIR)/calc.hrb \
 	$(OBJDIR)/tview.hrb \
 	$(OBJDIR)/gview.hrb \
 	$(DATADIR)/fujisan.jpg \
 	$(DATADIR)/night.bmp \
 	$(OBJDIR)/mandel.hrb \
 	$(OBJDIR)/aobench.hrb \
-	$(OBJDIR)/hello+.hrb \
 	$(OBJDIR)/fwrite.hrb \
 
 FAT12IMG=tools/fat12img
