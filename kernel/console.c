@@ -187,25 +187,31 @@ static char cmd_app(CONSOLE* cons, const char* cmdline) {
   }
 
   // File found.
-  MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
-  size_t fileSize = fh.finfo->size;
-  char* p = (char*)memman_alloc_4k(memman, fileSize);
-  int readSize = file_read(&fh, p, fileSize);
-  if (readSize < 36 || strncmp(p + 4, "Hari", 4) != 0 || *p != 0x00) {
+  HrbHeader header;
+  int readSize = file_read(&fh, &header, sizeof(header));
+  if ((size_t)readSize < sizeof(header) || strncmp((char*)header.signature, "Hari", 4) != 0) {
     cons_putstr0(cons, ".hrb file format error.\n");
-    memman_free_4k(memman, p, fileSize);
     return FALSE;
   }
 
-  HrbHeader* header = (HrbHeader*)p;
-  char* q = (char*)memman_alloc_4k(memman, header->segSize);  // Data segment.
+  int fileSize = fh.finfo->size;
+  int codeSize = fileSize - sizeof(header) - header.dataSize;
+
+  MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
+  char* p = (char*)memman_alloc_4k(memman, sizeof(header) + codeSize);
+  char* q = (char*)memman_alloc_4k(memman, header.segSize);  // Data segment.
+  memcpy(p, &header, sizeof(header));
+  file_read(&fh, p + sizeof(header), codeSize);
+  file_read(&fh, q + header.esp, header.dataSize);
+  // Clear .bss area.
+  memset(q + header.esp + header.dataSize, 0x00, header.segSize - (header.esp + header.dataSize));
+
   TASK* task = task_now();
   task->ds_base = (int)q;  // Store data segment address.
 
-  set_segmdesc(task->ldt + 0, fileSize - 1, (int)p, AR_CODE32_ER + 0x60);
-  set_segmdesc(task->ldt + 1, header->segSize - 1, (int)q, AR_DATA32_RW + 0x60);
-  memcpy(&q[header->esp], &p[header->dataAdr], header->dataSize);
-  start_app(0x1b, 0 * 8 + 4, header->esp, 1 * 8 + 4, &(task->tss.esp0));
+  set_segmdesc(task->ldt + 0, sizeof(header) + codeSize - 1, (int)p, AR_CODE32_ER + 0x60);
+  set_segmdesc(task->ldt + 1, header.segSize - 1, (int)q, AR_DATA32_RW + 0x60);
+  start_app(0x1b, 0 * 8 + 4, header.esp, 1 * 8 + 4, &(task->tss.esp0));
 
   // End of application.
   // Free sheets which are opened by the task.
@@ -223,8 +229,8 @@ static char cmd_app(CONSOLE* cons, const char* cmdline) {
     }
   }
   timer_cancelall(&task->fifo);
-  memman_free_4k(memman, q, 64 * 1024);
-  memman_free_4k(memman, p, fileSize);
+  memman_free_4k(memman, q, header.segSize);
+  memman_free_4k(memman, p, sizeof(header) + codeSize);
   cons_newline(cons);
   return TRUE;
 }
