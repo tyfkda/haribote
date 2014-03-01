@@ -28,7 +28,7 @@ static FILEHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
       return NULL;
   }
 
-  FILEHANDLE* fh = task_alloc_fhandle(task);
+  FILEHANDLE* fh = task_get_free_fhandle(task);
   if (fh == NULL)
     return NULL;
   fh->finfo = finfo;

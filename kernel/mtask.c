@@ -201,7 +201,7 @@ int* inthandler07(int *esp) {
   return 0;
 }
 
-FILEHANDLE* task_alloc_fhandle(TASK* task) {
+FILEHANDLE* task_get_free_fhandle(TASK* task) {
   for (int i = 0; i < task->fhandleCount; ++i) {
     if (task->fhandle[i].finfo == NULL)
       return &task->fhandle[i];
