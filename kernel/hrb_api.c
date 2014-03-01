@@ -330,6 +330,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       const char* filename = (char*)ebx + ds_base;
       reg[7] = file_delete(filename);
     }
+    break;
   case API_NOW:
     {
       unsigned char* buf = (unsigned char*)ebx + ds_base;
