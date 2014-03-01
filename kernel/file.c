@@ -53,23 +53,33 @@ static void make_file_name83(char s[12], const char* name) {
   }
 }
 
-FILEINFO* file_create(const char* filename) {
+int file_writeopen(FILEHANDLE* fh, const char* filename) {
+  fh->finfo = NULL;
+  fh->pos = 0;
+  fh->cluster = 0;
+  fh->modified = FALSE;
+
   char s[12];
   make_file_name83(s, filename);
+  FILEINFO* finfo;
   for (int i = 0; i < FINFO_MAX; ++i) {
-    FILEINFO* finfo = &FINFO_TOP[i];
+    finfo = &FINFO_TOP[i];
     if (finfo->name[0] == 0x00 || finfo->name[0] == 0xe5) {  // End of table, or deleted entry.
       memset(finfo, 0x00, sizeof(FILEINFO));
       memcpy(finfo->name, s, 11);
       finfo->type = 0x20;  // Normal file.
-      return finfo;
+      goto found;
     }
     if ((finfo->type & 0x18) == 0) {
       if (strncmp((char*)finfo->name, s, 11) == 0)
-        return finfo;
+        goto found;
     }
   }
-  return NULL;
+  return FALSE;
+
+ found:
+  fh->finfo = finfo;
+  return TRUE;
 }
 
 static FILEINFO* file_search(const char* filename) {

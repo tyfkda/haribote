@@ -14,13 +14,12 @@ typedef struct FILEHANDLE {
   char modified;
 } FILEHANDLE;
 
-FILEINFO* file_create(const char* filename);
-int file_delete(const char* filename);
-
 int file_open(FILEHANDLE* fh, const char* name);
+int file_writeopen(FILEHANDLE* fh, const char* filename);
 int file_read(FILEHANDLE* fh, void* dst, int requestSize);
 int file_write(FILEHANDLE* fh, const void* src, int requestSize);
 void file_seek(FILEHANDLE* fh, int offset, int origin);
 void file_close(FILEHANDLE* fh);
+int file_delete(const char* filename);
 
 #endif

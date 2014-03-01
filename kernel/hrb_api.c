@@ -22,11 +22,11 @@ static FILEHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
   if (fh == NULL)
     return NULL;
 
-  if (!file_open(fh, filename)) {
-    if (!(flag & OPEN_WRITE))
+  if (flag & OPEN_WRITE) {
+    if (!file_writeopen(fh, filename))
       return NULL;
-    fh->finfo = file_create(filename);
-    if (fh->finfo == NULL)
+  } else {
+    if (!file_open(fh, filename))
       return NULL;
   }
   return fh;
