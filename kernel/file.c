@@ -72,7 +72,7 @@ FILEINFO* file_create(const char* filename) {
   return NULL;
 }
 
-FILEINFO* file_search(const char* filename) {
+static FILEINFO* file_search(const char* filename) {
   char s[12];
   make_file_name83(s, filename);
   for (int i = 0; i < FINFO_MAX; ++i) {
@@ -192,14 +192,6 @@ int file_write(FILEHANDLE* fh, const void* srcData, int requestSize) {
     requestSize -= size;
   }
   return writeSize;
-}
-
-void file_loadfile(FILEINFO* finfo, void* buf) {
-  FILEHANDLE fh;
-  fh.finfo = finfo;
-  fh.pos = 0;
-  fh.cluster = finfo->clustno;
-  file_read(&fh, buf, finfo->size);
 }
 
 static int calc_cluster(FILEHANDLE* fh, int newpos) {

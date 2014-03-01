@@ -14,9 +14,7 @@ typedef struct FILEHANDLE {
   char modified;
 } FILEHANDLE;
 
-FILEINFO* file_search(const char* filename);
 FILEINFO* file_create(const char* filename);
-void file_loadfile(FILEINFO* finfo, void* buf);
 int file_delete(const char* filename);
 
 int file_open(FILEHANDLE* fh, const char* name);

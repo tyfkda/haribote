@@ -164,54 +164,56 @@ static char cmd_app(CONSOLE* cons, const char* cmdline) {
   }
   name[i] = '\0';
 
-  FILEINFO *finfo = file_search(name);
-  if (finfo == NULL) {
+  FILEHANDLE fh;
+  if (!file_open(&fh, name)) {
     // Try executable extension.
     strcpy(name + strlen(name), ".hrb");
-    finfo = file_search(name);
-    if (finfo == NULL)
+    if (!file_open(&fh, name))
       return FALSE;
   }
 
   // File found.
   MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
-  char* p = (char*)memman_alloc_4k(memman, finfo->size);
-  file_loadfile(finfo, p);
-  if (finfo->size < 36 || strncmp(p + 4, "Hari", 4) != 0 || *p != 0x00) {
+  size_t fileSize = fh.finfo->size;
+  char* p = (char*)memman_alloc_4k(memman, fileSize);
+  int readSize = file_read(&fh, p, fileSize);
+  if (readSize < 36 || strncmp(p + 4, "Hari", 4) != 0 || *p != 0x00) {
     cons_putstr0(cons, ".hrb file format error.\n");
-  } else {
-    int segsiz = *((int*)(p + 0x0000));
-    int esp    = *((int*)(p + 0x000c));
-    int datsiz = *((int*)(p + 0x0010));
-    int dathrb = *((int*)(p + 0x0014));
-    char* q = (char*)memman_alloc_4k(memman, segsiz);  // Data segment.
-    TASK* task = task_now();
-    task->ds_base = (int)q;  // Store data segment address.
-
-    set_segmdesc(task->ldt + 0, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);
-    set_segmdesc(task->ldt + 1, segsiz - 1, (int)q, AR_DATA32_RW + 0x60);
-    memcpy(&q[esp], &p[dathrb], datsiz);
-    start_app(0x1b, 0 * 8 + 4, esp, 1 * 8 + 4, &(task->tss.esp0));
-
-    // End of application.
-    // Free sheets which are opened by the task.
-    SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-    for (int i = 0; i < MAX_SHEETS; ++i) {
-      SHEET* sheet = &shtctl->sheets0[i];
-      if ((sheet->flags & 0x11) == 0x11 && sheet->task == task)
-        sheet_free(shtctl, sheet);
-    }
-    // Close files.
-    for (int i = 0; i < task->fhandleCount; ++i) {
-      if (task->fhandle[i].finfo != NULL) {
-        //memman_free_4k(memman, task->fhandle[i].buf, task->fhandle[i].size);
-        task->fhandle[i].finfo = NULL;
-      }
-    }
-    timer_cancelall(&task->fifo);
-    memman_free_4k(memman, q, 64 * 1024);
+    memman_free_4k(memman, p, fileSize);
+    return FALSE;
   }
-  memman_free_4k(memman, p, finfo->size);
+
+  int segsiz = *((int*)(p + 0x0000));
+  int esp    = *((int*)(p + 0x000c));
+  int datsiz = *((int*)(p + 0x0010));
+  int dathrb = *((int*)(p + 0x0014));
+  char* q = (char*)memman_alloc_4k(memman, segsiz);  // Data segment.
+  TASK* task = task_now();
+  task->ds_base = (int)q;  // Store data segment address.
+
+  set_segmdesc(task->ldt + 0, fileSize - 1, (int)p, AR_CODE32_ER + 0x60);
+  set_segmdesc(task->ldt + 1, segsiz - 1, (int)q, AR_DATA32_RW + 0x60);
+  memcpy(&q[esp], &p[dathrb], datsiz);
+  start_app(0x1b, 0 * 8 + 4, esp, 1 * 8 + 4, &(task->tss.esp0));
+
+  // End of application.
+  // Free sheets which are opened by the task.
+  SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+  for (int i = 0; i < MAX_SHEETS; ++i) {
+    SHEET* sheet = &shtctl->sheets0[i];
+    if ((sheet->flags & 0x11) == 0x11 && sheet->task == task)
+      sheet_free(shtctl, sheet);
+  }
+  // Close files.
+  for (int i = 0; i < task->fhandleCount; ++i) {
+    if (task->fhandle[i].finfo != NULL) {
+      //memman_free_4k(memman, task->fhandle[i].buf, task->fhandle[i].size);
+      task->fhandle[i].finfo = NULL;
+    }
+  }
+  timer_cancelall(&task->fifo);
+  memman_free_4k(memman, q, 64 * 1024);
+  memman_free_4k(memman, p, fileSize);
   cons_newline(cons);
   return TRUE;
 }
