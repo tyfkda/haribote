@@ -1,9 +1,13 @@
 #include "file.h"
+#include "bootpack.h"
 #include "stdio.h"  // NULL
 #include "string.h"  // memcpy, strncmp
 
 #define MAX_CLUSTER  (2880)
 #define CLUSTER_SIZE  (512)
+
+#define FINFO_TOP  ((FILEINFO*)(ADR_DISKIMG + 0x002600))
+#define FINFO_MAX  (224)
 
 static short get_next_cluster(const short* fat, short cluster) {
   return fat[cluster];
@@ -41,10 +45,11 @@ static void make_file_name83(char s[12], const char* name) {
   }
 }
 
-FILEINFO* file_create(const char* name, FILEINFO* finfo, int max) {
+FILEINFO* file_create(const char* name) {
   char s[12];
   make_file_name83(s, name);
-  for (int i = 0; i < max; ++i, ++finfo) {
+  for (int i = 0; i < FINFO_MAX; ++i) {
+    FILEINFO* finfo = &FINFO_TOP[i];
     if (finfo->name[0] == 0x00 || finfo->name[0] == 0xe5) {  // End of table, or deleted entry.
       memset(finfo, 0x00, sizeof(FILEINFO));
       memcpy(finfo->name, s, 11);
@@ -59,10 +64,11 @@ FILEINFO* file_create(const char* name, FILEINFO* finfo, int max) {
   return NULL;
 }
 
-FILEINFO* file_search(const char* name, FILEINFO* finfo, int max) {
+FILEINFO* file_search(const char* name) {
   char s[12];
   make_file_name83(s, name);
-  for (int i = 0; i < max; ++i, ++finfo) {
+  for (int i = 0; i < FINFO_MAX; ++i) {
+    FILEINFO* finfo = &FINFO_TOP[i];
     if (finfo->name[0] == 0x00)  // End of table.
       return NULL;
     if ((finfo->type & 0x18) == 0) {

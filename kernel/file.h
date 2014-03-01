@@ -16,8 +16,8 @@ typedef struct FILEHANDLE {
 } FILEHANDLE;
 
 void file_readfat(short* fat, unsigned char* img);
-FILEINFO* file_search(const char* name, FILEINFO* finfo, int max);
-FILEINFO* file_create(const char* name, FILEINFO* finfo, int max);
+FILEINFO* file_search(const char* name);
+FILEINFO* file_create(const char* name);
 void file_loadfile(FILEINFO* finfo, short* fat, char* img, void* buf);
 void file_delete(FILEINFO* finfo, short* fat);
 int file_read(FILEHANDLE* fh, void* dst, int requestSize, const char* diskImage);

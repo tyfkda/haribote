@@ -18,12 +18,11 @@ static int bcd2(unsigned char x) {
 }
 
 static FILEHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
-  FILEINFO* finfoTop = (FILEINFO*)(ADR_DISKIMG + 0x002600);
-  FILEINFO* finfo = file_search(filename, finfoTop, 224);
+  FILEINFO* finfo = file_search(filename);
   if (finfo == NULL) {
     if (!(flag & OPEN_WRITE))
       return NULL;
-    finfo = file_create(filename, finfoTop, 224);
+    finfo = file_create(filename);
     if (finfo == NULL)
       return NULL;
   }
@@ -330,7 +329,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   case API_DELETE:
     {
       const char* filename = (char*)ebx + ds_base;
-      FILEINFO* finfo = file_search(filename, (FILEINFO*)(ADR_DISKIMG + 0x002600), 224);
+      FILEINFO* finfo = file_search(filename);
       if (finfo == NULL) {
         reg[7] = FALSE;
         break;
