@@ -44,9 +44,10 @@ But I changed to use Linux, and simplify required tools using Ruby.
 ## How to make your own .hrb application
 ### Create executable for Haribote OS
 1. Create object files using gcc, or any
-  1. `void HariMain(void)` function is the entry point.
+  1. `int main(int argc, char* argv[])` function is the entry point.
 2. Use linker script [hrbapp.ls](https://github.com/tyfkda/haribote/blob/master/lib/hrbapp.ls) to make .hrb file
-  * `$ ld -T hrbapp.ls --oformat binary -o <executable file name> <object files...>`
+  * `$ ld -T hrbapp.ls lib/crt0.o -o <executable file name> <object files...> lib/apilib.a`
+  * You have to link lib/crt0.o and lib/applib.a
 
 ### Put executable onto floopy disk image
 1. Prepare disk image
