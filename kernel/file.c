@@ -9,6 +9,8 @@
 #define FINFO_TOP  ((FILEINFO*)(ADR_DISKIMG + 0x002600))
 #define FINFO_MAX  (224)
 
+#define DISK_CLUSTER_DATA  (ADR_DISKIMG + 0x003e00)
+
 static short get_next_cluster(const short* fat, short cluster) {
   return fat[cluster];
 }
@@ -88,11 +90,11 @@ void file_delete(FILEINFO* finfo, short* fat) {
   }
 }
 
-static unsigned char* clusterData(const void* diskImage, int cluster) {
-  return (unsigned char*)diskImage + cluster * CLUSTER_SIZE;
+static unsigned char* clusterData(int cluster) {
+  return (unsigned char*)DISK_CLUSTER_DATA + cluster * CLUSTER_SIZE;
 }
 
-int file_read(FILEHANDLE* fh, void* dst, int requestSize, const char* diskImage) {
+int file_read(FILEHANDLE* fh, void* dst, int requestSize) {
   int readSize = 0;
   unsigned char* p = dst;
   while (requestSize > 0) {
@@ -107,7 +109,7 @@ int file_read(FILEHANDLE* fh, void* dst, int requestSize, const char* diskImage)
       blockBytes = requestSize;
       forward = FALSE;
     }
-    const unsigned char* src = clusterData(diskImage, fh->cluster) + (fh->pos % CLUSTER_SIZE);
+    const unsigned char* src = clusterData(fh->cluster) + (fh->pos % CLUSTER_SIZE);
     memcpy(p, src, blockBytes);
     p += blockBytes;
     fh->pos += blockBytes;
@@ -129,7 +131,7 @@ short allocate_cluster(short* fat) {
   return -1;
 }
 
-int file_write(FILEHANDLE* fh, const void* srcData, int requestSize, const char* diskImage) {
+int file_write(FILEHANDLE* fh, const void* srcData, int requestSize) {
   if (requestSize <= 0)
     return 0;
 
@@ -159,7 +161,7 @@ int file_write(FILEHANDLE* fh, const void* srcData, int requestSize, const char*
     int size = CLUSTER_SIZE - (fh->pos % CLUSTER_SIZE);
     if (requestSize < size)
       size = requestSize;
-    unsigned char* dst = clusterData(diskImage, fh->cluster) + (fh->pos % CLUSTER_SIZE);
+    unsigned char* dst = clusterData(fh->cluster) + (fh->pos % CLUSTER_SIZE);
     memcpy(dst, src, size);
     fh->pos += size;
     writeSize += size;
@@ -169,13 +171,13 @@ int file_write(FILEHANDLE* fh, const void* srcData, int requestSize, const char*
   return writeSize;
 }
 
-void file_loadfile(FILEINFO* finfo, short* fat, char* img, void* buf) {
+void file_loadfile(FILEINFO* finfo, short* fat, void* buf) {
   FILEHANDLE fh;
   fh.finfo = finfo;
   fh.fat = fat;
   fh.pos = 0;
   fh.cluster = finfo->clustno;
-  file_read(&fh, buf, finfo->size, img);
+  file_read(&fh, buf, finfo->size);
 }
 
 static int calc_cluster(FILEHANDLE* fh, int newpos) {

@@ -302,7 +302,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       FILEHANDLE* fh = (FILEHANDLE*)eax;
       unsigned char* dst = (unsigned char*)ebx + ds_base;
       int size = ecx;
-      int readsize = file_read(fh, dst, size, (char*)(ADR_DISKIMG + 0x003e00));
+      int readsize = file_read(fh, dst, size);
       reg[7] = readsize;
     }
     break;
@@ -311,7 +311,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       FILEHANDLE* fh = (FILEHANDLE*)eax;
       const void* src = (unsigned char*)ebx + ds_base;
       int size = ecx;
-      int writesize = file_write(fh, src, size, (char*)(ADR_DISKIMG + 0x003e00));
+      int writesize = file_write(fh, src, size);
       reg[7] = writesize;
     }
     break;
