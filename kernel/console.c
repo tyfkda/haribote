@@ -18,6 +18,20 @@
 #define CONSOLE_WIDTH   (CONSOLE_NX * FONTW + 8 * 2)
 #define CONSOLE_HEIGHT  (CONSOLE_NY * FONTH + 8 * 2 + 20)
 
+// .hrb executable file header.
+typedef struct {
+  uint32_t segSize;
+  int8_t signature[4];  // Must be "Hari"
+  uint32_t mmarea;
+  uint32_t esp;  // stackSize;
+  uint32_t dataSize;
+  uint32_t dataAdr;
+  int32_t jump;
+  uint32_t entryPoint;
+  uint32_t heapAdr;
+  int32_t dummy[3];
+} HrbHeader;
+
 static TASK* open_constask(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal);
 
 void cons_putchar(CONSOLE* cons, int chr, char move) {
@@ -183,18 +197,15 @@ static char cmd_app(CONSOLE* cons, const char* cmdline) {
     return FALSE;
   }
 
-  int segsiz = *((int*)(p + 0x0000));
-  int esp    = *((int*)(p + 0x000c));
-  int datsiz = *((int*)(p + 0x0010));
-  int dathrb = *((int*)(p + 0x0014));
-  char* q = (char*)memman_alloc_4k(memman, segsiz);  // Data segment.
+  HrbHeader* header = (HrbHeader*)p;
+  char* q = (char*)memman_alloc_4k(memman, header->segSize);  // Data segment.
   TASK* task = task_now();
   task->ds_base = (int)q;  // Store data segment address.
 
   set_segmdesc(task->ldt + 0, fileSize - 1, (int)p, AR_CODE32_ER + 0x60);
-  set_segmdesc(task->ldt + 1, segsiz - 1, (int)q, AR_DATA32_RW + 0x60);
-  memcpy(&q[esp], &p[dathrb], datsiz);
-  start_app(0x1b, 0 * 8 + 4, esp, 1 * 8 + 4, &(task->tss.esp0));
+  set_segmdesc(task->ldt + 1, header->segSize - 1, (int)q, AR_DATA32_RW + 0x60);
+  memcpy(&q[header->esp], &p[header->dataAdr], header->dataSize);
+  start_app(0x1b, 0 * 8 + 4, header->esp, 1 * 8 + 4, &(task->tss.esp0));
 
   // End of application.
   // Free sheets which are opened by the task.
