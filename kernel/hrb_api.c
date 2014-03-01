@@ -18,22 +18,17 @@ static int bcd2(unsigned char x) {
 }
 
 static FILEHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
-  FILEINFO* finfo = file_search(filename);
-  if (finfo == NULL) {
-    if (!(flag & OPEN_WRITE))
-      return NULL;
-    finfo = file_create(filename);
-    if (finfo == NULL)
-      return NULL;
-  }
-
   FILEHANDLE* fh = task_get_free_fhandle(task);
   if (fh == NULL)
     return NULL;
-  fh->finfo = finfo;
-  fh->cluster = finfo->clustno;
-  fh->pos = 0;
-  fh->modified = FALSE;
+
+  if (!file_open(fh, filename)) {
+    if (!(flag & OPEN_WRITE))
+      return NULL;
+    fh->finfo = file_create(filename);
+    if (fh->finfo == NULL)
+      return NULL;
+  }
   return fh;
 }
 

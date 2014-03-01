@@ -101,6 +101,18 @@ int file_delete(const char* filename) {
   return TRUE;
 }
 
+int file_open(FILEHANDLE* fh, const char* name) {
+  fh->pos = 0;
+  fh->cluster = 0;
+  fh->modified = FALSE;
+
+  fh->finfo = file_search(name);
+  if (fh->finfo == NULL)
+    return FALSE;
+  fh->cluster = fh->finfo->clustno;
+  return TRUE;
+}
+
 static unsigned char* clusterData(int cluster) {
   return DISK_CLUSTER_DATA + cluster * CLUSTER_SIZE;
 }
