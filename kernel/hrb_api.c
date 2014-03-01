@@ -328,13 +328,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   case API_DELETE:
     {
       const char* filename = (char*)ebx + ds_base;
-      FILEINFO* finfo = file_search(filename);
-      if (finfo == NULL) {
-        reg[7] = FALSE;
-        break;
-      }
-      file_delete(finfo);
-      reg[7] = TRUE;
+      reg[7] = file_delete(filename);
     }
   case API_NOW:
     {

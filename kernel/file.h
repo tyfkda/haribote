@@ -14,10 +14,10 @@ typedef struct FILEHANDLE {
   char modified;
 } FILEHANDLE;
 
-FILEINFO* file_search(const char* name);
-FILEINFO* file_create(const char* name);
+FILEINFO* file_search(const char* filename);
+FILEINFO* file_create(const char* filename);
 void file_loadfile(FILEINFO* finfo, void* buf);
-void file_delete(FILEINFO* finfo);
+int file_delete(const char* filename);
 int file_read(FILEHANDLE* fh, void* dst, int requestSize);
 int file_write(FILEHANDLE* fh, const void* src, int requestSize);
 void file_seek(FILEHANDLE* fh, int offset, int origin);

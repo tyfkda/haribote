@@ -53,9 +53,9 @@ static void make_file_name83(char s[12], const char* name) {
   }
 }
 
-FILEINFO* file_create(const char* name) {
+FILEINFO* file_create(const char* filename) {
   char s[12];
-  make_file_name83(s, name);
+  make_file_name83(s, filename);
   for (int i = 0; i < FINFO_MAX; ++i) {
     FILEINFO* finfo = &FINFO_TOP[i];
     if (finfo->name[0] == 0x00 || finfo->name[0] == 0xe5) {  // End of table, or deleted entry.
@@ -72,9 +72,9 @@ FILEINFO* file_create(const char* name) {
   return NULL;
 }
 
-FILEINFO* file_search(const char* name) {
+FILEINFO* file_search(const char* filename) {
   char s[12];
-  make_file_name83(s, name);
+  make_file_name83(s, filename);
   for (int i = 0; i < FINFO_MAX; ++i) {
     FILEINFO* finfo = &FINFO_TOP[i];
     if (finfo->name[0] == 0x00)  // End of table.
@@ -87,13 +87,18 @@ FILEINFO* file_search(const char* name) {
   return NULL;
 }
 
-void file_delete(FILEINFO* finfo) {
+int file_delete(const char* filename) {
+  FILEINFO* finfo = file_search(filename);
+  if (finfo == NULL)
+    return FALSE;
+
   finfo->name[0] = 0xe5;  // Delete mark.
   for (short cluster = finfo->clustno; cluster < 0xff0; ) {
     short next = get_next_cluster(cluster);
     set_next_cluster(cluster, 0x000);  // Free
     cluster = next;
   }
+  return TRUE;
 }
 
 static unsigned char* clusterData(int cluster) {
