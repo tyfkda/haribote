@@ -31,7 +31,6 @@ static FILEHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
   if (fh == NULL)
     return NULL;
   fh->finfo = finfo;
-  fh->fat = task->fat;
   fh->cluster = finfo->clustno;
   fh->pos = 0;
   fh->modified = FALSE;
@@ -334,7 +333,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
         reg[7] = FALSE;
         break;
       }
-      file_delete(finfo, task->fat);
+      file_delete(finfo);
       reg[7] = TRUE;
     }
   case API_NOW:

@@ -9,17 +9,15 @@ typedef struct {
 
 typedef struct FILEHANDLE {
   FILEINFO* finfo;
-  short* fat;
   int pos;
   short cluster;
   char modified;
 } FILEHANDLE;
 
-void file_readfat(short* fat, unsigned char* img);
 FILEINFO* file_search(const char* name);
 FILEINFO* file_create(const char* name);
-void file_loadfile(FILEINFO* finfo, short* fat, void* buf);
-void file_delete(FILEINFO* finfo, short* fat);
+void file_loadfile(FILEINFO* finfo, void* buf);
+void file_delete(FILEINFO* finfo);
 int file_read(FILEHANDLE* fh, void* dst, int requestSize);
 int file_write(FILEHANDLE* fh, const void* src, int requestSize);
 void file_seek(FILEHANDLE* fh, int offset, int origin);

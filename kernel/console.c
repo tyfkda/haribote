@@ -114,14 +114,12 @@ static void cmd_dir(CONSOLE* cons) {
   }
 }
 
-static void cmd_exit(CONSOLE* cons, const short* fat) {
-  MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
+static void cmd_exit(CONSOLE* cons) {
   TASK* task = task_now();
   SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
   FIFO* fifo = (FIFO*)*((int*)0x0fec);
   if (cons->sheet != NULL)
     timer_cancel(cons->timer);
-  memman_free_4k(memman, (void*)fat, 4 * 2880);
   io_cli();
   if (cons->sheet != NULL)
     fifo_put(fifo, cons->sheet - shtctl->sheets0 + 768);  // 768~1023
@@ -156,7 +154,7 @@ static void cmd_ncst(const char* cmdline, int memtotal) {
   fifo_put(fifo, 10 + 256);  // Enter.
 }
 
-static char cmd_app(CONSOLE* cons, short* fat, const char* cmdline) {
+static char cmd_app(CONSOLE* cons, const char* cmdline) {
   char name[13];
   int i;
   for (i = 0; i < 8; ++i) {
@@ -178,7 +176,7 @@ static char cmd_app(CONSOLE* cons, short* fat, const char* cmdline) {
   // File found.
   MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
   char* p = (char*)memman_alloc_4k(memman, finfo->size);
-  file_loadfile(finfo, fat, p);
+  file_loadfile(finfo, p);
   if (finfo->size < 36 || strncmp(p + 4, "Hari", 4) != 0 || *p != 0x00) {
     cons_putstr0(cons, ".hrb file format error.\n");
   } else {
@@ -250,7 +248,7 @@ int* inthandler0d(void) {
   return &task->tss.esp0;  // Abort
 }
 
-static void cons_runcmd(const char* cmdline, CONSOLE* cons, short* fat, int memtotal) {
+static void cons_runcmd(const char* cmdline, CONSOLE* cons, int memtotal) {
   if (strcmp(cmdline, "mem") == 0 && cons->sheet != NULL) {
     cmd_mem(cons, memtotal);
   } else if (strcmp(cmdline, "cls") == 0 && cons->sheet != NULL) {
@@ -258,27 +256,27 @@ static void cons_runcmd(const char* cmdline, CONSOLE* cons, short* fat, int memt
   } else if (strcmp(cmdline, "dir") == 0 && cons->sheet != NULL) {
     cmd_dir(cons);
   } else if (strcmp(cmdline, "exit") == 0) {
-    cmd_exit(cons, fat);
+    cmd_exit(cons);
   } else if (strncmp(cmdline, "start ", 6) == 0) {
     cmd_start(cmdline, memtotal);
   } else if (strncmp(cmdline, "ncst ", 5) == 0) {
     cmd_ncst(cmdline, memtotal);
   } else if (cmdline[0] != '\0') {
-    if (!cmd_app(cons, fat, cmdline))
+    if (!cmd_app(cons, cmdline))
       cons_putstr0(cons, "Bad command.\n");
   }
 }
 
-static void handle_key_event(CONSOLE* cons, char* cmdline, short* fat, unsigned int memtotal, unsigned char key) {
+static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned int memtotal, unsigned char key) {
   switch (key) {
   case 10:  // Enter.
     // Erase cursor and newline.
     cons_putchar(cons, ' ', FALSE);
     cmdline[cons->cur_x / 8 - 2] = '\0';
     cons_newline(cons);
-    cons_runcmd(cmdline, cons, fat, memtotal);
+    cons_runcmd(cmdline, cons, memtotal);
     if (cons->sheet == NULL)
-      cmd_exit(cons, fat);
+      cmd_exit(cons);
     cons_putchar(cons, '>', TRUE);
     break;
   case 8:  // Back space.
@@ -301,17 +299,12 @@ static void handle_key_event(CONSOLE* cons, char* cmdline, short* fat, unsigned 
 static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   TASK* task = task_now();
 
-  MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
-  short* fat = (short*)memman_alloc_4k(memman, sizeof(short) * 2880);
-  file_readfat(fat, (unsigned char*)(ADR_DISKIMG + 0x000200));
-
 #define TASK_FHANDLE_COUNT  (8)
   FILEHANDLE fhandle[TASK_FHANDLE_COUNT];
   for (int i = 0; i < TASK_FHANDLE_COUNT; ++i)
     fhandle[i].finfo = NULL;  // Not used.
   task->fhandle = fhandle;
   task->fhandleCount = TASK_FHANDLE_COUNT;
-  task->fat = fat;
 
   char cmdline[CONSOLE_NX + 1];
 
@@ -342,7 +335,7 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
     int i = fifo_get(&task->fifo);
     io_sti();
     if (256 <= i && i < 512) {  // Keyboard data (from task A).
-      handle_key_event(&cons, cmdline, fat, memtotal, i - 256);
+      handle_key_event(&cons, cmdline, memtotal, i - 256);
     } else {
       switch (i) {
       case 0:
@@ -361,7 +354,7 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
         cons.cur_c = -1;
         break;
       case 4:  // Close button clicked.
-        cmd_exit(&cons, fat);
+        cmd_exit(&cons);
         break;
       }
     }
