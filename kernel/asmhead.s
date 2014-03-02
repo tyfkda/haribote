@@ -14,7 +14,7 @@
 	.equ	SCRNY, 0x0ff6	# Resolution y (screen y)
 	.equ	VRAM, 0x0ff8	# Graphics buffer
 
-	.equ	VBEMODE, 0x101
+	.equ	VBEMODE, 0x105
 	# 0x100 :  640 x  400 x 8bit color
 	# 0x101 :  640 x  480 x 8bit color
 	# 0x103 :  800 x  600 x 8bit color
