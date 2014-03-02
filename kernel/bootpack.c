@@ -93,12 +93,11 @@ typedef struct {
 static void handle_key_event(OsInfo* osinfo, int keycode) {
   switch (keycode) {
   case 0x0f:  // Tab.
-    if (osinfo->key_win != NULL) {
+    if (osinfo->key_win != NULL && osinfo->shtctl->top > 2) {
       keywin_off(osinfo->shtctl, osinfo->key_win);
-      int j = osinfo->key_win->height - 1;
-      if (j == 0)
-        j = osinfo->shtctl->top - 1;
-      osinfo->key_win = osinfo->shtctl->sheets[j];
+      // Move old bottom to the top.
+      osinfo->key_win = osinfo->shtctl->sheets[1];
+      sheet_updown(osinfo->shtctl, osinfo->key_win, osinfo->shtctl->top - 1);
       keywin_on(osinfo->shtctl, osinfo->key_win);
     }break;
   case 0x2a:  // Left shift on.
@@ -134,10 +133,6 @@ static void handle_key_event(OsInfo* osinfo, int keycode) {
       sheet_updown(osinfo->shtctl, osinfo->key_win, osinfo->shtctl->top);
       keywin_on(osinfo->shtctl, osinfo->key_win);
     }
-    break;
-  case 0x57:  // F11
-    // Move most bottom (except back!) sheet to the top.
-    sheet_updown(osinfo->shtctl, osinfo->shtctl->sheets[1], osinfo->shtctl->top - 1);
     break;
   default:
     if (keycode < 0x80) {  // Normal character.
