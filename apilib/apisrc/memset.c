@@ -1,8 +1,8 @@
-#include "stdio.h"
+#include "string.h"
 
-void* memset(void* buf, int ch, int n) {
+void* memset(void* buf, int ch, size_t n) {
   char* p = (char*)buf;
-  for (int i = 0; i < n; ++i)
+  for (size_t i = 0; i < n; ++i)
     *p++ = ch;
   return buf;
 }

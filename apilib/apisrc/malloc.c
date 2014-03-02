@@ -1,9 +1,10 @@
-#include "stdio.h"
+#include "stdlib.h"
 #include "apilib.h"
+#include "stddef.h"
 
 #define HEADER_SIZE  (16)
 
-void* malloc(int size) {
+void* malloc(size_t size) {
   char* p = api_malloc(size + HEADER_SIZE);
   if (p != NULL) {
     *((int*)p) = size;

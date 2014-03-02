@@ -1,5 +1,5 @@
-#include "stddef.h"
 #include "stdlib.h"
+#include "stddef.h"
 
 long strtol(const char *s, char **endp, int base) {
   char negative = FALSE;
