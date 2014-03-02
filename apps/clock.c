@@ -2,8 +2,6 @@
 #include "stdio.h"
 #include "math.h"
 
-#define M_PI  (3.1415926535)
-
 static void draw_poly_circle(int win, int cx, int cy, int r, int div, int col) {
   int x = cx + r, y = cy;
   for (int i = 1; i <= div; ++i) {
