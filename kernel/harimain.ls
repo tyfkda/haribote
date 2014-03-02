@@ -13,11 +13,13 @@ SECTIONS {
         LONG((ADDR(.bss) + SIZEOF(.bss) + 0xf) & ~ 0xf)       /* 32 : heap space (malloc) start address */
     }
 
-    .text : { *(.text) }
+    .text : {
+        *(.text)
+    }
 
-    .data 0x800000 : AT(ADDR(.text) + SIZEOF(.text)) SUBALIGN(4) {
-        *(.data)
+    .data 0x2f0000 : AT(ADDR(.text) + SIZEOF(.text)) SUBALIGN(4) {
         *(.rodata*)
+        *(.data)
     }
 
     .bss : AT(LOADADDR(.data) + SIZEOF(.data)) SUBALIGN(4) {
