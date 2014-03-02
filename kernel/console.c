@@ -194,23 +194,30 @@ static char cmd_app(CONSOLE* cons, const char* cmdline) {
     return FALSE;
   }
 
-  int fileSize = fh.finfo->size;
-  int codeSize = fileSize - sizeof(header) - header.dataSize;
+  int codeBlockSize = fh.finfo->size - header.dataSize;
 
   MEMMAN *memman = (MEMMAN*) MEMMAN_ADDR;
-  char* p = (char*)memman_alloc_4k(memman, sizeof(header) + codeSize);
-  char* q = (char*)memman_alloc_4k(memman, header.segSize);  // Data segment.
-  memcpy(p, &header, sizeof(header));
-  file_read(&fh, p + sizeof(header), codeSize);
-  file_read(&fh, q + header.esp, header.dataSize);
+  char* code = (char*)memman_alloc_4k(memman, codeBlockSize);
+  char* data = (char*)memman_alloc_4k(memman, header.segSize);  // Data segment.
+  memcpy(code, &header, sizeof(header));
+  int codeReadSize = file_read(&fh, code + sizeof(header), codeBlockSize - sizeof(header));
+  int dataReadSize = file_read(&fh, data + header.esp, header.dataSize);
+  if (codeReadSize != codeBlockSize - (int)sizeof(header) ||
+      dataReadSize != (int)header.dataSize) {
+    cons_putstr0(cons, "File size mismatch.\n");
+    memman_free_4k(memman, data, header.segSize);
+    memman_free_4k(memman, code, codeBlockSize);
+    return FALSE;
+  }
+
   // Clear .bss area.
-  memset(q + header.esp + header.dataSize, 0x00, header.segSize - (header.esp + header.dataSize));
+  memset(data + header.esp + header.dataSize, 0x00, header.segSize - (header.esp + header.dataSize));
 
   TASK* task = task_now();
-  task->ds_base = (int)q;  // Store data segment address.
+  task->ds_base = (int)data;  // Store data segment address.
 
-  set_segmdesc(task->ldt + 0, sizeof(header) + codeSize - 1, (int)p, AR_CODE32_ER + 0x60);
-  set_segmdesc(task->ldt + 1, header.segSize - 1, (int)q, AR_DATA32_RW + 0x60);
+  set_segmdesc(task->ldt + 0, codeBlockSize - 1, (int)code, AR_CODE32_ER + 0x60);
+  set_segmdesc(task->ldt + 1, header.segSize - 1, (int)data, AR_DATA32_RW + 0x60);
   start_app(0x1b, 0 * 8 + 4, header.esp, 1 * 8 + 4, &(task->tss.esp0));
 
   // End of application.
@@ -229,8 +236,8 @@ static char cmd_app(CONSOLE* cons, const char* cmdline) {
     }
   }
   timer_cancelall(&task->fifo);
-  memman_free_4k(memman, q, header.segSize);
-  memman_free_4k(memman, p, sizeof(header) + codeSize);
+  memman_free_4k(memman, data, header.segSize);
+  memman_free_4k(memman, code, codeBlockSize);
   cons_newline(cons);
   return TRUE;
 }
