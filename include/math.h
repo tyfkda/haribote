@@ -13,6 +13,8 @@ double sin(double x);
 double cos(double x);
 double sqrt(double x);
 double fabs(double x);
+double round(double x);
+long lround(double x);
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -5,7 +5,7 @@
 static void draw_poly_circle(int win, int cx, int cy, int r, int div, int col) {
   int x = cx + r, y = cy;
   for (int i = 1; i <= div; ++i) {
-    double t = i * (2 * M_PI) / div;
+    double t = i * M_2PI / div;
     int nx = cx + r * cos(t);
     int ny = cy + r * sin(t);
     api_linewin(win, x, y, nx, ny, col);
@@ -16,9 +16,9 @@ static void draw_poly_circle(int win, int cx, int cy, int r, int div, int col) {
 
 static void draw_clock_line(int win, int val, int total, int r, int col) {
   const int X0 = 160 / 2 + 8, Y0 = 160 / 2 + 8 + 20;
-  double t = val * (2 * M_PI) / total;
-  int x = X0 + r * sin(t);
-  int y = Y0 - r * cos(t);
+  double t = val * M_2PI / total;
+  int x = X0 + (int)round(r * sin(t));
+  int y = Y0 - (int)round(r * cos(t));
   api_linewin(win, X0, Y0, x, y, col);
 }
 
