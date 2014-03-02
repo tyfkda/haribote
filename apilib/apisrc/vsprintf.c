@@ -65,6 +65,19 @@ int vsprintf(char *str, const char *fmt, va_list ap) {
     case 's':
       q = va_arg(ap, char*);
       break;
+    case 'f':
+      {
+        double x = va_arg(ap, double);
+        int i = (int)x;
+        q = int2num(&buf[sizeof(buf)], i, 10, hextableLower, padding, keta);
+        while (*q != '\0')
+          *dst++ = *q++;
+        *dst++ = '.';
+        double y = (x - i) * 1000000;
+        int j = (y >= 0) ? (int)(y + 0.5) : (int)(-y + 0.5);
+        q = int2num(&buf[sizeof(buf)], j, 10, hextableLower, '0', 6);
+      }
+      break;
     }
 
     while (*q != '\0')
