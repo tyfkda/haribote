@@ -11,7 +11,7 @@ int main() {
     char s[12];
     sprintf(s, "%5d:%02d:%02d", hou, min, sec);
     api_boxfilwin(win, 28, 27, 115, 41, COL8_WHITE);
-    api_putstrwin(win, 28, 27, 0, 11, s);
+    api_putstrwin(win, 28, 27, COL8_BLACK, 11, s);
     api_settimer(timer, 100);
     if (api_getkey(1) != 128)
       break;

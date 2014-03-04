@@ -45,7 +45,7 @@ int main() {
     draw_clock_line(win | 1, second, 60, 70, COL8_DARK_BLUE);
     draw_clock_line(win | 1, minute * 60 + second, 60 * 60, 60, COL8_GREEN);
     draw_clock_line(win | 1, (hour * 60 + minute) * 60 + second, 12 * 60 * 60, 40, COL8_RED);
-    api_putstrwin(win | 1, 8, H - 8 - 16, 0, 19, s);
+    api_putstrwin(win | 1, (W - 19 * 8) / 2, H - 8 - 16, COL8_WHITE, 19, s);
     api_refreshwin(win, 8, 20 + 8, W - 8, H - 8);
 
     api_settimer(timer, 100);
