@@ -236,7 +236,6 @@ static char cmd_app(CONSOLE* cons, const char* cmdline) {
   timer_cancelall(&task->fifo);
   memman_free_4k(memman, data, header.segSize);
   memman_free_4k(memman, code, codeBlockSize);
-  cons_newline(cons);
   return TRUE;
 }
 
