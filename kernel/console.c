@@ -1,4 +1,5 @@
 #include "console.h"
+#include "apilib.h"  // KEY
 #include "bootpack.h"
 #include "fd.h"
 #include "graphics.h"
@@ -36,13 +37,16 @@ typedef struct {
 
 static TASK* open_constask(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal);
 
-static void cons_newline(CONSOLE* cons) {
-  cons->cur_x = 8;
+static void cons_newline(CONSOLE* cons, int* pcurX, int* pcurY) {
+  *pcurX = 8;
   SHEET* sheet = cons->sheet;
-  if (cons->cur_y < Y0 + (CONSOLE_NY - 1) * FONTH || sheet == NULL) {
-    cons->cur_y += FONTH;
+  if (*pcurY < Y0 + (CONSOLE_NY - 1) * FONTH || sheet == NULL) {
+    *pcurY += FONTH;
     return;
   }
+
+  if (pcurY != &cons->cur_y)
+    cons->cur_y -= FONTH;
   unsigned char* buf = sheet->buf;
   int bxsize = sheet->bxsize;
   // Scroll.
@@ -53,45 +57,52 @@ static void cons_newline(CONSOLE* cons) {
   sheet_refresh(cons->shtctl, sheet, X0, Y0, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
 }
 
-void cons_putchar(CONSOLE* cons, int chr, char move) {
+void cons_putchar_with(CONSOLE* cons, int chr, char move, char neg, int* pcurX, int* pcurY) {
+  unsigned char fontColor = COL8_WHITE, backColor = COL8_BLACK;
+  if (neg)
+    fontColor = COL8_BLACK, backColor = COL8_WHITE;
   char s[2] = { chr, '\0' };
   switch (chr) {
   case 0x09:  // Tab.
     for (;;) {
       if (cons->sheet != NULL)
-        putfonts8_asc_sht(cons->shtctl, cons->sheet, cons->cur_x, cons->cur_y, COL8_WHITE, COL8_BLACK, " ", 1);
-      cons->cur_x += FONTW;
-      if (cons->cur_x >= X0 + CONSOLE_NX * FONTW)
-        cons_newline(cons);
-      if (((cons->cur_x - X0) & 0x1f) == 0)
+        putfonts8_asc_sht(cons->shtctl, cons->sheet, *pcurX, *pcurY, fontColor, backColor, " ", 1);
+      *pcurX += FONTW;
+      if (*pcurX >= X0 + CONSOLE_NX * FONTW)
+        cons_newline(cons, pcurX, pcurY);
+      if (((*pcurX - X0) & 0x1f) == 0)
         break;
     }
     break;
   case 0x0a:  // Line feed.
-    cons_newline(cons);
+    cons_newline(cons, pcurX, pcurY);
     break;
   case 0x0d:  // Carrige return.
     break;
   default:  // Normal character.
     if (cons->sheet != NULL)
-      putfonts8_asc_sht(cons->shtctl, cons->sheet, cons->cur_x, cons->cur_y, COL8_WHITE, COL8_BLACK, s, 1);
+      putfonts8_asc_sht(cons->shtctl, cons->sheet, *pcurX, *pcurY, fontColor, backColor, s, 1);
     if (move) {
-      cons->cur_x += FONTW;
-      if (cons->cur_x >= X0 + CONSOLE_NX * FONTW)
-        cons_newline(cons);
+      *pcurX += FONTW;
+      if (*pcurX >= X0 + CONSOLE_NX * FONTW)
+        cons_newline(cons, pcurX, pcurY);
     }
     break;
   }
 }
 
+void cons_putchar(CONSOLE* cons, int chr, char move, char neg) {
+  cons_putchar_with(cons, chr, move, neg, &cons->cur_x, &cons->cur_y);
+}
+
 void cons_putstr0(CONSOLE* cons, const char* s) {
   for (; *s != '\0'; ++s)
-    cons_putchar(cons, *s, 1);
+    cons_putchar(cons, *s, TRUE, FALSE);
 }
 
 void cons_putstr1(CONSOLE* cons, const char* s, int l) {
   for (int i = 0; i < l; ++i)
-    cons_putchar(cons, *s++, 1);
+    cons_putchar(cons, *s++, TRUE, FALSE);
 }
 
 static void cmd_mem(CONSOLE* cons, int memtotal) {
@@ -290,37 +301,115 @@ static void cons_runcmd(const char* cmdline, CONSOLE* cons, int memtotal) {
   }
 }
 
+static void cursor_left(CONSOLE* cons) {
+  --cons->cmdp;
+  cons->cur_x -= FONTW;
+  if (cons->cur_x < 8) {
+    cons->cur_x = 8 + (CONSOLE_NX - 1) * FONTW;
+    cons->cur_y -= FONTH;
+  }
+}
+
+static void cursor_right(CONSOLE* cons) {
+  ++cons->cmdp;
+  cons->cur_x += FONTW;
+  if (cons->cur_x >= 8 + CONSOLE_NX * FONTW) {
+    cons->cur_x = 8;
+    cons->cur_y += FONTH;
+  }
+}
+
+static void draw_cmdline(CONSOLE* cons, const char* cmdline) {
+  int curx = cons->cur_x, cury = cons->cur_y;
+  for (int i = cons->cmdp, n = cons->cmdlen; i < n; ++i)
+    cons_putchar_with(cons, cmdline[i], TRUE, FALSE, &curx, &cury);
+}
+
 static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned int memtotal, unsigned char key) {
+  cons->cur_c = COL8_WHITE;
   switch (key) {
   case 10:  // Enter.
   case 0x0d:  // CTRL-M
     // Erase cursor and newline.
-    cons_putchar(cons, ' ', FALSE);
-    cmdline[cons->cmdp] = '\0';
-    cons_newline(cons);
+    cons_putchar(cons, cmdline[cons->cmdp], FALSE, FALSE);
+    cmdline[cons->cmdlen] = '\0';
+    cons_newline(cons, &cons->cur_x, &cons->cur_y);
     cons_runcmd(cmdline, cons, memtotal);
     if (cons->sheet == NULL)
       cmd_exit(cons);
-    cons_putchar(cons, '>', TRUE);
-    cons->cmdp = 0;
+    cons_putchar(cons, '>', TRUE, FALSE);
+    cons->cmdp = cons->cmdlen = 0;
+    cmdline[0] = ' ';
     break;
   case 8:  // Back space.
     if (cons->cmdp > 0) {
-      cons_putchar(cons, ' ', FALSE);
+      cons_putchar(cons, cmdline[cons->cmdp], FALSE, FALSE);  // Erase cursor.
       if (cons->cur_x > 8)
         cons->cur_x -= FONTW;
       else {
         cons->cur_x = (CONSOLE_NX - 1) * FONTW + X0;
         cons->cur_y -= FONTH;
       }
+      memmove(&cmdline[cons->cmdp - 1], &cmdline[cons->cmdp], cons->cmdlen - cons->cmdp + 1);
       --cons->cmdp;
+      draw_cmdline(cons, cmdline);
+      --cons->cmdlen;
+    }
+    break;
+  case 0x04:  // CTRL+D : Delete
+    if (cons->cmdp < cons->cmdlen) {
+      memmove(&cmdline[cons->cmdp], &cmdline[cons->cmdp + 1], cons->cmdlen - cons->cmdp + 1);
+      draw_cmdline(cons, cmdline);
+      --cons->cmdlen;
+    }
+    break;
+  case KEY_LEFT:
+  case 0x02:  // CTRL+B
+    if (cons->cmdp > 0) {
+      cons_putchar(cons, cmdline[cons->cmdp], FALSE, FALSE);
+      cursor_left(cons);
+    }
+    break;
+  case KEY_RIGHT:
+  case 0x06:  // CTRL+F
+    if (cons->cmdp < cons->cmdlen) {
+      cons_putchar(cons, cmdline[cons->cmdp], FALSE, FALSE);
+      cursor_right(cons);
+    }
+    break;
+  case 0x01:  // CTRL-A : Line top.
+    if (cons->cmdp > 0) {
+      cons_putchar(cons, cmdline[cons->cmdp], FALSE, FALSE);
+      while (cons->cmdp > 0)
+        cursor_left(cons);
+    }
+    break;
+  case 0x05:  // CTRL-E : Line last.
+    if (cons->cmdp < cons->cmdlen) {
+      cons_putchar(cons, cmdline[cons->cmdp], FALSE, FALSE);
+      while (cons->cmdp < cons->cmdlen)
+        cursor_right(cons);
+    }
+    break;
+  case 0x0b:  // CTRL-K : Erase after cursor.
+    if (cons->cmdlen > cons->cmdp) {
+      // Erasee.
+      int curx = cons->cur_x, cury = cons->cur_y;
+      for (int i = cons->cmdp, n = cons->cmdlen; i < n; ++i)
+        cons_putchar_with(cons, ' ', TRUE, FALSE, &curx, &cury);
+
+      cons->cmdlen = cons->cmdp;
+      cmdline[cons->cmdlen] = ' ';
     }
     break;
   default:  // Normal character.
     if (' ' <= key && key < 0x80) {
-      if (cons->cmdp < CMDLINE_MAX) {
-        cmdline[cons->cmdp++] = key;
-        cons_putchar(cons, key, TRUE);
+      if (cons->cmdlen < CMDLINE_MAX) {
+        ++cons->cmdlen;
+        memmove(&cmdline[cons->cmdp + 1], &cmdline[cons->cmdp], cons->cmdlen - cons->cmdp);
+        cmdline[cons->cmdp] = key;
+        draw_cmdline(cons, cmdline);
+        cursor_right(cons);
       }
     }
     break;
@@ -346,9 +435,10 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   cons.cur_x = X0;
   cons.cur_y = Y0;
   cons.cur_c = -1;
-  cons.cmdp = 0;
+  cons.cmdp = cons.cmdlen = 0;
   task->cons = &cons;
   task->cmdline = cmdline;
+  cmdline[0] = ' ';
 
   if (cons.sheet != NULL) {
     cons.timer = timer_alloc();
@@ -356,7 +446,7 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
     timer_settime(cons.timer, 50);
   }
 
-  cons_putchar(&cons, '>', TRUE);
+  cons_putchar(&cons, '>', TRUE, FALSE);
 
   for (;;) {
     io_cli();
@@ -381,8 +471,10 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
         break;
       case 2:  cons.cur_c = COL8_WHITE; break;
       case 3:
-        if (cons.sheet != NULL)
-          boxfill8(sheet->buf, sheet->bxsize, COL8_BLACK, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
+        if (cons.sheet != NULL) {
+          cons_putchar(&cons, cmdline[cons.cmdp], FALSE, FALSE);
+          boxfill8(cons.sheet->buf, cons.sheet->bxsize, COL8_WHITE, cons.cur_x, cons.cur_y + FONTH - 1, cons.cur_x + FONTW, cons.cur_y + FONTH);
+        }
         cons.cur_c = -1;
         break;
       case 4:  // Close button clicked.
@@ -393,8 +485,9 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
     // Redraw cursor.
     if (cons.sheet != NULL) {
       if (cons.cur_c >= 0)
-        boxfill8(cons.sheet->buf, cons.sheet->bxsize, cons.cur_c, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
-      sheet_refresh(shtctl, cons.sheet, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
+        cons_putchar(&cons, cmdline[cons.cmdp], FALSE, cons.cur_c == COL8_WHITE);
+      else
+        sheet_refresh(shtctl, cons.sheet, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
     }
   }
 }

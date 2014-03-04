@@ -115,7 +115,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   // reg[4] = ebx, reg[5] = edx, reg[6] = ecx, reg[7] = eax
 
   switch (edx) {
-  case API_PUTCHAR:  cons_putchar(cons, eax & 0xff, TRUE); break;
+  case API_PUTCHAR:  cons_putchar(cons, eax & 0xff, TRUE, FALSE); break;
   case API_PUTSTR0:  cons_putstr0(cons, (char*)eax + ds_base); break;
   case API_PUTSTR1:  cons_putstr1(cons, (char*)eax + ds_base, ecx); break;
   case API_END: return &task->tss.esp0;
