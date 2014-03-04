@@ -65,12 +65,12 @@ void cons_putchar(CONSOLE* cons, int chr, char move) {
   }
 }
 
-void cons_putstr0(CONSOLE* cons, char* s) {
+void cons_putstr0(CONSOLE* cons, const char* s) {
   for (; *s != '\0'; ++s)
     cons_putchar(cons, *s, 1);
 }
 
-void cons_putstr1(CONSOLE* cons, char* s, int l) {
+void cons_putstr1(CONSOLE* cons, const char* s, int l) {
   for (int i = 0; i < l; ++i)
     cons_putchar(cons, *s++, 1);
 }
