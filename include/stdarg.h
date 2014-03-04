@@ -1,10 +1,6 @@
 #ifndef __STDARG_H__
 #define __STDARG_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef __GNUC__
 #error stdarg is not implemented
 #endif
