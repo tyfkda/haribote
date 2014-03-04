@@ -9,6 +9,7 @@ typedef struct CONSOLE {
   struct SHTCTL* shtctl;
   struct SHEET* sheet;
   int cur_x, cur_y, cur_c;
+  int cmdp;
   struct TIMER* timer;
 } CONSOLE;
 

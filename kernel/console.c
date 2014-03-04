@@ -18,6 +18,8 @@
 #define CONSOLE_WIDTH   (CONSOLE_NX * FONTW + 8 * 2)
 #define CONSOLE_HEIGHT  (CONSOLE_NY * FONTH + 8 * 2 + 20)
 
+#define CMDLINE_MAX  (255)
+
 // .hrb executable file header.
 typedef struct {
   uint32_t segSize;
@@ -295,23 +297,30 @@ static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned int memtotal
   case 0x0d:  // CTRL-M
     // Erase cursor and newline.
     cons_putchar(cons, ' ', FALSE);
-    cmdline[cons->cur_x / 8 - 2] = '\0';
+    cmdline[cons->cmdp] = '\0';
     cons_newline(cons);
     cons_runcmd(cmdline, cons, memtotal);
     if (cons->sheet == NULL)
       cmd_exit(cons);
     cons_putchar(cons, '>', TRUE);
+    cons->cmdp = 0;
     break;
   case 8:  // Back space.
-    if (cons->cur_x > X0 + FONTW) {
+    if (cons->cmdp > 0) {
       cons_putchar(cons, ' ', FALSE);
-      cons->cur_x -= FONTW;
+      if (cons->cur_x > 8)
+        cons->cur_x -= FONTW;
+      else {
+        cons->cur_x = (CONSOLE_NX - 1) * FONTW + X0;
+        cons->cur_y -= FONTH;
+      }
+      --cons->cmdp;
     }
     break;
   default:  // Normal character.
     if (' ' <= key && key < 0x80) {
-      if (cons->cur_x < X0 + (CONSOLE_NX - 1) * FONTW) {
-        cmdline[cons->cur_x / FONTW - 2] = key;
+      if (cons->cmdp < CMDLINE_MAX) {
+        cmdline[cons->cmdp++] = key;
         cons_putchar(cons, key, TRUE);
       }
     }
@@ -329,7 +338,7 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   task->fhandle = fhandle;
   task->fhandleCount = TASK_FHANDLE_COUNT;
 
-  char cmdline[CONSOLE_NX + 1];
+  char cmdline[CMDLINE_MAX + 1];
 
   // Show prompt.
   CONSOLE cons;
@@ -338,6 +347,7 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   cons.cur_x = X0;
   cons.cur_y = Y0;
   cons.cur_c = -1;
+  cons.cmdp = 0;
   task->cons = &cons;
   task->cmdline = cmdline;
 

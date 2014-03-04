@@ -27,8 +27,8 @@ static char* skipUntilSpace(char* p) {
 void HariMain(void) {
   api_initmalloc();
 
-  char cmdline[128];
-  api_cmdline(cmdline, 128);  // TODO: Check command line argument length.
+  char cmdline[256];
+  api_cmdline(cmdline, sizeof(cmdline));  // TODO: Check command line argument length.
 
   int argc = 0;
   char* argv[16];
