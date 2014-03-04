@@ -1,7 +1,7 @@
 #include "mtask.h"
 #include "bootpack.h"
 #include "dsctbl.h"
-#include "file.h"
+#include "fd.h"
 #include "memory.h"
 #include "stdio.h"  // NULL
 #include "timer.h"
@@ -201,7 +201,7 @@ int* inthandler07(int *esp) {
   return 0;
 }
 
-FILEHANDLE* task_get_free_fhandle(TASK* task) {
+FDHANDLE* task_get_free_fhandle(TASK* task) {
   for (int i = 0; i < task->fhandleCount; ++i) {
     if (task->fhandle[i].finfo == NULL)
       return &task->fhandle[i];

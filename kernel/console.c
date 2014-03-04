@@ -1,6 +1,6 @@
 #include "console.h"
 #include "bootpack.h"
-#include "file.h"
+#include "fd.h"
 #include "graphics.h"
 #include "mtask.h"
 #include "sheet.h"
@@ -109,9 +109,9 @@ static void cmd_cls(CONSOLE* cons) {
 }
 
 static void cmd_dir(CONSOLE* cons) {
-  FILEINFO *finfo = (FILEINFO*)(ADR_DISKIMG + 0x002600);
+  FDINFO *finfo = (FDINFO*)(ADR_DISKIMG + 0x002600);
   for (int i = 0; i < 224; ++i) {
-    FILEINFO* p = &finfo[i];
+    FDINFO* p = &finfo[i];
     if (p->name[0] == 0x00)  // End of table.
       break;
     if (p->name[0] == 0xe5)  // Deleted file.
@@ -178,17 +178,17 @@ static char cmd_app(CONSOLE* cons, const char* cmdline) {
   }
   name[i] = '\0';
 
-  FILEHANDLE fh;
-  if (!file_open(&fh, name)) {
+  FDHANDLE fh;
+  if (!fd_open(&fh, name)) {
     // Try executable extension.
     strcpy(name + strlen(name), ".hrb");
-    if (!file_open(&fh, name))
+    if (!fd_open(&fh, name))
       return FALSE;
   }
 
   // File found.
   HrbHeader header;
-  int readSize = file_read(&fh, &header, sizeof(header));
+  int readSize = fd_read(&fh, &header, sizeof(header));
   if ((size_t)readSize < sizeof(header) || strncmp((char*)header.signature, "Hari", 4) != 0) {
     cons_putstr0(cons, ".hrb file format error.\n");
     return FALSE;
@@ -200,8 +200,8 @@ static char cmd_app(CONSOLE* cons, const char* cmdline) {
   char* code = (char*)memman_alloc_4k(memman, codeBlockSize);
   char* data = (char*)memman_alloc_4k(memman, header.segSize);  // Data segment.
   memcpy(code, &header, sizeof(header));
-  int codeReadSize = file_read(&fh, code + sizeof(header), codeBlockSize - sizeof(header));
-  int dataReadSize = file_read(&fh, data + header.esp, header.dataSize);
+  int codeReadSize = fd_read(&fh, code + sizeof(header), codeBlockSize - sizeof(header));
+  int dataReadSize = fd_read(&fh, data + header.esp, header.dataSize);
   if (codeReadSize != codeBlockSize - (int)sizeof(header) ||
       dataReadSize != (int)header.dataSize) {
     cons_putstr0(cons, "File size mismatch.\n");
@@ -326,7 +326,7 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   TASK* task = task_now();
 
 #define TASK_FHANDLE_COUNT  (8)
-  FILEHANDLE fhandle[TASK_FHANDLE_COUNT];
+  FDHANDLE fhandle[TASK_FHANDLE_COUNT];
   for (int i = 0; i < TASK_FHANDLE_COUNT; ++i)
     fhandle[i].finfo = NULL;  // Not used.
   task->fhandle = fhandle;

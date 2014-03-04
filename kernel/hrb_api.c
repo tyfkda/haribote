@@ -2,7 +2,7 @@
 #include "apilib.h"
 #include "bootpack.h"
 #include "console.h"
-#include "file.h"
+#include "fd.h"
 #include "graphics.h"
 #include "memory.h"
 #include "mtask.h"
@@ -17,16 +17,16 @@ static int bcd2(unsigned char x) {
   return (x >> 4) * 10 + (x & 0x0f);
 }
 
-static FILEHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
-  FILEHANDLE* fh = task_get_free_fhandle(task);
+static FDHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
+  FDHANDLE* fh = task_get_free_fhandle(task);
   if (fh == NULL)
     return NULL;
 
   if (flag & OPEN_WRITE) {
-    if (!file_writeopen(fh, filename))
+    if (!fd_writeopen(fh, filename))
       return NULL;
   } else {
-    if (!file_open(fh, filename))
+    if (!fd_open(fh, filename))
       return NULL;
   }
   return fh;
@@ -268,21 +268,21 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     break;
   case API_FCLOSE:
     {
-      FILEHANDLE* fh = (FILEHANDLE*)eax;
-      file_close(fh);
+      FDHANDLE* fh = (FDHANDLE*)eax;
+      fd_close(fh);
     }
     break;
   case API_FSEEK:
     {
-      FILEHANDLE* fh = (FILEHANDLE*)eax;
+      FDHANDLE* fh = (FDHANDLE*)eax;
       int origin = ecx;
       int offset = ebx;
-      file_seek(fh, offset, origin);
+      fd_seek(fh, offset, origin);
     }
     break;
   case API_FSIZE:
     {
-      FILEHANDLE* fh = (FILEHANDLE*)eax;
+      FDHANDLE* fh = (FDHANDLE*)eax;
       int mode = ecx;
       switch (mode) {
       case 0:  reg[7] = fh->finfo->size; break;
@@ -293,19 +293,19 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     break;
   case API_FREAD:
     {
-      FILEHANDLE* fh = (FILEHANDLE*)eax;
+      FDHANDLE* fh = (FDHANDLE*)eax;
       unsigned char* dst = (unsigned char*)ebx + ds_base;
       int size = ecx;
-      int readsize = file_read(fh, dst, size);
+      int readsize = fd_read(fh, dst, size);
       reg[7] = readsize;
     }
     break;
   case API_FWRITE:
     {
-      FILEHANDLE* fh = (FILEHANDLE*)eax;
+      FDHANDLE* fh = (FDHANDLE*)eax;
       const void* src = (unsigned char*)ebx + ds_base;
       int size = ecx;
-      int writesize = file_write(fh, src, size);
+      int writesize = fd_write(fh, src, size);
       reg[7] = writesize;
     }
     break;
@@ -323,7 +323,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   case API_DELETE:
     {
       const char* filename = (char*)ebx + ds_base;
-      reg[7] = file_delete(filename);
+      reg[7] = fd_delete(filename);
     }
     break;
   case API_NOW:

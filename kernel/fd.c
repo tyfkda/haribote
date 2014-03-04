@@ -1,4 +1,4 @@
-#include "file.h"
+#include "fd.h"
 #include "bootpack.h"
 #include "stdio.h"  // NULL
 #include "string.h"  // memcpy, strncmp
@@ -6,7 +6,7 @@
 #define MAX_CLUSTER  (2880)
 #define CLUSTER_SIZE  (512)
 
-#define FINFO_TOP  ((FILEINFO*)(ADR_DISKIMG + 0x002600))
+#define FINFO_TOP  ((FDINFO*)(ADR_DISKIMG + 0x002600))
 #define FINFO_MAX  (224)
 
 #define DISK_FAT           ((unsigned char*)(ADR_DISKIMG + 0x000200))
@@ -32,7 +32,7 @@ static void set_next_cluster(short cluster, short next) {
   }
 }
 
-void file_close(FILEHANDLE* fh) {
+void fd_close(FDHANDLE* fh) {
   if (fh->modified) {
     if (fh->cluster > 0)
       set_next_cluster(fh->cluster, 0xfff);  // End mark.
@@ -53,7 +53,7 @@ static void make_file_name83(char s[12], const char* name) {
   }
 }
 
-int file_writeopen(FILEHANDLE* fh, const char* filename) {
+int fd_writeopen(FDHANDLE* fh, const char* filename) {
   fh->finfo = NULL;
   fh->pos = 0;
   fh->cluster = 0;
@@ -61,11 +61,11 @@ int file_writeopen(FILEHANDLE* fh, const char* filename) {
 
   char s[12];
   make_file_name83(s, filename);
-  FILEINFO* finfo;
+  FDINFO* finfo;
   for (int i = 0; i < FINFO_MAX; ++i) {
     finfo = &FINFO_TOP[i];
     if (finfo->name[0] == 0x00 || finfo->name[0] == 0xe5) {  // End of table, or deleted entry.
-      memset(finfo, 0x00, sizeof(FILEINFO));
+      memset(finfo, 0x00, sizeof(FDINFO));
       memcpy(finfo->name, s, 11);
       finfo->type = 0x20;  // Normal file.
       goto found;
@@ -82,11 +82,11 @@ int file_writeopen(FILEHANDLE* fh, const char* filename) {
   return TRUE;
 }
 
-static FILEINFO* file_search(const char* filename) {
+static FDINFO* fd_search(const char* filename) {
   char s[12];
   make_file_name83(s, filename);
   for (int i = 0; i < FINFO_MAX; ++i) {
-    FILEINFO* finfo = &FINFO_TOP[i];
+    FDINFO* finfo = &FINFO_TOP[i];
     if (finfo->name[0] == 0x00)  // End of table.
       return NULL;
     if ((finfo->type & 0x18) == 0) {
@@ -97,8 +97,8 @@ static FILEINFO* file_search(const char* filename) {
   return NULL;
 }
 
-int file_delete(const char* filename) {
-  FILEINFO* finfo = file_search(filename);
+int fd_delete(const char* filename) {
+  FDINFO* finfo = fd_search(filename);
   if (finfo == NULL)
     return FALSE;
 
@@ -111,12 +111,12 @@ int file_delete(const char* filename) {
   return TRUE;
 }
 
-int file_open(FILEHANDLE* fh, const char* name) {
+int fd_open(FDHANDLE* fh, const char* name) {
   fh->pos = 0;
   fh->cluster = 0;
   fh->modified = FALSE;
 
-  fh->finfo = file_search(name);
+  fh->finfo = fd_search(name);
   if (fh->finfo == NULL)
     return FALSE;
   fh->cluster = fh->finfo->clustno;
@@ -127,7 +127,7 @@ static unsigned char* clusterData(int cluster) {
   return DISK_CLUSTER_DATA + cluster * CLUSTER_SIZE;
 }
 
-int file_read(FILEHANDLE* fh, void* dst, int requestSize) {
+int fd_read(FDHANDLE* fh, void* dst, int requestSize) {
   int readSize = 0;
   unsigned char* p = dst;
   while (requestSize > 0) {
@@ -164,7 +164,7 @@ short allocate_cluster(void) {
   return -1;
 }
 
-int file_write(FILEHANDLE* fh, const void* srcData, int requestSize) {
+int fd_write(FDHANDLE* fh, const void* srcData, int requestSize) {
   if (requestSize <= 0)
     return 0;
 
@@ -204,7 +204,7 @@ int file_write(FILEHANDLE* fh, const void* srcData, int requestSize) {
   return writeSize;
 }
 
-static int calc_cluster(FILEHANDLE* fh, int newpos) {
+static int calc_cluster(FDHANDLE* fh, int newpos) {
   int clusterCount = newpos / CLUSTER_SIZE - fh->pos / CLUSTER_SIZE;
   int cluster = fh->cluster;
   if (newpos < fh->pos) {  // If the new position is backward,
@@ -218,7 +218,7 @@ static int calc_cluster(FILEHANDLE* fh, int newpos) {
   return cluster;
 }
 
-void file_seek(FILEHANDLE* fh, int offset, int origin) {
+void fd_seek(FDHANDLE* fh, int offset, int origin) {
   int newpos = fh->pos;
   switch (origin) {
   case 0:  newpos = offset; break;
