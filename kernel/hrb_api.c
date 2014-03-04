@@ -9,7 +9,7 @@
 #include "sheet.h"
 #include "timer.h"
 #include "window.h"
-#include "stdio.h"  // FALSE, TRUE, NULL
+#include "../apilib/apisrc/stdio_def.h"
 
 #define SWAP(type, a, b)  do { type tmp = a; a = b; b = tmp; } while (0)
 
@@ -57,6 +57,50 @@ static void read_rtc(unsigned char t[7]) {
       }
     }
   } while (err);
+}
+
+static int waitKeyInput(TASK* task, int sleep) {
+  CONSOLE* cons = task->cons;
+  for (;;) {
+    io_cli();
+    if (fifo_empty(&task->fifo)) {
+      if (sleep) {
+        task_sleep(task);
+      } else {
+        io_sti();
+        return -1;
+      }
+    }
+    int i = fifo_get(&task->fifo);
+    io_sti();
+    switch (i) {
+    case 0: case 1:  // Cursor
+      timer_init(cons->timer, &task->fifo, 1);  // Next disp.
+      timer_settime(cons->timer, 50);
+      break;
+    case 2:  // Cursor on
+      cons->cur_c = COL8_WHITE;
+      break;
+    case 3:  // Cursor off
+      cons->cur_c = -1;
+      break;
+    case 4:  // Close console only.
+      {
+        SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+        FIFO* sys_fifo = (FIFO*)*((int*)0x0fec);
+        timer_cancel(cons->timer);
+        io_cli();
+        fifo_put(sys_fifo, cons->sheet - shtctl->sheets0 + 2024);
+        cons->sheet = NULL;
+        io_sti();
+      }
+      break;
+    default:
+      if (i >= 256) {  // Keyboard, etc.
+        return i - 256;
+      }
+    }
+  }
 }
 
 // This is the system call for Haribote OS.
@@ -176,48 +220,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   case API_GETKEY:
     {
       int sleep = eax;
-      for (;;) {
-        io_cli();
-        if (fifo_empty(&task->fifo)) {
-          if (sleep) {
-            task_sleep(task);
-          } else {
-            io_sti();
-            reg[7] = -1;
-            return NULL;
-          }
-        }
-        int i = fifo_get(&task->fifo);
-        io_sti();
-        switch (i) {
-        case 0: case 1:  // Cursor
-          timer_init(cons->timer, &task->fifo, 1);  // Next disp.
-          timer_settime(cons->timer, 50);
-          break;
-        case 2:  // Cursor on
-          cons->cur_c = COL8_WHITE;
-          break;
-        case 3:  // Cursor off
-          cons->cur_c = -1;
-          break;
-        case 4:  // Close console only.
-          {
-            SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-            FIFO* sys_fifo = (FIFO*)*((int*)0x0fec);
-            timer_cancel(cons->timer);
-            io_cli();
-            fifo_put(sys_fifo, cons->sheet - shtctl->sheets0 + 2024);
-            cons->sheet = NULL;
-            io_sti();
-          }
-          break;
-        default:
-          if (i >= 256) {  // Keyboard, etc.
-            reg[7] = i - 256;
-            return NULL;
-          }
-        }
-      }
+      reg[7] = waitKeyInput(task, sleep);
     }break;
   case API_ALLOCTIMER:
     {
@@ -293,20 +296,37 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     break;
   case API_FREAD:
     {
-      FDHANDLE* fh = (FDHANDLE*)eax;
+      int handle = eax;
       unsigned char* dst = (unsigned char*)ebx + ds_base;
       int size = ecx;
-      int readsize = fd_read(fh, dst, size);
-      reg[7] = readsize;
+      if (handle == kSTDIN) {
+        int readSize = 0;
+        for (; size > 0; --size, ++readSize) {
+          int c = waitKeyInput(task, TRUE);
+          if (c < 0)
+            break;
+          *dst++ = c;
+        }
+        reg[7] = readSize;
+      } else {
+        FDHANDLE* fh = (FDHANDLE*)handle;
+        int readSize = fd_read(fh, dst, size);
+        reg[7] = readSize;
+      }
     }
     break;
   case API_FWRITE:
     {
-      FDHANDLE* fh = (FDHANDLE*)eax;
+      int handle = eax;
       const void* src = (unsigned char*)ebx + ds_base;
       int size = ecx;
-      int writesize = fd_write(fh, src, size);
-      reg[7] = writesize;
+      if (handle == kSTDOUT || handle == kSTDERR) {
+        cons_putstr1(cons, src, size);
+      } else {
+        FDHANDLE* fh = (FDHANDLE*)handle;
+        int writesize = fd_write(fh, src, size);
+        reg[7] = writesize;
+      }
     }
     break;
   case API_CMDLINE:
