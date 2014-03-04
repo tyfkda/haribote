@@ -11,9 +11,17 @@
 #include "mtask.h"
 #include "sheet.h"
 #include "stdio.h"
+#include "stdlib.h"
 #include "string.h"
 #include "timer.h"
 #include "window.h"
+
+#define MOD_LSHIFT    (1 << 0)
+#define MOD_RSHIFT    (1 << 1)
+#define MOD_LCONTROL  (1 << 2)
+#define MOD_RCONTROL  (1 << 3)
+#define MOD_SHIFT_MASK    (MOD_LSHIFT | MOD_RSHIFT)
+#define MOD_CONTROL_MASK  (MOD_LCONTROL | MOD_RCONTROL)
 
 static void keywin_off(SHTCTL* shtctl, SHEET* key_win) {
   change_wtitle8(shtctl, key_win, FALSE);
@@ -80,7 +88,7 @@ typedef struct {
   SHEET* key_win;
   MOUSE_DEC mdec;
   unsigned int memtotal;
-  int key_shift;
+  int key_mod;
 
   // Mouse.
   int mx, my;
@@ -101,19 +109,25 @@ static void handle_key_event(OsInfo* osinfo, int keycode) {
       keywin_on(osinfo->shtctl, osinfo->key_win);
     }break;
   case 0x2a:  // Left shift on.
-    osinfo->key_shift |= 1;
+    osinfo->key_mod |= MOD_LSHIFT;
     break;
   case 0x36:  // Right shift on.
-    osinfo->key_shift |= 2;
+    osinfo->key_mod |= MOD_RSHIFT;
     break;
   case 0xaa:  // Left shift off.
-    osinfo->key_shift &= ~1;
+    osinfo->key_mod &= ~MOD_LSHIFT;
     break;
   case 0xb6:  // Right shift off.
-    osinfo->key_shift &= ~2;
+    osinfo->key_mod &= ~MOD_RSHIFT;
+    break;
+  case 0x1d:  // Left control on.
+    osinfo->key_mod |= MOD_LCONTROL;
+    break;
+  case 0x9d:  // Left control off.
+    osinfo->key_mod &= ~MOD_LCONTROL;
     break;
   case 0x3b:  // F1
-    if (osinfo->key_shift != 0) {  // Shift + F1
+    if ((osinfo->key_mod & MOD_SHIFT_MASK) != 0) {  // Shift + F1
       TASK* task = osinfo->key_win->task;
       if (task != NULL && task->tss.ss0 != 0) {
         io_cli();
@@ -125,7 +139,7 @@ static void handle_key_event(OsInfo* osinfo, int keycode) {
     }
     break;
   case 0x3c:  // F2
-    if (osinfo->key_shift != 0) {  // Shift + F2 : Create console.
+    if ((osinfo->key_mod & MOD_SHIFT_MASK) != 0) {  // Shift + F2 : Create console.
       if (osinfo->key_win != NULL)
         keywin_off(osinfo->shtctl, osinfo->key_win);
       osinfo->key_win = open_console(osinfo->shtctl, osinfo->memtotal);
@@ -136,10 +150,13 @@ static void handle_key_event(OsInfo* osinfo, int keycode) {
     break;
   default:
     if (keycode < 0x80) {  // Normal character.
-      unsigned char key = keytable[osinfo->key_shift ? 1 : 0][keycode];
+      int shift = (osinfo->key_mod & MOD_SHIFT_MASK) != 0;
+      unsigned char key = keytable[shift][keycode];
       if (key != 0 && osinfo->key_win != NULL) {  // Normal character.
-        if (!osinfo->key_shift && 'A' <= key && key <= 'Z')
+        if (!shift && 'A' <= key && key <= 'Z')
           key += 'a' - 'A';
+        if ((osinfo->key_mod & MOD_CONTROL_MASK) != 0)
+          key = toupper(key) - ('A' - 1);
         fifo_put(&osinfo->key_win->task->fifo, key + 256);
       }
     }
@@ -306,7 +323,7 @@ void HariMain(void) {
   sheet_updown(osinfo.shtctl, osinfo.key_win, 1);
   sheet_updown(osinfo.shtctl, sht_mouse, 2);
 
-  osinfo.key_shift = 0;
+  osinfo.key_mod = 0;
   keywin_on(osinfo.shtctl, osinfo.key_win);
 
   for (;;) {

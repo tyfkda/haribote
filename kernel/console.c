@@ -292,6 +292,7 @@ static void cons_runcmd(const char* cmdline, CONSOLE* cons, int memtotal) {
 static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned int memtotal, unsigned char key) {
   switch (key) {
   case 10:  // Enter.
+  case 0x0d:  // CTRL-M
     // Erase cursor and newline.
     cons_putchar(cons, ' ', FALSE);
     cmdline[cons->cur_x / 8 - 2] = '\0';

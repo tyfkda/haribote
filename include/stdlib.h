@@ -22,6 +22,9 @@ long strtol(const char *s, char **endp, int base);
 
 int rand(void);
 
+// ctype.h
+int toupper(int c);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
