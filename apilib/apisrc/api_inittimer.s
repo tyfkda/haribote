@@ -3,9 +3,7 @@
 
 # void api_inittimer(TIMER* timer, int data)
 api_inittimer:
-	push	%ebx
-	mov	8(%esp), %ebx	# timer
-	mov	12(%esp), %eax	# data
+	mov	4(%esp), %ecx	# timer
+	mov	8(%esp), %eax	# data
 	syscall	API_INITTIMER
-	pop	%ebx
 	ret

@@ -3,9 +3,7 @@
 
 # int api_cmdline(char* buf, int maxsize)
 api_cmdline:
-	push	%ebx
-	mov	8(%esp), %ebx	# buf
-	mov	12(%esp), %ecx	# maxsize
+	mov	4(%esp), %ecx	# buf
+	mov	8(%esp), %eax	# maxsize
 	syscall	API_CMDLINE
-	pop	%ebx
 	ret

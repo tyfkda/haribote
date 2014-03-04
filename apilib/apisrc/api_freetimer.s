@@ -3,8 +3,6 @@
 
 # void api_freetimer(TIMER* timer)
 api_freetimer:
-	push	%ebx
-	mov	8(%esp), %ebx	# timer
+	mov	4(%esp), %eax	# timer
 	syscall	API_FREETIMER
-	pop	%ebx
 	ret

@@ -3,8 +3,6 @@
 
 # void api_closewin(int win)
 api_closewin:
-	push	%ebx
-	mov	8(%esp), %ebx	# win
+	mov	4(%esp), %eax	# win
 	syscall	API_CLOSEWIN
-	pop	%ebx
 	ret

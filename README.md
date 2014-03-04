@@ -76,3 +76,7 @@ These sequence is done in $/Makefile.
 * 0x00270000 - 0x0027ffff : GDT (64KB)
 * 0x00280000 - 0x002fffff : bootpack.hrb (512KB)
 * 0x00300000 - 0x003fffff : Stack etc. (1MB)
+
+### Calling convension
+* For 32bit x86 CPU, eax, ecx, and edx registers don't need to be saved
+  during function call.

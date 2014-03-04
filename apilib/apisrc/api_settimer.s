@@ -3,9 +3,7 @@
 
 # void api_settimer(TIMER* timer, int time)
 api_settimer:
-	push	%ebx
-	mov	8(%esp), %ebx	# timer
-	mov	12(%esp), %eax	# time
+	mov	4(%esp), %ecx	# timer
+	mov	8(%esp), %eax	# time
 	syscall	API_SETTIMER
-	pop	%ebx
 	ret

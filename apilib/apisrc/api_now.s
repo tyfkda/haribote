@@ -3,8 +3,6 @@
 
 # int api_now(unsigned char* buf)
 api_now:
-	push	%ebx
-	mov	8(%esp), %ebx	# buf
+	mov	4(%esp), %eax	# buf
 	syscall	API_NOW
-	pop	%ebx
 	ret

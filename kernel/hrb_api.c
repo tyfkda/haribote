@@ -116,8 +116,8 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 
   switch (edx) {
   case API_PUTCHAR:  cons_putchar(cons, eax & 0xff, TRUE); break;
-  case API_PUTSTR0:  cons_putstr0(cons, (char*)ebx + ds_base); break;
-  case API_PUTSTR1:  cons_putstr1(cons, (char*)ebx + ds_base, ecx); break;
+  case API_PUTSTR0:  cons_putstr0(cons, (char*)eax + ds_base); break;
+  case API_PUTSTR1:  cons_putstr1(cons, (char*)eax + ds_base, ecx); break;
   case API_END: return &task->tss.esp0;
   case API_OPENWIN:
     {
@@ -167,8 +167,8 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     }break;
   case API_MALLOC:
     {
-      MEMMAN* memman = (MEMMAN*)(ebx + ds_base);
-      int size = (ecx + 0x0f) & -16;  // Align with 16 bytes.
+      MEMMAN* memman = (MEMMAN*)(ecx + ds_base);
+      int size = (eax + 0x0f) & -16;  // Align with 16 bytes.
       reg[7] = (int)memman_alloc(memman, size);
     }break;
   case API_FREE:
@@ -180,8 +180,8 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     }break;
   case API_POINT:
     {
-      SHEET* sheet = (SHEET*)(ebx & ~1);  // SHEET* sheet == int win;
-      char refresh = (ebx & 1) == 0;
+      SHEET* sheet = (SHEET*)(ecx & ~1);  // SHEET* sheet == int win;
+      char refresh = (ecx & 1) == 0;
       int x = esi, y = edi, col = eax;
       sheet->buf[sheet->bxsize * y + x] = col;
       if (refresh) {
@@ -213,7 +213,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     }break;
   case API_CLOSEWIN:
     {
-      SHEET* sheet = (SHEET*)ebx;  // SHEET* sheet == int win;
+      SHEET* sheet = (SHEET*)eax;  // SHEET* sheet == int win;
       SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
       sheet_free(shtctl, sheet);
     }break;
@@ -231,21 +231,21 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     break;
   case API_INITTIMER:
     {
-      TIMER* timer = (TIMER*)ebx;
+      TIMER* timer = (TIMER*)ecx;
       int data = eax;
       timer_init(timer, &task->fifo, data + 256);
     }
     break;
   case API_SETTIMER:
     {
-      TIMER* timer = (TIMER*)ebx;
+      TIMER* timer = (TIMER*)ecx;
       int time = eax;
       timer_settime(timer, time);
     }
     break;
   case API_FREETIMER:
     {
-      TIMER* timer = (TIMER*)ebx;
+      TIMER* timer = (TIMER*)eax;
       timer_free(timer);
     }
     break;
@@ -264,7 +264,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     break;
   case API_FOPEN:
     {
-      const char* filename = (char*)ebx + ds_base;
+      const char* filename = (char*)ecx + ds_base;
       int flag = eax;
       reg[7] = (int)_api_fopen(task, filename, flag);
     }
@@ -331,8 +331,8 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     break;
   case API_CMDLINE:
     {
-      char* buf = (char*)ebx + ds_base;
-      int maxsize = ecx;
+      char* buf = (char*)ecx + ds_base;
+      int maxsize = eax;
       char* src = task->cmdline;
       int i;
       for (i = 0; i < maxsize && (*buf++ = *src++) != '\0'; ++i)
@@ -342,13 +342,13 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     break;
   case API_DELETE:
     {
-      const char* filename = (char*)ebx + ds_base;
+      const char* filename = (char*)eax + ds_base;
       reg[7] = fd_delete(filename);
     }
     break;
   case API_NOW:
     {
-      unsigned char* buf = (unsigned char*)ebx + ds_base;
+      unsigned char* buf = (unsigned char*)eax + ds_base;
       unsigned char t[7];
       read_rtc(t);
       short year = bcd2(t[6]) * 100 + bcd2(t[5]);

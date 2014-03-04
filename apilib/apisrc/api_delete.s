@@ -3,8 +3,6 @@
 
 # int api_delete(const char* fname)
 api_delete:
-	push	%ebx
-	mov	8(%esp), %ebx	# fname
+	mov	4(%esp), %eax	# fname
 	syscall	API_DELETE
-	pop	%ebx
 	ret
