@@ -229,12 +229,8 @@ static char cmd_app(CONSOLE* cons, const char* cmdline) {
       sheet_free(shtctl, sheet);
   }
   // Close files.
-  for (int i = 0; i < task->fhandleCount; ++i) {
-    if (task->fhandle[i].finfo != NULL) {
-      //memman_free_4k(memman, task->fhandle[i].buf, task->fhandle[i].size);
-      task->fhandle[i].finfo = NULL;
-    }
-  }
+  for (int i = 0; i < task->fhandleCount; ++i)
+    fd_close(&task->fhandle[i]);
   timer_cancelall(&task->fifo);
   memman_free_4k(memman, data, header.segSize);
   memman_free_4k(memman, code, codeBlockSize);
