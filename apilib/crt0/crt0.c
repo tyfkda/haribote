@@ -6,12 +6,13 @@ extern int main(int argc, char* argv[]);
 
 typedef void (*InitFunc)(void);
 
-extern InitFunc __preinit_array_start;
-extern InitFunc __preinit_array_end;
-extern InitFunc __init_array_start;
-extern InitFunc __init_array_end;
-extern InitFunc __fini_array_start;
-extern InitFunc __fini_array_end;
+/* These magic symbols are provided by the linker.  */
+extern void (*__preinit_array_start []) (void) __attribute__((weak));
+extern void (*__preinit_array_end []) (void) __attribute__((weak));
+extern void (*__init_array_start []) (void) __attribute__((weak));
+extern void (*__init_array_end []) (void) __attribute__((weak));
+extern void (*__fini_array_start []) (void) __attribute__((weak));
+extern void (*__fini_array_end []) (void) __attribute__((weak));
 
 static char* skipSpace(char* p) {
   for (; *p == ' '; ++p);
@@ -46,9 +47,10 @@ void HariMain(void) {
     *p++ = '\0';
   }
 
-  for (InitFunc* pp = &__preinit_array_start; pp < &__preinit_array_end; ++pp)
+  for (InitFunc* pp = __preinit_array_start; pp < __preinit_array_end; ++pp)
     (**pp)();
-  for (InitFunc* pp = &__init_array_start; pp < &__init_array_end; ++pp)
+  // TODO: Init.
+  for (InitFunc* pp = __init_array_start; pp < __init_array_end; ++pp)
     (**pp)();
 
   int result = main(argc, argv);
