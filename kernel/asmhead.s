@@ -88,6 +88,12 @@ keystatus:
 
 	cli			# Prevent interrupt for CPU level
 
+	# Set key repeat speed.
+	mov	$0xf3, %al	# Typematic rate/delay setting.
+	out	%al, $0x60
+	mov	$0x00, %al	# bit0-4: Typematic rate (30 chars/sec), bit5-6: Typematic delay(250 ms)
+	out	%al, $0x60
+
 	# Set A20GATE to use more than 1MB from CPU
 	call	waitkbdout
 	mov	$0xd1, %al
