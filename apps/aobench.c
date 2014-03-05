@@ -344,7 +344,7 @@ int main()
       unsigned char b = clamp(fimg[3 * j + 2]);
       api_point(win | 1, j + 8, i + 8 + 18, rgb2pal(r, g, b, j, i));
     }
-    api_refreshwin(win, 8, i + 8 + 18, 8 + 256, i + 8 + 19);
+    api_refreshwin(win, 8, i + 8 + 18, W - 8, i + 8 + 19);
   }
 
   api_getkey(1);

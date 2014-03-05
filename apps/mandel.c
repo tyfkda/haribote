@@ -37,7 +37,7 @@ static unsigned char buf[WIN_W * WIN_H];
 
 int main() {
   int win = api_openwin(buf, WIN_W, WIN_H, -1, "mandelbrot");
-  api_boxfilwin(win, 8, 8 + 18, W - 8, H - 8, COL8_BLACK);
+  api_boxfilwin(win, 8, 8 + 18, WIN_W - 8, WIN_H - 8, COL8_BLACK);
 
   drawMandelbrot(win, W, H, DEPTH, -2, -1.5, 1, 1.5);
   api_getkey(1);
