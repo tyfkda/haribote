@@ -26,8 +26,7 @@ int main() {
   api_refreshwin(win, 0, 0, 216, 237);
 
   for (;;)
-    if (api_getkey(1) == 0x0a)
+    if (api_getkey(1) == 0x1b)
       break;
-
   return 0;
 }

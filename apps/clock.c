@@ -49,7 +49,7 @@ int main() {
     api_refreshwin(win, 8, 20 + 8, W - 8, H - 8);
 
     api_settimer(timer, 100);
-    if (api_getkey(1) != 128)
+    if (api_getkey(1) == 0x1b)
       break;
   }
   return 0;

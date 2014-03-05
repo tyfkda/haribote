@@ -40,6 +40,9 @@ int main() {
   api_boxfilwin(win, 8, 8 + 18, WIN_W - 8, WIN_H - 8, COL8_BLACK);
 
   drawMandelbrot(win, W, H, DEPTH, -2, -1.5, 1, 1.5);
-  api_getkey(1);
+
+  for (;;)
+    if (api_getkey(1) == 0x1b)
+      break;
   return 0;
 }
