@@ -28,9 +28,9 @@ void draw_shaded_box(unsigned char* buf, int xsize, int x0, int y0, int x1,
 void line8(unsigned char* vram, int xsize,
            int x0, int y0, int x1, int y1, unsigned char c);
 void init_screen8(unsigned char* vram, int x, int y);
-void putfont8(unsigned char* vram, int xsize, int x, int y, unsigned char c,
-              const unsigned char* font);
-void putfonts8_asc(unsigned char* vram, int xsize, int x, int y,
+void putfont8(unsigned char* vram, int xsize, int ysize, int x, int y,
+              unsigned char c, const unsigned char* font);
+void putfonts8_asc(unsigned char* vram, int xsize, int ysize, int x, int y,
                    unsigned char c, const char* s);
 void init_mouse_cursor8(unsigned char* mouse, unsigned char bc);
 void convert_image8(unsigned char* buf, int bufXsize, int x0, int y0, int imgXsize, int imgYsize, const char* image, const unsigned char* table);

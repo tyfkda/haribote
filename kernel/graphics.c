@@ -1,5 +1,6 @@
 #include "graphics.h"
 #include "bootpack.h"
+#include "string.h"
 
 extern const unsigned char fontdata[][16];
 
@@ -102,17 +103,40 @@ void init_screen8(unsigned char* vram, int x, int y) {
   draw_shaded_box(vram, x, x - 47, y - 24, x - 2, y - 2, COL8_DARK_GRAY, COL8_WHITE, -1);
 }
 
-void putfont8(unsigned char* vram, int xsize, int x, int y, unsigned char c, const unsigned char* font) {
-  for (int i = 0; i < 16; ++i)
-    for (int j = 0; j < 8; ++j)
+void putfont8(unsigned char* vram, int xsize, int ysize, int x, int y, unsigned char c, const unsigned char* font) {
+  const int FONTW = 8, FONTH = 16;
+  int x0 = 0, y0 = 0;
+  int w = FONTW, h = FONTH;
+  if (x < 0)
+    x0 = -x;
+  if (y < 0)
+    y0 = -y;
+  if (x + w > xsize)
+    w = xsize - x;
+  if (y + h > ysize)
+    h = ysize - y;
+  for (int i = y0; i < h; ++i)
+    for (int j = x0; j < w; ++j)
       if (font[i] & (0x80 >> j))
 	vram[(y + i) * xsize + x + j] = c;
 }
 
-void putfonts8_asc(unsigned char* vram, int xsize, int x, int y, unsigned char c, const char* s) {
+void putfonts8_asc(unsigned char* vram, int xsize, int ysize, int x, int y, unsigned char c, const char* s) {
+  const int FONTW = 8, FONTH = 16;
+  if (y <= -FONTH || y >= ysize)
+    return;
+  if (x < 0) {
+    int n = -x / FONTW;
+    if (strlen(s) <= n)
+      return;
+    x += n * FONTW;
+    s += n;
+  }
   while (*s != '\0') {
-    putfont8(vram, xsize, x, y, c, fontdata[(unsigned char)*s++]);
+    putfont8(vram, xsize, ysize, x, y, c, fontdata[(unsigned char)*s++]);
     x += 8;
+    if (x >= xsize)
+      break;
   }
 }
 

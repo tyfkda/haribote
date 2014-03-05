@@ -140,7 +140,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       char refresh = (ebx & 1) == 0;
       int x = esi, y = edi, col = eax, len = ecx;
       const char* str = (const char*)ebp + ds_base;
-      putfonts8_asc(sheet->buf, sheet->bxsize, x, y, col, str);
+      putfonts8_asc(sheet->buf, sheet->bxsize, sheet->bysize, x, y, col, str);
       if (refresh) {
         SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
         sheet_refresh(shtctl, sheet, x, y, x + len * 8, y + 16);

@@ -34,8 +34,8 @@ static void make_wtitle8(unsigned char* buf, int xsize, const char* title, char 
     tbc = COL8_DARK_GRAY;
   }
   boxfill8(buf, xsize, tbc, 3, 3, xsize - 3, 21);
-  putfonts8_asc(buf, xsize, 24, 4, tc, title);
-  putfonts8_asc(buf, xsize, 25, 4, tc, title);
+  putfonts8_asc(buf, xsize, 24, 24, 4, tc, title);
+  putfonts8_asc(buf, xsize, 24, 25, 4, tc, title);
   convert_image8(buf, xsize, xsize - 21, 5, 16, 14, &closebtn[0][0], &table[0][0]);
 }
 
@@ -83,6 +83,6 @@ void make_textbox8(SHEET* sheet, int x0, int y0, int sx, int sy, int c) {
 
 void putfonts8_asc_sht(SHTCTL* shtctl, SHEET* sheet, int x, int y, int c, int b, const char* s, int l) {
   boxfill8(sheet->buf, sheet->bxsize, b, x, y, x + l * 8, y + 16);
-  putfonts8_asc(sheet->buf, sheet->bxsize, x, y, c, s);
+  putfonts8_asc(sheet->buf, sheet->bxsize, sheet->bysize, x, y, c, s);
   sheet_refresh(shtctl, sheet, x, y, x + l * 8, y + 16);
 }
