@@ -7,7 +7,7 @@ LIBDIR=../lib
 SRCS=$(wildcard $(SRCDIR)/*.c) $(wildcard $(SRCDIR)/*.cc) $(wildcard $(SRCDIR)/*.s)
 OBJS=$(subst $(SRCDIR)/,$(OBJDIR)/,$(subst .s,.o,$(subst .cc,.o,$(SRCS:%.c=%.o))))
 
-APILIB=$(LIBDIR)/apilib.a
+APILIB=$(LIBDIR)/libhrb.a
 CRT0=$(LIBDIR)/crt0.o
 
 CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror $(INC)

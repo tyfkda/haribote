@@ -13,6 +13,7 @@ CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror -nostdinc $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
 APILIB=$(LIBDIR)/apilib.a
+LIBS=-L $(LIBDIR) -lhrb
 
 all:	$(OBJDIR)/ipl.bin $(OBJDIR)/haribote.sys
 
@@ -35,7 +36,7 @@ $(OBJDIR)/asmhead.bin:	$(OBJDIR)/asmhead.o
 	ld -N -e start -Ttext 0xc200 -s --oformat binary -o $@ $<
 
 $(OBJDIR)/bootpack.bin:	$(OBJS) $(APILIB)
-	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls -s -o $@ $^
+	ld -Map $(OBJDIR)/bootpack.map -T harimain.ls -s -o $@ $(OBJS) $(LIBS)
 
 $(APILIB):
 	make -C ../apilib
