@@ -47,3 +47,6 @@ apps:
 clean:
 	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.hrb \
 	  $(OBJDIR)/*.map $(TARGET) $(LIBDIR)/*.a $(LIBDIR)/*.o
+
+font:
+	ruby tools/makefont.rb < tools/hankaku.txt > kernel/fontdata.c
