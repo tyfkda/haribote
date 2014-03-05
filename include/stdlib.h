@@ -16,6 +16,7 @@ void exit(int status) __attribute__((__noreturn__));
 int atexit(void (*function)(void));
 
 void* malloc(size_t size);
+void* realloc(void* ptr, size_t size);
 void free(void* p);
 
 long strtol(const char *s, char **endp, int base);
