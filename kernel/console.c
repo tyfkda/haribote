@@ -34,6 +34,23 @@ typedef struct {
 
 static TASK* open_constask(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal);
 
+static void cons_newline(CONSOLE* cons) {
+  cons->cur_x = 8;
+  SHEET* sheet = cons->sheet;
+  if (cons->cur_y < Y0 + (CONSOLE_NY - 1) * FONTH || sheet == NULL) {
+    cons->cur_y += FONTH;
+    return;
+  }
+  unsigned char* buf = sheet->buf;
+  int bxsize = sheet->bxsize;
+  // Scroll.
+  for (int y = Y0; y < Y0 + CONSOLE_NY * FONTH; ++y)
+    memcpy(&buf[y * bxsize + X0], &buf[(y + FONTH) * bxsize + X0], CONSOLE_NX * FONTW);
+  // Erase last line.
+  boxfill8(buf, bxsize, COL8_BLACK, X0, Y0 + (CONSOLE_NY - 1) * FONTH, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
+  sheet_refresh(cons->shtctl, sheet, X0, Y0, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
+}
+
 void cons_putchar(CONSOLE* cons, int chr, char move) {
   char s[2] = { chr, '\0' };
   switch (chr) {
@@ -73,23 +90,6 @@ void cons_putstr0(CONSOLE* cons, const char* s) {
 void cons_putstr1(CONSOLE* cons, const char* s, int l) {
   for (int i = 0; i < l; ++i)
     cons_putchar(cons, *s++, 1);
-}
-
-void cons_newline(CONSOLE* cons) {
-  cons->cur_x = 8;
-  SHEET* sheet = cons->sheet;
-  if (cons->cur_y < Y0 + (CONSOLE_NY - 1) * FONTH || sheet == NULL) {
-    cons->cur_y += FONTH;
-    return;
-  }
-  unsigned char* buf = sheet->buf;
-  int bxsize = sheet->bxsize;
-  // Scroll.
-  for (int y = Y0; y < Y0 + CONSOLE_NY * FONTH; ++y)
-    memcpy(&buf[y * bxsize + X0], &buf[(y + FONTH) * bxsize + X0], CONSOLE_NX * FONTW);
-  // Erase last line.
-  boxfill8(buf, bxsize, COL8_BLACK, X0, Y0 + (CONSOLE_NY - 1) * FONTH, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
-  sheet_refresh(cons->shtctl, sheet, X0, Y0, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
 }
 
 static void cmd_mem(CONSOLE* cons, int memtotal) {

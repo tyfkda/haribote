@@ -19,7 +19,6 @@ void close_console(struct SHTCTL* shtctl, struct SHEET* sht);
 void cons_putchar(CONSOLE* cons, int chr, char move);
 void cons_putstr0(CONSOLE* cons, const char* s);
 void cons_putstr1(CONSOLE* cons, const char* s, int l);
-void cons_newline(CONSOLE* cons);
 
 #endif
 
