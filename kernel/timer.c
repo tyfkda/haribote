@@ -79,6 +79,7 @@ void timer_init(TIMER* timer, FIFO* fifo, int data) {
 }
 
 void timer_settime(TIMER* timer, unsigned int timeout) {
+  timer_cancel(timer);
   timer->timeout = timeout + timerctl.count;
   timer->flags = TIMER_FLAGS_RUNNING;
   int e = io_load_eflags();

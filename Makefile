@@ -22,6 +22,7 @@ DISK_FILES=\
 	$(OBJDIR)/aobench.hrb \
 	$(OBJDIR)/write.hrb \
 	$(OBJDIR)/clock.hrb \
+	$(OBJDIR)/lifegame.hrb \
 
 FAT12IMG=tools/fat12img
 
