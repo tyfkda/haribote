@@ -33,12 +33,14 @@ But I changed to use Linux, and simplify required tools using Ruby.
 * Burn image into floppy disk, or run disk image using PC emulator (e.g. VirtualBox)
 
 ### Directory structure
-* kernel : Boot loader & OS
-* include : Header files for application
-* lib : Library files for application
-* apilib : API source codes
-* tools : Tools for building OS, disk image
-* apps : applications (not OS itself)
+| Name    | Entry                              |
+|---------|------------------------------------|
+| kernel  | Boot loader & OS                   |
+| include | Header files for application       |
+| lib     | Library files for application      |
+| apilib  | API source codes                   |
+| tools   | Tools for building OS, disk image  |
+| apps    | applications (not OS itself)       |
 
 
 ## How to make your own .hrb application
