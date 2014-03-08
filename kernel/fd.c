@@ -2,6 +2,7 @@
 #include "bootpack.h"
 #include "stdio.h"  // NULL
 #include "string.h"  // memcpy, strncmp
+#include "util.h"
 
 #define MAX_CLUSTER  (2880)
 #define CLUSTER_SIZE  (512)
@@ -37,6 +38,12 @@ void fd_close(FDHANDLE* fh) {
     if (fh->cluster > 0)
       set_next_cluster(fh->cluster, 0xfff);  // End mark.
     fh->finfo->size = fh->pos;
+
+    // Update timestamp.
+    unsigned char t[5];
+    int year = read_rtc(t);
+    fh->finfo->date = ((year - 1980) << 9) | ((t[0] - 1) << 5) | (t[1] - 1);
+    fh->finfo->time = (t[2] << 11) | (t[3] << 5) | (t[4] / 2);
   }
   fh->finfo = NULL;
 }

@@ -8,14 +8,11 @@
 #include "mtask.h"
 #include "sheet.h"
 #include "timer.h"
+#include "util.h"
 #include "window.h"
 #include "../apilib/apisrc/stdio_def.h"
 
 #define SWAP(type, a, b)  do { type tmp = a; a = b; b = tmp; } while (0)
-
-static int bcd2(unsigned char x) {
-  return (x >> 4) * 10 + (x & 0x0f);
-}
 
 static FDHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
   FDHANDLE* fh = task_get_free_fhandle(task);
@@ -30,33 +27,6 @@ static FDHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
       return NULL;
   }
   return fh;
-}
-
-// Reads real time clock, and returns the result into array t.
-// 0 = sec, 1 = min, 2 = hour, 3 = day, 4 = month, 5..6 = year
-// Each value is represented in BCD. e.g. 12 = 0x12
-static void read_rtc(unsigned char t[7]) {
-  static const unsigned char adr[7] = { 0x00, 0x02, 0x04, 0x07, 0x08, 0x09, 0x32 };
-  static const unsigned char max[7] = { 0x60, 0x59, 0x23, 0x31, 0x12, 0x99, 0x99 };
-  for (int i = 0; i < 7; i++) {
-    io_out8(0x70, adr[i]);
-    unsigned char v = io_in8(0x71);
-    if (!((v & 0x0f) <= 9 && v <= max[i]))
-      v = -1;
-    t[i] = v;
-  }
-  char err = FALSE;
-  do {
-    for (int i = 0; i < 7; i++) {
-      io_out8(0x70, adr[i]);
-      unsigned char v = io_in8(0x71);
-      if (t[i] != v) {
-        if ((v & 0x0f) <= 9 && v <= max[i])
-          t[i] = v;
-        err = TRUE;
-      }
-    }
-  } while (err);
 }
 
 static int waitKeyInput(TASK* task, int sleep) {
@@ -350,21 +320,15 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   case API_NOW:
     {
       unsigned char* buf = (unsigned char*)eax + ds_base;
-      unsigned char t[7];
-      read_rtc(t);
-      short year = bcd2(t[6]) * 100 + bcd2(t[5]);
-      unsigned char month = bcd2(t[4]);
-      unsigned char day = bcd2(t[3]);
-      unsigned char hour = bcd2(t[2]);
-      unsigned char minute = bcd2(t[1]);
-      unsigned char second = bcd2(t[0]);
+      unsigned char t[5];
+      int year = read_rtc(t);
       buf[0] = year >> 8;
       buf[1] = year;
-      buf[2] = month;
-      buf[3] = day;
-      buf[4] = hour;
-      buf[5] = minute;
-      buf[6] = second;
+      buf[2] = t[0];
+      buf[3] = t[1];
+      buf[4] = t[2];
+      buf[5] = t[3];
+      buf[6] = t[4];
     }
     break;
   }
