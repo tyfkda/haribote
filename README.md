@@ -48,8 +48,8 @@ But I changed to use Linux, and simplify required tools using Ruby.
 1. Create object files using gcc, or any
   1. `int main(int argc, char* argv[])` function is the entry point.
 2. Use linker script [hrbapp.ls](https://github.com/tyfkda/haribote/blob/master/lib/hrbapp.ls) to make .hrb file
-  * `$ ld -T hrbapp.ls lib/crt0.o -o <executable file name> <object files...> lib/apilib.a`
-  * You have to link lib/crt0.o and lib/applib.a
+  * `$ ld -T hrbapp.ls lib/crt0.o -o <executable file name> <object files...> lib/libhrb.a`
+  * You have to link lib/crt0.o and lib/libhrb.a
 
 ### Put executable onto floopy disk image
 1. Prepare disk image
