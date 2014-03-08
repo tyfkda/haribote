@@ -1,15 +1,9 @@
-// Interrupt handler.
-
-// These functions are called from asm_inthandlerXX, defined in naskfunc.s
-// There are other `inthandler` functions in other source files, which are
-// related to their own components (keyboard, mouse, timer).
-
 #include "bootpack.h"
 #include "console.h"
 #include "mtask.h"
 #include "stdio.h"
 
-// Interrupt 07 : FPU exception.
+// IRQ-07 : FPU exception.
 int* inthandler07(int *esp) {
   (void)esp;
   TASK *now = task_now();
@@ -25,7 +19,7 @@ int* inthandler07(int *esp) {
   return 0;
 }
 
-// Interrupt 0c : Stack exception.
+// IRQ-0c : Stack exception.
 int* inthandler0c(int* esp) {
   // esp[ 0] = edi  : esp[0~7] are given from asm_inthandler, pushal
   // esp[ 1] = esi
@@ -51,7 +45,7 @@ int* inthandler0c(int* esp) {
   return &task->tss.esp0;  // Abort
 }
 
-// Interrupt 0d : General protected exception.
+// IRQ-0d : General protected exception.
 int* inthandler0d(void) {
   TASK* task = task_now();
   CONSOLE* cons = task->cons;
