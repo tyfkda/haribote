@@ -16,6 +16,7 @@ typedef struct CONSOLE {
 struct SHEET* open_console(struct SHTCTL* shtctl);
 void close_constask(struct TASK* task);
 void close_console(struct SHTCTL* shtctl, struct SHEET* sht);
+struct TASK* open_constask(struct SHTCTL* shtctl, struct SHEET* sheet);
 
 void cons_putchar(CONSOLE* cons, int chr, char move, char neg);
 void cons_putstr0(CONSOLE* cons, const char* s);
