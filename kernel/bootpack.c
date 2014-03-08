@@ -140,7 +140,7 @@ static void handle_key_event(OsInfo* osinfo, int keycode) {
     if ((osinfo->key_mod & MOD_SHIFT_MASK) != 0) {  // Shift + F2 : Create console.
       if (osinfo->key_win != NULL)
         keywin_off(osinfo->shtctl, osinfo->key_win);
-      osinfo->key_win = open_console(osinfo->shtctl, osinfo->memtotal);
+      osinfo->key_win = open_console(osinfo->shtctl);
       sheet_slide(osinfo->shtctl, osinfo->key_win, 32, 4);
       sheet_updown(osinfo->shtctl, osinfo->key_win, osinfo->shtctl->top);
       keywin_on(osinfo->shtctl, osinfo->key_win);
@@ -226,15 +226,15 @@ static void mouse_left_clicked(OsInfo* osinfo) {
   }
 }
 
-static void handle_mouse_event(OsInfo* osinfo, int code) {
-  if (mouse_decode(&osinfo->mdec, code) == 0)
+static void handle_mouse_event(OsInfo* osinfo, MOUSE_DEC* mdec, int code) {
+  if (mouse_decode(mdec, code) == 0)
     return;
 
-  int mtrg = osinfo->mdec.btn & ~osinfo->mobtn;
-  osinfo->mobtn = osinfo->mdec.btn;
+  int mtrg = mdec->btn & ~osinfo->mobtn;
+  osinfo->mobtn = mdec->btn;
   // Move mouse cursor.
-  osinfo->mx += osinfo->mdec.dx;
-  osinfo->my += osinfo->mdec.dy;
+  osinfo->mx += mdec->dx;
+  osinfo->my += mdec->dy;
   if (osinfo->mx < 0)  osinfo->mx = 0;
   if (osinfo->my < 0)  osinfo->my = 0;
   if (osinfo->mx >= osinfo->binfo->scrnx - 1)  osinfo->mx = osinfo->binfo->scrnx - 1;
@@ -245,7 +245,7 @@ static void handle_mouse_event(OsInfo* osinfo, int code) {
   if (mtrg & MOUSE_LBUTTON)
     mouse_left_clicked(osinfo);
   if (osinfo->mmx >= 0) {  // Drag mode.
-    if ((osinfo->mdec.btn & MOUSE_LBUTTON) == 0) {  // Mouse left button released.
+    if ((mdec->btn & MOUSE_LBUTTON) == 0) {  // Mouse left button released.
       osinfo->mmx = -1;  // Drag end.
     } else {
       int dx = osinfo->mx - osinfo->mmx;
@@ -270,7 +270,8 @@ void HariMain(void) {
   osinfo.fifo = &fifo;
   init_pit();
   init_keyboard(&fifo, 256);
-  enable_mouse(&fifo, 512, &osinfo.mdec);
+  MOUSE_DEC mdec;
+  enable_mouse(&fifo, 512, &mdec);
   io_out8(PIC0_IMR, 0xf8);  // Enable PIT, PIC1 and keyboard.
   io_out8(PIC1_IMR, 0xef);  // Enable mouse.
 
@@ -296,7 +297,7 @@ void HariMain(void) {
   init_screen8(buf_back, osinfo.binfo->scrnx, osinfo.binfo->scrny);
 
   // sht_cons
-  osinfo.key_win = open_console(osinfo.shtctl, osinfo.memtotal);
+  osinfo.key_win = open_console(osinfo.shtctl);
 
   // sht_mouse
   SHEET* sht_mouse = sheet_alloc(osinfo.shtctl);
@@ -355,7 +356,7 @@ void HariMain(void) {
     if (256 <= i && i < 512) {  // Keyboard data.
       handle_key_event(&osinfo, i - 256);
     } else if (512 <= i && i < 768) {  // Mouse data.
-      handle_mouse_event(&osinfo, i - 512);
+      handle_mouse_event(&osinfo, &mdec, i - 512);
     } else if (768 <= i && i < 1024) {  // Close console request.
       close_console(osinfo.shtctl, osinfo.shtctl->sheets0 + (i - 768));
     } else if (1024 <= i && i < 2024) {  // Close console task request.

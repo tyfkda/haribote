@@ -13,7 +13,7 @@ typedef struct CONSOLE {
   struct TIMER* timer;
 } CONSOLE;
 
-struct SHEET* open_console(struct SHTCTL* shtctl, unsigned int memtotal);
+struct SHEET* open_console(struct SHTCTL* shtctl);
 void close_constask(struct TASK* task);
 void close_console(struct SHTCTL* shtctl, struct SHEET* sht);
 

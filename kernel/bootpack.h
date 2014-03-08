@@ -1,8 +1,6 @@
 #ifndef __BOOTPACK_H__
 #define __BOOTPACK_H__
 
-#include "mouse.h"
-
 struct FIFO;
 struct SHEET;
 struct SHTCTL;
@@ -22,7 +20,6 @@ typedef struct {
   struct SHTCTL* shtctl;
   struct SHEET* sht_back;
   struct SHEET* key_win;
-  MOUSE_DEC mdec;
   unsigned int memtotal;
   int key_mod;
 

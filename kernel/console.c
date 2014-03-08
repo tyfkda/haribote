@@ -35,7 +35,7 @@ typedef struct {
   int32_t dummy[3];
 } HrbHeader;
 
-static TASK* open_constask(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal);
+static TASK* open_constask(SHTCTL* shtctl, SHEET* sheet);
 
 static void cons_newline(CONSOLE* cons, int* pcurX, int* pcurY) {
   *pcurX = 8;
@@ -105,7 +105,8 @@ void cons_putstr1(CONSOLE* cons, const char* s, int l) {
     cons_putchar(cons, *s++, TRUE, FALSE);
 }
 
-static void cmd_mem(CONSOLE* cons, int memtotal) {
+static void cmd_mem(CONSOLE* cons) {
+  int memtotal = getOsInfo()->memtotal;
   MEMMAN* memman = (MEMMAN*)MEMMAN_ADDR;
   char s[60];
   sprintf(s, "total %4dMB\nfree %5dKB\n",
@@ -157,9 +158,9 @@ static void cmd_exit(CONSOLE* cons) {
     task_sleep(task);
 }
 
-static void cmd_start(const char* cmdline, int memtotal) {
+static void cmd_start(const char* cmdline) {
   SHTCTL* shtctl = getOsInfo()->shtctl;
-  SHEET* sheet = open_console(shtctl, memtotal);
+  SHEET* sheet = open_console(shtctl);
   sheet_slide(shtctl, sheet, 32, 4);
   sheet_updown(shtctl, sheet, shtctl->top);
 
@@ -171,8 +172,8 @@ static void cmd_start(const char* cmdline, int memtotal) {
 }
 
 // No console start.
-static void cmd_ncst(const char* cmdline, int memtotal) {
-  TASK* task = open_constask(NULL, NULL, memtotal);
+static void cmd_ncst(const char* cmdline) {
+  TASK* task = open_constask(NULL, NULL);
 
   // Send key command.
   FIFO* fifo = &task->fifo;
@@ -282,9 +283,9 @@ int* inthandler0d(void) {
   return &task->tss.esp0;  // Abort
 }
 
-static void cons_runcmd(const char* cmdline, CONSOLE* cons, int memtotal) {
+static void cons_runcmd(const char* cmdline, CONSOLE* cons) {
   if (strcmp(cmdline, "mem") == 0 && cons->sheet != NULL) {
-    cmd_mem(cons, memtotal);
+    cmd_mem(cons);
   } else if (strcmp(cmdline, "cls") == 0 && cons->sheet != NULL) {
     cmd_cls(cons);
   } else if (strcmp(cmdline, "dir") == 0 && cons->sheet != NULL) {
@@ -292,9 +293,9 @@ static void cons_runcmd(const char* cmdline, CONSOLE* cons, int memtotal) {
   } else if (strcmp(cmdline, "exit") == 0) {
     cmd_exit(cons);
   } else if (strncmp(cmdline, "start ", 6) == 0) {
-    cmd_start(cmdline, memtotal);
+    cmd_start(cmdline);
   } else if (strncmp(cmdline, "ncst ", 5) == 0) {
-    cmd_ncst(cmdline, memtotal);
+    cmd_ncst(cmdline);
   } else if (cmdline[0] != '\0') {
     if (!cmd_app(cons, cmdline))
       cons_putstr0(cons, "Bad command.\n");
@@ -325,7 +326,7 @@ static void draw_cmdline(CONSOLE* cons, const char* cmdline) {
     cons_putchar_with(cons, cmdline[i], TRUE, FALSE, &curx, &cury);
 }
 
-static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned int memtotal, unsigned char key) {
+static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned char key) {
   cons->cur_c = COL8_WHITE;
   switch (key) {
   case 10:  // Enter.
@@ -334,7 +335,7 @@ static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned int memtotal
     cons_putchar(cons, cmdline[cons->cmdp], FALSE, FALSE);
     cmdline[cons->cmdlen] = '\0';
     cons_newline(cons, &cons->cur_x, &cons->cur_y);
-    cons_runcmd(cmdline, cons, memtotal);
+    cons_runcmd(cmdline, cons);
     if (cons->sheet == NULL)
       cmd_exit(cons);
     cons_putchar(cons, '>', TRUE, FALSE);
@@ -416,7 +417,7 @@ static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned int memtotal
   }
 }
 
-static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
+static void console_task(SHTCTL* shtctl, SHEET* sheet) {
   TASK* task = task_now();
 
 #define TASK_FHANDLE_COUNT  (8)
@@ -457,7 +458,7 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
     int i = fifo_get(&task->fifo);
     io_sti();
     if (256 <= i && i < 512) {  // Keyboard data (from task A).
-      handle_key_event(&cons, cmdline, memtotal, i - 256);
+      handle_key_event(&cons, cmdline, i - 256);
     } else {
       switch (i) {
       case 0:
@@ -492,18 +493,17 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
   }
 }
 
-static TASK* open_constask(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) {
+static TASK* open_constask(SHTCTL* shtctl, SHEET* sheet) {
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
   TASK* task = task_alloc();
   int stack_size = 64 * 1024;
   task->cons_stack = memman_alloc_4k(memman, stack_size);
-  task->tss.esp = (int)task->cons_stack + stack_size - 4 - 4 * 3;
+  task->tss.esp = (int)task->cons_stack + stack_size - 4 - 4 * 2;
   task->tss.eip = (int) &console_task;
   task->tss.cs = 2 * 8;
   task->tss.es = task->tss.ss = task->tss.ds = task->tss.fs = task->tss.gs = 1 * 8;
   *((int*)(task->tss.esp + 4)) = (int)shtctl;
   *((int*)(task->tss.esp + 8)) = (int)sheet;
-  *((int*)(task->tss.esp + 12)) = (int)memtotal;
   task_run(task, 2, 2);
 
   int* cons_fifo = (int*)memman_alloc_4k(memman, 128 * sizeof(int));
@@ -511,14 +511,14 @@ static TASK* open_constask(SHTCTL* shtctl, SHEET* sheet, unsigned int memtotal) 
   return task;
 }
 
-SHEET* open_console(SHTCTL* shtctl, unsigned int memtotal) {
+SHEET* open_console(SHTCTL* shtctl) {
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
   SHEET* sheet = sheet_alloc(shtctl);
   unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, CONSOLE_WIDTH * CONSOLE_HEIGHT);
   sheet_setbuf(sheet, buf, CONSOLE_WIDTH, CONSOLE_HEIGHT, -1);
   make_window8(sheet, "console", FALSE);
   make_textbox8(sheet, X0, Y0, CONSOLE_NX * 8, CONSOLE_NY * 16, COL8_BLACK);
-  sheet->task = open_constask(shtctl, sheet, memtotal);
+  sheet->task = open_constask(shtctl, sheet);
   sheet->flags |= 0x20;
   return sheet;
 }
