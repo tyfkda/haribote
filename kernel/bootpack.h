@@ -56,4 +56,6 @@ void farjmp(int eip, int cs);
 void farcall(int eip, int cs);
 void start_app(int eip, int cs, int esp, int ds, int* tss_esp0);
 
+void set_active_window(struct SHEET* sheet);
+
 #endif

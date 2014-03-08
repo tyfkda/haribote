@@ -25,8 +25,8 @@
 #define MOD_SHIFT_MASK    (MOD_LSHIFT | MOD_RSHIFT)
 #define MOD_CONTROL_MASK  (MOD_LCONTROL | MOD_RCONTROL)
 
-static OsInfo osinfo;
-const OsInfo* getOsInfo(void)  { return &osinfo; }
+static OsInfo s_osinfo;
+const OsInfo* getOsInfo(void)  { return &s_osinfo; }
 
 int toupper(int c) {
   if ('a' <= c && c <= 'z')
@@ -98,16 +98,22 @@ static const char keytable[2][0x80] = {
 #endif
 };
 
+void set_active_window(SHEET* sheet) {
+  OsInfo* osinfo = &s_osinfo;
+  if (osinfo->key_win != sheet) {
+    keywin_off(osinfo->shtctl, osinfo->key_win);
+    keywin_on(osinfo->shtctl, osinfo->key_win = sheet);
+  }
+  sheet_updown(osinfo->shtctl, sheet, osinfo->shtctl->top - 1);
+}
+
 static void handle_key_event(OsInfo* osinfo, int keycode) {
   switch (keycode) {
   case 0x0f:  // Tab.
-    if (osinfo->key_win != NULL && osinfo->shtctl->top > 2) {
-      keywin_off(osinfo->shtctl, osinfo->key_win);
+    if (osinfo->key_win != NULL && osinfo->shtctl->top > 2)
       // Move old bottom to the top.
-      osinfo->key_win = osinfo->shtctl->sheets[1];
-      sheet_updown(osinfo->shtctl, osinfo->key_win, osinfo->shtctl->top - 1);
-      keywin_on(osinfo->shtctl, osinfo->key_win);
-    }break;
+      set_active_window(osinfo->shtctl->sheets[1]);
+    break;
   case 0x2a:  // Left shift on.
     osinfo->key_mod |= MOD_LSHIFT;
     break;
@@ -269,7 +275,8 @@ void HariMain(void) {
   FIFO fifo;
   int fifobuf[128];
   fifo_init(&fifo, 128, fifobuf, NULL);
-  osinfo.fifo = &fifo;
+  OsInfo* osinfo = &s_osinfo;
+  osinfo->fifo = &fifo;
   init_pit();
   init_keyboard(&fifo, 256);
   MOUSE_DEC mdec;
@@ -277,68 +284,68 @@ void HariMain(void) {
   io_out8(PIC0_IMR, 0xf8);  // Enable PIT, PIC1 and keyboard.
   io_out8(PIC1_IMR, 0xef);  // Enable mouse.
 
-  osinfo.memtotal = memtest(0x00400000, 0xbfffffff);
+  osinfo->memtotal = memtest(0x00400000, 0xbfffffff);
   MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
   memman_init(memman);
   memman_free(memman, (void*)0x00001000, 0x0009e000); /* 0x00001000 - 0x0009efff */
-  memman_free(memman, (void*)0x00400000, osinfo.memtotal - 0x00400000);
+  memman_free(memman, (void*)0x00400000, osinfo->memtotal - 0x00400000);
 
   init_palette();
 
-  osinfo.binfo = (BOOTINFO*)ADR_BOOTINFO;
-  osinfo.shtctl = shtctl_init(memman, osinfo.binfo->vram, osinfo.binfo->scrnx, osinfo.binfo->scrny);
+  osinfo->binfo = (BOOTINFO*)ADR_BOOTINFO;
+  osinfo->shtctl = shtctl_init(memman, osinfo->binfo->vram, osinfo->binfo->scrnx, osinfo->binfo->scrny);
 
   TASK* task_a = task_init(memman);
   fifo.task = task_a;
   task_run(task_a, 1, 2);
 
   // sht_back
-  osinfo.sht_back = sheet_alloc(osinfo.shtctl);
-  unsigned char* buf_back = (unsigned char*)memman_alloc_4k(memman, osinfo.binfo->scrnx * osinfo.binfo->scrny);
-  sheet_setbuf(osinfo.sht_back, buf_back, osinfo.binfo->scrnx, osinfo.binfo->scrny, -1);
-  init_screen8(buf_back, osinfo.binfo->scrnx, osinfo.binfo->scrny);
+  osinfo->sht_back = sheet_alloc(osinfo->shtctl);
+  unsigned char* buf_back = (unsigned char*)memman_alloc_4k(memman, osinfo->binfo->scrnx * osinfo->binfo->scrny);
+  sheet_setbuf(osinfo->sht_back, buf_back, osinfo->binfo->scrnx, osinfo->binfo->scrny, -1);
+  init_screen8(buf_back, osinfo->binfo->scrnx, osinfo->binfo->scrny);
 
   // sht_cons
-  osinfo.key_win = open_console(osinfo.shtctl);
+  osinfo->key_win = open_console(osinfo->shtctl);
 
   // sht_mouse
-  SHEET* sht_mouse = sheet_alloc(osinfo.shtctl);
+  SHEET* sht_mouse = sheet_alloc(osinfo->shtctl);
   unsigned char buf_mouse[16 * 16];
   sheet_setbuf(sht_mouse, buf_mouse, 16, 16, 99);
   init_mouse_cursor8(buf_mouse, 99);
-  osinfo.mx = (osinfo.binfo->scrnx - 16) / 2;
-  osinfo.my = (osinfo.binfo->scrny - 28 - 16) / 2;
-  osinfo.mmx = osinfo.mmy = osinfo.new_mx = -1;
-  osinfo.new_my = osinfo.new_wx = osinfo.new_wy = 0;
-  osinfo.mobtn = 0;
-  osinfo.drag_moved = FALSE;
-  osinfo.sht_dragging = NULL;
+  osinfo->mx = (osinfo->binfo->scrnx - 16) / 2;
+  osinfo->my = (osinfo->binfo->scrny - 28 - 16) / 2;
+  osinfo->mmx = osinfo->mmy = osinfo->new_mx = -1;
+  osinfo->new_my = osinfo->new_wx = osinfo->new_wy = 0;
+  osinfo->mobtn = 0;
+  osinfo->drag_moved = FALSE;
+  osinfo->sht_dragging = NULL;
 
-  sheet_slide(osinfo.shtctl, osinfo.sht_back, 0, 0);
-  sheet_slide(osinfo.shtctl, osinfo.key_win, 8, 2);  // console
-  sheet_slide(osinfo.shtctl, sht_mouse, osinfo.mx, osinfo.my);
-  sheet_updown(osinfo.shtctl, osinfo.sht_back, 0);
-  sheet_updown(osinfo.shtctl, osinfo.key_win, 1);
-  sheet_updown(osinfo.shtctl, sht_mouse, 2);
+  sheet_slide(osinfo->shtctl, osinfo->sht_back, 0, 0);
+  sheet_slide(osinfo->shtctl, osinfo->key_win, 8, 2);  // console
+  sheet_slide(osinfo->shtctl, sht_mouse, osinfo->mx, osinfo->my);
+  sheet_updown(osinfo->shtctl, osinfo->sht_back, 0);
+  sheet_updown(osinfo->shtctl, osinfo->key_win, 1);
+  sheet_updown(osinfo->shtctl, sht_mouse, 2);
 
-  osinfo.key_mod = 0;
-  keywin_on(osinfo.shtctl, osinfo.key_win);
+  osinfo->key_mod = 0;
+  keywin_on(osinfo->shtctl, osinfo->key_win);
 
   for (;;) {
     io_cli();
 
     if (fifo_empty(&fifo)) {
-      if (osinfo.new_mx >= 0) {
+      if (osinfo->new_mx >= 0) {
         io_sti();
-        sheet_slide(osinfo.shtctl, sht_mouse, osinfo.new_mx, osinfo.new_my);
-        osinfo.new_mx = -1;
+        sheet_slide(osinfo->shtctl, sht_mouse, osinfo->new_mx, osinfo->new_my);
+        osinfo->new_mx = -1;
       }
-      if (osinfo.drag_moved) {
+      if (osinfo->drag_moved) {
         io_sti();
-        sheet_slide(osinfo.shtctl, osinfo.sht_dragging, osinfo.new_wx, osinfo.new_wy);
-        osinfo.drag_moved = FALSE;
-        if (osinfo.mmx < 0)  // Drag released.
-          osinfo.sht_dragging = NULL;
+        sheet_slide(osinfo->shtctl, osinfo->sht_dragging, osinfo->new_wx, osinfo->new_wy);
+        osinfo->drag_moved = FALSE;
+        if (osinfo->mmx < 0)  // Drag released.
+          osinfo->sht_dragging = NULL;
       }
       task_sleep(task_a);
       io_sti();
@@ -348,25 +355,25 @@ void HariMain(void) {
     int i = fifo_get(&fifo);
     io_sti();
 
-    if (osinfo.key_win != NULL && osinfo.key_win->flags == 0) {  // Console window closed.
-      if (osinfo.shtctl->top == 1) {  // No window, only mouse and background.
-        osinfo.key_win = NULL;
+    if (osinfo->key_win != NULL && osinfo->key_win->flags == 0) {  // Console window closed.
+      if (osinfo->shtctl->top == 1) {  // No window, only mouse and background.
+        osinfo->key_win = NULL;
       } else {
-        keywin_on(osinfo.shtctl, osinfo.key_win = osinfo.shtctl->sheets[osinfo.shtctl->top - 1]);
+        keywin_on(osinfo->shtctl, osinfo->key_win = osinfo->shtctl->sheets[osinfo->shtctl->top - 1]);
       }
     }
     if (256 <= i && i < 512) {  // Keyboard data.
-      handle_key_event(&osinfo, i - 256);
+      handle_key_event(osinfo, i - 256);
     } else if (512 <= i && i < 768) {  // Mouse data.
-      handle_mouse_event(&osinfo, &mdec, i - 512);
+      handle_mouse_event(osinfo, &mdec, i - 512);
     } else if (768 <= i && i < 1024) {  // Close console request.
-      close_console(osinfo.shtctl, osinfo.shtctl->sheets0 + (i - 768));
+      close_console(osinfo->shtctl, osinfo->shtctl->sheets0 + (i - 768));
     } else if (1024 <= i && i < 2024) {  // Close console task request.
       close_constask(taskctl->tasks0 + (i - 1024));
     } else if (2024 <= i && i < 2280) {  // Close console only.
-      SHEET* sheet2 = osinfo.shtctl->sheets0 + (i - 2024);
+      SHEET* sheet2 = osinfo->shtctl->sheets0 + (i - 2024);
       memman_free_4k(memman, sheet2->buf, 256 * 165);
-      sheet_free(osinfo.shtctl, sheet2);
+      sheet_free(osinfo->shtctl, sheet2);
     }
   }
 }

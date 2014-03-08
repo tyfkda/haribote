@@ -133,6 +133,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       make_window8(sheet, title, FALSE);
       sheet_slide(shtctl, sheet, (shtctl->xsize - xsize) / 2, (shtctl->ysize - ysize) / 2);
       sheet_updown(shtctl, sheet, shtctl->top);
+      set_active_window(sheet);
     }break;
   case API_PUTSTRWIN:
     {
