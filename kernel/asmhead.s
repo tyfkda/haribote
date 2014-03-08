@@ -20,6 +20,8 @@
 	# 0x103 :  800 x  600 x 8bit color
 	# 0x105 : 1024 x  768 x 8bit color
 	# 0x107 : 1280 x 1024 x 8bit color
+	# 0x111 :  640 x  480 x 16bit color
+	# 0x112 :  640 x  480 x 16bit color
 
 start:
 	mov	$0x9000, %ax
@@ -43,10 +45,10 @@ start:
 	jne	scrn320
 
 	# Check screen mode information.
-	cmpb	$8, %es:0x19(%di)
-	jne	scrn320
-	cmpb	$4, %es:0x1b(%di)
-	jne	scrn320
+	#cmpb	$8, %es:0x19(%di)
+	#jne	scrn320
+	#cmpb	$4, %es:0x1b(%di)
+	#jne	scrn320
 	mov	%es:0(%di), %ax
 	and	$0x0080, %ax
 	jz	scrn320
@@ -56,7 +58,8 @@ start:
 	mov	$0x4f02, %ax
 	int	$0x10
 
-	movb	$8, (VMODE)
+	mov	%es:0x19(%di), %al
+	mov	%al, (VMODE)
 	mov	%es:0x12(%di), %ax
 	mov	%ax, (SCRNX)
 	mov	%es:0x14(%di), %ax
@@ -83,7 +86,7 @@ keystatus:
 	# Prevent interrupt for PIC
 	mov	$0xff, %al
 	out	%al, $0x21
-	nop			# Avoid using out intstruction .
+	nop			# Avoid using `out` intstruction sequentially.
 	out	%al, $0xa1
 
 	cli			# Prevent interrupt for CPU level
