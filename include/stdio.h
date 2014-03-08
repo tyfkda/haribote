@@ -31,6 +31,7 @@ int fgetc(FILE *stream);
 
 //int putc(int c, FILE *stream);
 #define putc(c, stream)  fputc(c, stream)
+#define getc(stream)  fgetc(stream)
 #define getchar()  fgetc(stdin)
 
 #ifdef __cplusplus

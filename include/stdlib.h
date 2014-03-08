@@ -28,6 +28,7 @@ unsigned long int strtoul(const char *nptr, char **endptr, int base);
 double strtod(const char *nptr, char **endptr);
 int abs(int j);
 void* realloc(void* ptr, size_t size);
+void* calloc(size_t nmemb, size_t size);
 
 #ifdef __cplusplus
 }  // extern "C"
