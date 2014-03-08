@@ -143,8 +143,8 @@ static void cmd_dir(CONSOLE* cons) {
 
 static void cmd_exit(CONSOLE* cons) {
   TASK* task = task_now();
-  SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-  FIFO* fifo = (FIFO*)*((int*)0x0fec);
+  SHTCTL* shtctl = getOsInfo()->shtctl;
+  FIFO* fifo = getOsInfo()->fifo;
   if (cons->sheet != NULL)
     timer_cancel(cons->timer);
   io_cli();
@@ -158,7 +158,7 @@ static void cmd_exit(CONSOLE* cons) {
 }
 
 static void cmd_start(const char* cmdline, int memtotal) {
-  SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+  SHTCTL* shtctl = getOsInfo()->shtctl;
   SHEET* sheet = open_console(shtctl, memtotal);
   sheet_slide(shtctl, sheet, 32, 4);
   sheet_updown(shtctl, sheet, shtctl->top);
@@ -235,7 +235,7 @@ static char cmd_app(CONSOLE* cons, const char* cmdline) {
 
   // End of application.
   // Free sheets which are opened by the task.
-  SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+  SHTCTL* shtctl = getOsInfo()->shtctl;
   for (int i = 0; i < MAX_SHEETS; ++i) {
     SHEET* sheet = &shtctl->sheets0[i];
     if ((sheet->flags & 0x11) == 0x11 && sheet->task == task)

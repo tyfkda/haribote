@@ -23,6 +23,9 @@
 #define MOD_SHIFT_MASK    (MOD_LSHIFT | MOD_RSHIFT)
 #define MOD_CONTROL_MASK  (MOD_LCONTROL | MOD_RCONTROL)
 
+static OsInfo osinfo;
+const OsInfo* getOsInfo(void)  { return &osinfo; }
+
 int toupper(int c) {
   if ('a' <= c && c <= 'z')
     return c + ('A' - 'a');
@@ -92,23 +95,6 @@ static const char keytable[2][0x80] = {
   },
 #endif
 };
-
-typedef struct {
-  BOOTINFO* binfo;
-  SHTCTL* shtctl;
-  SHEET* sht_back;
-  SHEET* key_win;
-  MOUSE_DEC mdec;
-  unsigned int memtotal;
-  int key_mod;
-
-  // Mouse.
-  int mx, my;
-  int mobtn;  // Old mouse button state.
-  int mmx, mmy, new_mx, new_my, new_wx, new_wy;  // Mouse drag position.
-  SHEET* sht_dragging;
-  char drag_moved;
-} OsInfo;
 
 static void handle_key_event(OsInfo* osinfo, int keycode) {
   switch (keycode) {
@@ -274,8 +260,6 @@ static void handle_mouse_event(OsInfo* osinfo, int code) {
 }
 
 void HariMain(void) {
-  OsInfo osinfo;
-
   init_gdtidt();
   init_pic();
   io_sti();  // Enable CPU interrupt after IDT/PIC initialization.
@@ -283,7 +267,7 @@ void HariMain(void) {
   FIFO fifo;
   int fifobuf[128];
   fifo_init(&fifo, 128, fifobuf, NULL);
-  *((int *) 0x0fec) = (int) &fifo;
+  osinfo.fifo = &fifo;
   init_pit();
   init_keyboard(&fifo, 256);
   enable_mouse(&fifo, 512, &osinfo.mdec);
@@ -300,7 +284,6 @@ void HariMain(void) {
 
   osinfo.binfo = (BOOTINFO*)ADR_BOOTINFO;
   osinfo.shtctl = shtctl_init(memman, osinfo.binfo->vram, osinfo.binfo->scrnx, osinfo.binfo->scrny);
-  *((int*)0x0fe4) = (int)osinfo.shtctl;
 
   TASK* task_a = task_init(memman);
   fifo.task = task_a;

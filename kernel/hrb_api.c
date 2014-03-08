@@ -86,8 +86,8 @@ static int waitKeyInput(TASK* task, int sleep) {
       break;
     case 4:  // Close console only.
       {
-        SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
-        FIFO* sys_fifo = (FIFO*)*((int*)0x0fec);
+        SHTCTL* shtctl = getOsInfo()->shtctl;
+        FIFO* sys_fifo = getOsInfo()->fifo;
         timer_cancel(cons->timer);
         io_cli();
         fifo_put(sys_fifo, cons->sheet - shtctl->sheets0 + 2024);
@@ -124,7 +124,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       unsigned char* buf = (unsigned char*)ebx + ds_base;
       int xsize = esi, ysize = edi, col_inv = eax;
       const char* title = (const char*)ecx + ds_base;
-      SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+      SHTCTL* shtctl = getOsInfo()->shtctl;
       SHEET* sheet = sheet_alloc(shtctl);
       sheet->task = task;
       sheet->flags |= 0x10;
@@ -142,7 +142,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       const char* str = (const char*)ebp + ds_base;
       putfonts8_asc(sheet->buf, sheet->bxsize, sheet->bysize, x, y, col, str);
       if (refresh) {
-        SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+        SHTCTL* shtctl = getOsInfo()->shtctl;
         sheet_refresh(shtctl, sheet, x, y, x + len * 8, y + 16);
       }
     }break;
@@ -153,7 +153,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       int x0 = eax, y0 = ecx, x1 = esi, y1 = edi, col = ebp;
       boxfill8(sheet->buf, sheet->bxsize, col, x0, y0, x1, y1);
       if (refresh) {
-        SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+        SHTCTL* shtctl = getOsInfo()->shtctl;
         sheet_refresh(shtctl, sheet, x0, y0, x1, y1);
       }
     }break;
@@ -185,7 +185,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
       int x = esi, y = edi, col = eax;
       sheet->buf[sheet->bxsize * y + x] = col;
       if (refresh) {
-        SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+        SHTCTL* shtctl = getOsInfo()->shtctl;
         sheet_refresh(shtctl, sheet, x, y, x + 1, y + 1);
       }
     }break;
@@ -193,7 +193,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
     {
       SHEET* sheet = (SHEET*)ebx;  // SHEET* sheet == int win;
       int x0 = eax, y0 = ecx, x1 = esi, y1 = edi;
-      SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+      SHTCTL* shtctl = getOsInfo()->shtctl;
       sheet_refresh(shtctl, sheet, x0, y0, x1, y1);
     }break;
   case API_LINEWIN:
@@ -207,14 +207,14 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
           SWAP(int, x0, x1);
         if (y0 > y1)
           SWAP(int, y0, y1);
-        SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+        SHTCTL* shtctl = getOsInfo()->shtctl;
         sheet_refresh(shtctl, sheet, x0, y0, x1, y1);
       }
     }break;
   case API_CLOSEWIN:
     {
       SHEET* sheet = (SHEET*)eax;  // SHEET* sheet == int win;
-      SHTCTL* shtctl = (SHTCTL*)*((int*)0x0fe4);
+      SHTCTL* shtctl = getOsInfo()->shtctl;
       sheet_free(shtctl, sheet);
     }break;
   case API_GETKEY:
