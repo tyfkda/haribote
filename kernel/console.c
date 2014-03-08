@@ -49,7 +49,7 @@ static void cons_cls(CONSOLE* cons) {
   cons->cur_y = 28;
 }
 
-void cons_putchar_with(CONSOLE* cons, int chr, char move, char neg, int* pcurX, int* pcurY) {
+void cons_putchar_at(CONSOLE* cons, int chr, char move, char neg, int* pcurX, int* pcurY) {
   unsigned char fontColor = COL8_WHITE, backColor = COL8_BLACK;
   if (neg)
     fontColor = COL8_BLACK, backColor = COL8_WHITE;
@@ -84,7 +84,7 @@ void cons_putchar_with(CONSOLE* cons, int chr, char move, char neg, int* pcurX, 
 }
 
 void cons_putchar(CONSOLE* cons, int chr, char move, char neg) {
-  cons_putchar_with(cons, chr, move, neg, &cons->cur_x, &cons->cur_y);
+  cons_putchar_at(cons, chr, move, neg, &cons->cur_x, &cons->cur_y);
 }
 
 void cons_putstr0(CONSOLE* cons, const char* s) {
@@ -137,7 +137,7 @@ static void cursor_right(CONSOLE* cons) {
 static void draw_cmdline(CONSOLE* cons, const char* cmdline) {
   int curx = cons->cur_x, cury = cons->cur_y;
   for (int i = cons->cmdp, n = cons->cmdlen; i < n; ++i)
-    cons_putchar_with(cons, cmdline[i], TRUE, FALSE, &curx, &cury);
+    cons_putchar_at(cons, cmdline[i], TRUE, FALSE, &curx, &cury);
 }
 
 static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned char key) {
@@ -211,7 +211,7 @@ static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned char key) {
       // Erasee.
       int curx = cons->cur_x, cury = cons->cur_y;
       for (int i = cons->cmdp, n = cons->cmdlen; i < n; ++i)
-        cons_putchar_with(cons, ' ', TRUE, FALSE, &curx, &cury);
+        cons_putchar_at(cons, ' ', TRUE, FALSE, &curx, &cury);
 
       cons->cmdlen = cons->cmdp;
       cmdline[cons->cmdlen] = ' ';
