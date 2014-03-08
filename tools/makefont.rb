@@ -3,8 +3,8 @@ def read_font(f)
   char_data = Array.new(256)
   until f.eof
     line = f.readline
-    if line =~ /^char 0x([0-9a-fA-F]+)/
-      char_data[$1.hex] = read_char1(f)
+    if line =~ /^char ((0x)?([0-9a-fA-F]+))/
+      char_data[Integer($1)] = read_char1(f)
     end
   end
   return char_data
@@ -22,11 +22,11 @@ def output_font(f, font_data)
     unless dat
       dat = [0] * 16
     end
-    f.puts "  { #{dat.map {|x| sprintf("0x%02x", x)}.join(', ')} },"
+    f.puts "  #{dat.map {|x| sprintf("0x%02x", x)}.join(', ')},"
   end
 end
 
 font = read_font($stdin)
-puts "const unsigned char fontdata[256][16] = {"
+puts "const unsigned char fontdata[16 * 256] = {"
 output_font($stdout, font)
 puts "};"

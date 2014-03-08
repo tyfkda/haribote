@@ -52,4 +52,4 @@ clean:
 	  $(OBJDIR)/*.map $(TARGET) $(LIBDIR)/*.a $(LIBDIR)/*.o
 
 font:
-	ruby tools/makefont.rb < tools/hankaku.txt > kernel/fontdata.c
+	ruby tools/makefont.rb < tools/biosfont.txt > kernel/fontdata.c

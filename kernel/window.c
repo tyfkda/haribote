@@ -34,8 +34,8 @@ static void make_wtitle8(unsigned char* buf, int xsize, const char* title, char 
     tbc = COL8_DARK_GRAY;
   }
   boxfill8(buf, xsize, tbc, 3, 3, xsize - 3, 21);
+  putfonts8_asc(buf, xsize, 24, 25, 4, COL8_BLACK, title);
   putfonts8_asc(buf, xsize, 24, 24, 4, tc, title);
-  putfonts8_asc(buf, xsize, 24, 25, 4, tc, title);
   convert_image8(buf, xsize, xsize - 21, 5, 16, 14, &closebtn[0][0], &table[0][0]);
 }
 

@@ -2,7 +2,7 @@
 #include "bootpack.h"
 #include "string.h"
 
-extern const unsigned char fontdata[][16];
+extern const unsigned char fontdata[];
 
 void init_palette(void) {
   static unsigned char table_rgb[16 * 3] = {
@@ -133,7 +133,7 @@ void putfonts8_asc(unsigned char* vram, int xsize, int ysize, int x, int y, unsi
     s += n;
   }
   while (*s != '\0') {
-    putfont8(vram, xsize, ysize, x, y, c, fontdata[(unsigned char)*s++]);
+    putfont8(vram, xsize, ysize, x, y, c, &fontdata[16 * (unsigned char)*s++]);
     x += 8;
     if (x >= xsize)
       break;
