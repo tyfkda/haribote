@@ -12,6 +12,7 @@
 static FIFO* mousefifo;
 static int mousedata0;
 
+// IRQ-2c : Mouse interrupt.
 void inthandler2c(int* esp) {
   (void)esp;
   io_out8(PIC1_OCW2, 0x64);  // Notify IRQ-12 recv finish to PIC1

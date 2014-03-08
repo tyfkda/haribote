@@ -60,7 +60,6 @@ void task_run(TASK* task, int level, int priority);
 void task_switch(void);
 void task_sleep(TASK* task);
 void task_wake(TASK* task);
-int* inthandler07(int* esp);
 struct FDHANDLE* task_get_free_fhandle(TASK* task);
 
 #endif

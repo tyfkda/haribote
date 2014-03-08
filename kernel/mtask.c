@@ -186,21 +186,6 @@ void task_wake(TASK* task) {
     task_run(task, -1, 0);
 }
 
-int* inthandler07(int *esp) {
-  (void)esp;
-  TASK *now = task_now();
-  io_cli();
-  io_clts();
-  if (taskctl->task_fpu != now) {
-    if (taskctl->task_fpu != NULL)
-      io_fnsave(taskctl->task_fpu->fpu);
-    io_frstor(now->fpu);
-    taskctl->task_fpu = now;
-  }
-  io_sti();
-  return 0;
-}
-
 FDHANDLE* task_get_free_fhandle(TASK* task) {
   for (int i = 0; i < task->fhandleCount; ++i) {
     if (task->fhandle[i].finfo == NULL)
