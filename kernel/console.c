@@ -131,8 +131,14 @@ static void cmd_dir(CONSOLE* cons) {
     if (p->name[0] == 0xe5)  // Deleted file.
       continue;
     if ((p->type & 0x18) == 0) {
+      int year = ((p->date >> 9) & 0x7f) + 1980;
+      int month = ((p->date >> 5) & 0x0f) + 1;
+      int day = (p->date & 0x1f) + 1;
+      int hour = (p->time >> 11) & 0x1f;
+      int minute = (p->time >> 5) & 0x3f;
       char s[30];
-      sprintf(s, "filename.ext   %7d\n", p->size);
+      sprintf(s, "filename.ext   %7d '%02d/%02d/%02d %02d:%02d\n",
+              p->size, year % 100, month, day, hour, minute);
       memcpy(&s[0], p->name, 8);
       memcpy(&s[9], p->ext, 3);
       if (p->ext[0] == ' ')  // No file extension: remove dot.
