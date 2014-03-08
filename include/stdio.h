@@ -18,13 +18,20 @@ int putchar(int c);
 int puts(const char* str);
 int printf(const char* format, ...);
 int sprintf(char *str, const char *fmt, ...);
+int snprintf(char *str, size_t size, const char *format, ...);
 
 FILE* fopen(const char* filename, const char* mode);
 void fclose(FILE* fp);
+int fputc(int c, FILE *stream);
+int fputs(const char *s, FILE *stream);
 int fprintf(FILE* stream, const char* format, ...);
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int fgetc(FILE *stream);
+
+//int putc(int c, FILE *stream);
+#define putc(c, stream)  fputc(c, stream)
+#define getchar()  fgetc(stdin)
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -23,6 +23,18 @@
 #define MOD_SHIFT_MASK    (MOD_LSHIFT | MOD_RSHIFT)
 #define MOD_CONTROL_MASK  (MOD_LCONTROL | MOD_RCONTROL)
 
+int toupper(int c) {
+  if ('a' <= c && c <= 'z')
+    return c + ('A' - 'a');
+  return c;
+}
+
+int tolower(int c) {
+  if ('A' <= c && c <= 'Z')
+    return c + ('a' - 'A');
+  return c;
+}
+
 static void keywin_off(SHTCTL* shtctl, SHEET* key_win) {
   change_wtitle8(shtctl, key_win, FALSE);
   if ((key_win->flags & 0x20) != 0)
@@ -153,8 +165,8 @@ static void handle_key_event(OsInfo* osinfo, int keycode) {
       int shift = (osinfo->key_mod & MOD_SHIFT_MASK) != 0;
       unsigned char key = keytable[shift][keycode];
       if (key != 0 && osinfo->key_win != NULL) {  // Normal character.
-        if (!shift && 'A' <= key && key <= 'Z')
-          key += 'a' - 'A';
+        if (!shift)
+          key = tolower(key);
         if ((osinfo->key_mod & MOD_CONTROL_MASK) != 0)
           key = toupper(key) - ('A' - 1);
         fifo_put(&osinfo->key_win->task->fifo, key + 256);

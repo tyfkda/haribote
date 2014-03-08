@@ -15,6 +15,7 @@ double sqrt(double x);
 double fabs(double x);
 double round(double x);
 long lround(double x);
+double pow(double x, double y);
 
 #ifdef __cplusplus
 }  // extern "C"

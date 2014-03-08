@@ -1,13 +1,10 @@
 #include "stdio.h"
 #include "stdarg.h"
-#include "apilib.h"
 
 int printf(const char* format, ...) {
   va_list ap;
   va_start(ap, format);
-  char s[1000];  // TODO: Handle buffer overflow.
-  int i = vsprintf(s, format, ap);
-  api_putstr0(s);
+  int i = vfprintf(stdout, format, ap);
   va_end(ap);
   return i;
 }
