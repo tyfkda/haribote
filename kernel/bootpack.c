@@ -16,6 +16,8 @@
 #include "timer.h"
 #include "window.h"
 
+#define ADR_BOOTINFO  (0x00000ff0)
+
 #define MOD_LSHIFT    (1 << 0)
 #define MOD_RSHIFT    (1 << 1)
 #define MOD_LCONTROL  (1 << 2)

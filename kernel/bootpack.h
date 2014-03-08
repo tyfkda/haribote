@@ -31,7 +31,6 @@ typedef struct {
   char drag_moved;
 } OsInfo;
 
-#define ADR_BOOTINFO  0x00000ff0
 #define ADR_DISKIMG   0x00100000
 
 const OsInfo* getOsInfo(void);
