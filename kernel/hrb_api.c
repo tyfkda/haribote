@@ -19,14 +19,11 @@ static FDHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
   if (fh == NULL)
     return NULL;
 
-  if (flag & OPEN_WRITE) {
-    if (!fd_writeopen(fh, filename))
-      return NULL;
-  } else {
-    if (!fd_open(fh, filename))
-      return NULL;
-  }
-  return fh;
+  if (fd_open(fh, filename))
+    return fh;
+  if ((flag & OPEN_WRITE) && fd_writeopen(fh, filename))
+    return fh;
+  return NULL;
 }
 
 static int waitKeyInput(TASK* task, int sleep) {
