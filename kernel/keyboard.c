@@ -13,7 +13,7 @@
 static FIFO* keyfifo;
 static int keydata0;
 
-// IRQ-21 : Keyboard interrupt.
+// IRQ-01 : Keyboard interrupt.
 void inthandler21(int* esp) {
   (void)esp;
   io_out8(PIC0_OCW2, 0x61);  // Notify IRQ-01 recv finish to PIC

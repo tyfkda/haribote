@@ -31,7 +31,7 @@ void init_pit(void) {
   timerctl.next_time = (unsigned int)-1;
 }
 
-// IRQ-20 : Timer interrupt.
+// IRQ-00 : Timer interrupt.
 void inthandler20(int* esp) {
   (void)esp;
   char switch_task = FALSE;
