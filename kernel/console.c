@@ -38,21 +38,21 @@ static void cons_newline(CONSOLE* cons, int* pcurX, int* pcurY) {
   for (int y = Y0; y < Y0 + CONSOLE_NY * FONTH; ++y)
     memcpy(&buf[y * bxsize + X0], &buf[(y + FONTH) * bxsize + X0], CONSOLE_NX * FONTW);
   // Erase last line.
-  boxfill8(buf, bxsize, COL8_BLACK, X0, Y0 + (CONSOLE_NY - 1) * FONTH, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
+  boxfill8(buf, bxsize, cons->bgColor, X0, Y0 + (CONSOLE_NY - 1) * FONTH, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
   sheet_refresh(cons->shtctl, sheet, X0, Y0, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
 }
 
 static void cons_cls(CONSOLE* cons) {
   SHEET* sheet = cons->sheet;
-  boxfill8(sheet->buf, sheet->bxsize, COL8_BLACK, 8, 28, 8 + CONSOLE_NX * 8, 28 + CONSOLE_NY * 16);
+  boxfill8(sheet->buf, sheet->bxsize, cons->bgColor, 8, 28, 8 + CONSOLE_NX * 8, 28 + CONSOLE_NY * 16);
   sheet_refresh(cons->shtctl, sheet, 8, 28, 8 + CONSOLE_NX * 8, 28 + CONSOLE_NY * 16);
   cons->cur_y = 28;
 }
 
 void cons_putchar_at(CONSOLE* cons, int chr, char move, char neg, int* pcurX, int* pcurY) {
-  unsigned char fontColor = COL8_WHITE, backColor = COL8_BLACK;
+  unsigned char fontColor = cons->fontColor, backColor = cons->bgColor;
   if (neg)
-    fontColor = COL8_BLACK, backColor = COL8_WHITE;
+    fontColor = cons->bgColor, backColor = cons->fontColor;
   char s[2] = { chr, '\0' };
   switch (chr) {
   case 0x09:  // Tab.
@@ -140,6 +140,13 @@ static void draw_cmdline(CONSOLE* cons, const char* cmdline) {
     cons_putchar_at(cons, cmdline[i], TRUE, FALSE, &curx, &cury);
 }
 
+static void putPrompt(CONSOLE* cons) {
+  unsigned char col = cons->fontColor;
+  cons->fontColor = COL8_BLUE;
+  cons_putchar(cons, '>', TRUE, FALSE);
+  cons->fontColor = col;
+}
+
 static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned char key) {
   cons->cur_c = COL8_WHITE;
   switch (key) {
@@ -152,7 +159,7 @@ static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned char key) {
     cons_runcmd(cmdline, cons);
     if (cons->sheet == NULL)
       cmd_exit(cons);
-    cons_putchar(cons, '>', TRUE, FALSE);
+    putPrompt(cons);
     cons->cmdp = cons->cmdlen = 0;
     cmdline[0] = ' ';
     break;
@@ -251,6 +258,8 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet) {
   cons.cur_y = Y0;
   cons.cur_c = -1;
   cons.cmdp = cons.cmdlen = 0;
+  cons.fontColor = COL8_WHITE;
+  cons.bgColor = COL8_BLACK;
   task->cons = &cons;
   task->cmdline = cmdline;
   cmdline[0] = ' ';
@@ -261,7 +270,8 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet) {
     timer_settime(cons.timer, 50);
   }
 
-  cons_putchar(&cons, '>', TRUE, FALSE);
+  cons_cls(&cons);
+  putPrompt(&cons);
 
   for (;;) {
     io_cli();

@@ -11,6 +11,7 @@ typedef struct CONSOLE {
   int cur_x, cur_y, cur_c;
   int cmdp, cmdlen;
   struct TIMER* timer;
+  unsigned char fontColor, bgColor;
 } CONSOLE;
 
 struct SHEET* open_console(struct SHTCTL* shtctl);
