@@ -127,9 +127,11 @@ static void handle_key_event(OsInfo* osinfo, int keycode) {
     osinfo->key_mod &= ~MOD_RSHIFT;
     break;
   case 0x1d:  // Left control on.
+  case 0x3a:  // Caps lock: treat as left control key.
     osinfo->key_mod |= MOD_LCONTROL;
     break;
   case 0x9d:  // Left control off.
+  case 0xba:  // Caps lock: treat as left control key.
     osinfo->key_mod &= ~MOD_LCONTROL;
     break;
   case 0x3b:  // F1
