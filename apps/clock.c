@@ -34,7 +34,7 @@ int main() {
     int year = (now[0] << 8) | now[1];
     int month = now[2];
     int day = now[3];
-    int hour = now[4] % 12;
+    int hour = now[4];
     int minute = now[5];
     int second = now[6];
 
@@ -44,7 +44,7 @@ int main() {
     draw_poly_circle(win | 1, 160 / 2 + 8, 160 / 2 + 8 + 20, 78, 12, COL8_BLACK);
     draw_clock_line(win | 1, second, 60, 70, COL8_DARK_BLUE);
     draw_clock_line(win | 1, minute * 60 + second, 60 * 60, 60, COL8_GREEN);
-    draw_clock_line(win | 1, (hour * 60 + minute) * 60 + second, 12 * 60 * 60, 40, COL8_RED);
+    draw_clock_line(win | 1, ((hour % 12) * 60 + minute) * 60 + second, 12 * 60 * 60, 40, COL8_RED);
     api_putstrwin(win | 1, (W - 19 * 8) / 2, H - 8 - 16, COL8_WHITE, 19, s);
     api_refreshwin(win, 8, 20 + 8, W - 8, H - 8);
 
