@@ -39,6 +39,7 @@ int vsprintf(char *str, const char *fmt, va_list ap) {
     }
 
     int keta = 0;
+    int sign = TRUE;
     char padding = ' ';
     char buf[sizeof(int) * 3 + 3];
     char* q;
@@ -54,7 +55,13 @@ int vsprintf(char *str, const char *fmt, va_list ap) {
     case '6': case '7': case '8': case '9':
       keta = *fmt - '0';
       goto again;
-    case 'd': q = int2num(&buf[sizeof(buf)], va_arg(ap, int), 10, hextableLower, padding, keta); break;
+    case 'u': sign = FALSE; goto again;
+    case 'd':
+      if (sign)
+        q = int2num(&buf[sizeof(buf)], va_arg(ap, int), 10, hextableLower, padding, keta);
+      else
+        q = uint2num(&buf[sizeof(buf)], va_arg(ap, unsigned int), 10, hextableLower, padding, keta);
+      break;
     case 'x': q = uint2num(&buf[sizeof(buf)], va_arg(ap, int), 16, hextableLower, padding, keta); break;
     case 'X': q = uint2num(&buf[sizeof(buf)], va_arg(ap, int), 16, hextableUpper, padding, keta); break;
     case 'p':

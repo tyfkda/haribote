@@ -60,10 +60,10 @@ int read_rtc(unsigned char tt[5]) {
 }
 
 void cmd_mem(CONSOLE* cons) {
-  int memtotal = getOsInfo()->memtotal;
+  unsigned int memtotal = getOsInfo()->memtotal;
   MEMMAN* memman = (MEMMAN*)MEMMAN_ADDR;
   char s[60];
-  sprintf(s, "total %4dMB\nfree %5dKB\n",
+  sprintf(s, "total %4udMB\nfree %5dKB\n",
           memtotal / (1024 * 1024),
           memman_total(memman) / 1024);
   cons_putstr0(cons, s);
