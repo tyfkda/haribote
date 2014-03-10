@@ -46,6 +46,7 @@ static void cons_cls(CONSOLE* cons) {
   SHEET* sheet = cons->sheet;
   boxfill8(sheet->buf, sheet->bxsize, cons->bgColor, 8, 28, 8 + CONSOLE_NX * 8, 28 + CONSOLE_NY * 16);
   sheet_refresh(cons->shtctl, sheet, 8, 28, 8 + CONSOLE_NX * 8, 28 + CONSOLE_NY * 16);
+  cons->cur_x = 8;
   cons->cur_y = 28;
 }
 
@@ -100,8 +101,6 @@ void cons_putstr1(CONSOLE* cons, const char* s, int l) {
 static void cons_runcmd(const char* cmdline, CONSOLE* cons) {
   if (strcmp(cmdline, "mem") == 0 && cons->sheet != NULL) {
     cmd_mem(cons);
-  } else if (strcmp(cmdline, "cls") == 0 && cons->sheet != NULL) {
-    cons_cls(cons);
   } else if (strcmp(cmdline, "dir") == 0 && cons->sheet != NULL) {
     cmd_dir(cons);
   } else if (strcmp(cmdline, "exit") == 0) {
@@ -222,6 +221,17 @@ static void handle_key_event(CONSOLE* cons, char* cmdline, unsigned char key) {
 
       cons->cmdlen = cons->cmdp;
       cmdline[cons->cmdlen] = ' ';
+    }
+    break;
+  case 0x0c:  // CTRL-L : Erase screen.
+    cons_cls(cons);
+    putPrompt(cons);
+    {
+      int cmdp = cons->cmdp;
+      cons->cmdp = 0;
+      draw_cmdline(cons, cmdline);
+      for (int i = 0; i < cmdp; ++i)
+        cursor_right(cons);
     }
     break;
   default:  // Normal character.
