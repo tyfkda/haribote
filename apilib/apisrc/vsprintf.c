@@ -55,6 +55,7 @@ int vsprintf(char *str, const char *fmt, va_list ap) {
     case '6': case '7': case '8': case '9':
       keta = *fmt - '0';
       goto again;
+    case '.': goto again;  // TODO: Handle fraction specifier.
     case 'u': sign = FALSE; goto again;
     case 'd':
       if (sign)
@@ -75,13 +76,17 @@ int vsprintf(char *str, const char *fmt, va_list ap) {
     case 'f':
       {
         double x = va_arg(ap, double);
+        if (x < 0) {
+          *dst++ = '-';
+          x = -x;
+        }
         int i = (int)x;
         q = int2num(&buf[sizeof(buf)], i, 10, hextableLower, padding, keta);
         while (*q != '\0')
           *dst++ = *q++;
         *dst++ = '.';
         double y = (x - i) * 1000000;
-        int j = (y >= 0) ? (int)(y + 0.5) : (int)(-y + 0.5);
+        int j = (int)(y + 0.5);
         q = int2num(&buf[sizeof(buf)], j, 10, hextableLower, '0', 6);
       }
       break;
