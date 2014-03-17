@@ -18,6 +18,7 @@
 
 void init_pic(void);
 
+void asm_inthandler00(void);
 void asm_inthandler07(void);
 void asm_inthandler0c(void);
 void asm_inthandler0d(void);

@@ -3,7 +3,15 @@
 #include "mtask.h"
 #include "stdio.h"
 
-// IRQ-07 : FPU exception.
+// Interrupt 00 : Division by zero.
+int* inthandler00() {
+  TASK* task = task_now();
+  CONSOLE* cons = task->cons;
+  cons_putstr0(cons, "\nINT 00 :\n Division by zero.\n");
+  return &task->tss.esp0;  // Abort
+}
+
+// Interrupt 07 : FPU exception.
 int* inthandler07(int *esp) {
   (void)esp;
   TASK *now = task_now();

@@ -8,8 +8,8 @@
 .globl	load_tr
 .globl	farjmp, farcall, start_app
 .globl	asm_cons_putchar, asm_hrb_api, asm_end_app
-.globl	asm_inthandler07, asm_inthandler0c, asm_inthandler0d, asm_inthandler20, asm_inthandler21, asm_inthandler2c
-.extern inthander07, inthandler0c, inthandler0d, inthandler20, inthandler21, inthandler2c
+.globl	asm_inthandler00, asm_inthandler07, asm_inthandler0c, asm_inthandler0d, asm_inthandler20, asm_inthandler21, asm_inthandler2c
+.extern inthander00, inthander07, inthandler0c, inthandler0d, inthandler20, inthandler21, inthandler2c
 
 .macro asm_inthandler	c_inthandler
 	push	%es
@@ -167,6 +167,10 @@ store_cr0:
 load_tr:
 	LTR	4(%esp)		# tr
 	ret
+
+asm_inthandler00:
+	asm_inthandler_with_exit inthandler00
+	iret
 
 asm_inthandler07:
 	asm_inthandler_with_exit inthandler07
