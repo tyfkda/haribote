@@ -136,7 +136,7 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   case API_MALLOC:
     {
       MEMMAN* memman = (MEMMAN*)(ecx + ds_base);
-      int size = (eax + 0x0f) & -16;  // Align with 16 bytes.
+      size_t size = (eax + 0x0f) & -16;  // Align with 16 bytes.
       reg[7] = (int)memman_alloc(memman, size);
     }break;
   case API_FREE:
