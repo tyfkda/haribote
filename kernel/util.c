@@ -178,7 +178,8 @@ char cmd_app(CONSOLE* cons, const char* cmdline) {
   }
 
   // Clear .bss area.
-  memset(data + header.esp + header.dataSize, 0x00, header.segSize - (header.esp + header.dataSize));
+  size_t bssSize = (header.heapAdr - header.dataAdr) - header.dataSize;
+  memset(data + header.esp + header.dataSize, 0x00, bssSize);
 
   TASK* task = task_now();
   task->ds_base = (int)data;  // Store data segment address.
