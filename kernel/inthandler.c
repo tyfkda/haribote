@@ -53,10 +53,13 @@ int* inthandler0c(int* esp) {
   return &task->tss.esp0;  // Abort
 }
 
-// IRQ-0d : General protected exception.
-int* inthandler0d(void) {
+// Interrupt 0d : General protected exception.
+int* inthandler0d(int* esp) {
   TASK* task = task_now();
   CONSOLE* cons = task->cons;
   cons_putstr0(cons, "\nINT 0D :\n General Protected Exception.\n");
+  char s[30];
+  sprintf(s, "EIP = %08x\n", esp[11]);
+  cons_putstr0(cons, s);
   return &task->tss.esp0;  // Abort
 }
