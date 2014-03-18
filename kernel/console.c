@@ -44,10 +44,10 @@ static void cons_newline(CONSOLE* cons, int* pcurX, int* pcurY) {
 
 static void cons_cls(CONSOLE* cons) {
   SHEET* sheet = cons->sheet;
-  boxfill8(sheet->buf, sheet->bxsize, cons->bgColor, 8, 28, 8 + CONSOLE_NX * 8, 28 + CONSOLE_NY * 16);
-  sheet_refresh(cons->shtctl, sheet, 8, 28, 8 + CONSOLE_NX * 8, 28 + CONSOLE_NY * 16);
-  cons->cur_x = 8;
-  cons->cur_y = 28;
+  boxfill8(sheet->buf, sheet->bxsize, cons->bgColor, X0, Y0, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
+  sheet_refresh(cons->shtctl, sheet, X0, Y0, X0 + CONSOLE_NX * FONTW, Y0 + CONSOLE_NY * FONTH);
+  cons->cur_x = X0;
+  cons->cur_y = Y0;
 }
 
 void cons_putchar_at(CONSOLE* cons, int chr, char move, char neg, int* pcurX, int* pcurY) {
@@ -279,9 +279,9 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet) {
     cons.timer = timer_alloc();
     timer_init(cons.timer, &task->fifo, 1);
     timer_settime(cons.timer, 50);
+    cons_cls(&cons);
   }
 
-  cons_cls(&cons);
   putPrompt(&cons);
 
   for (;;) {
@@ -352,7 +352,7 @@ SHEET* open_console(SHTCTL* shtctl) {
   unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, CONSOLE_WIDTH * CONSOLE_HEIGHT);
   sheet_setbuf(sheet, buf, CONSOLE_WIDTH, CONSOLE_HEIGHT, -1);
   make_window8(sheet, "console", FALSE);
-  make_textbox8(sheet, X0, Y0, CONSOLE_NX * 8, CONSOLE_NY * 16, COL8_BLACK);
+  make_textbox8(sheet, X0, Y0, CONSOLE_NX * FONTW, CONSOLE_NY * FONTH, COL8_BLACK);
   sheet->task = open_constask(shtctl, sheet);
   sheet->flags |= 0x20;
   return sheet;
