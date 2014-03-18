@@ -1,6 +1,7 @@
 #include "stdlib.h"
 #include "apilib.h"
 #include "stddef.h"
+#include "stdio.h"
 
 #define HEADER_SIZE  (16)
 
@@ -9,6 +10,9 @@ void* malloc(size_t size) {
   if (p != NULL) {
     *((int*)p) = size;
     p += HEADER_SIZE;
+  } else {
+    fprintf(stderr, "malloc failed! (size=%ud)\n", size);
+    exit(1);
   }
   return p;
 }
