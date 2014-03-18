@@ -21,7 +21,7 @@
 	# 0x105 : 1024 x  768 x 8bit color
 	# 0x107 : 1280 x 1024 x 8bit color
 	# 0x111 :  640 x  480 x 16bit color
-	# 0x112 :  640 x  480 x 16bit color
+	# 0x112 :  640 x  480 x 24bit color
 
 start:
 	mov	$0x9000, %ax
