@@ -71,6 +71,7 @@ void cons_putchar_at(CONSOLE* cons, int chr, char move, char neg, int* pcurX, in
     cons_newline(cons, pcurX, pcurY);
     break;
   case 0x0d:  // Carrige return.
+    *pcurX = 8;  // TODO: Consider multiple lines.
     break;
   default:  // Normal character.
     if (cons->sheet != NULL)
