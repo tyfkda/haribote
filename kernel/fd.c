@@ -253,17 +253,29 @@ void fd_seek(FDHANDLE* fh, int offset, int origin) {
 #include "int.h"
 #include "mtask.h"
 
-static volatile int irq6;
+typedef unsigned char  u_int8_t;
+typedef unsigned int   u_int32_t;
+
+static u_int32_t fdc_interrupt = 0; // for 0x26 FDC interrupt
+
+static int fdc_chk_interrupt() {
+  return fdc_interrupt;
+}
+
+static u_int32_t fdc_wait_interrupt() {
+  while (!fdc_chk_interrupt());
+  return TRUE;
+}
+
+static void fdc_clear_interrupt() {
+  fdc_interrupt = 0;
+}
 
 // IRQ-06 : FDC
 int* inthandler26(int *esp) {
   (void)esp;
-  irq6 = TRUE;
+  ++fdc_interrupt;
   io_out8(PIC0_OCW2, 0x66);  // Notify IRQ-06 recv finish to PIC0
-
-CONSOLE* cons = task_now()->cons;
-cons_putstr0(cons, "IRQ6\n");
-
   return 0;
 }
 
@@ -324,15 +336,18 @@ static void sysPrintBin(int x) {
 #define FDC_DIR  0x3f7// FDC digital input register (R)
 #define FDC_CCR  0x3f7// FDC configuration control register (W)
 
-#define MSR_RQM  0x80
-#define MSR_DIO  0x40
+#define MSR_RQM    0x80
+#define MSR_DIO    0x40
+#define MSR_BUSY   0x10
+#define MSR_READY  0
 
 /* FDC CMD */
-#define CMD_SPECIFY     0x03
-#define CMD_RECALIBRATE 0x07
-#define CMD_SIS         0x08  // SIS = SENSE INTERRUPT STATUS
-#define CMD_SEEK        0x0f
-#define CMD_READ        0x46  //MT=0,MF=1,SK=0
+#define CMD_SPECIFY         0x03
+#define CMD_RECALIBRATE     0x07
+#define CMD_SENSE_INT_STS   0x08
+#define CMD_SEEK            0x0f
+#define CMD_READ            0x46  //MT=0,MF=1,SK=0
+#define CMD_WRITE           0x45 //MT=0,MF=1,SK=0
 
 /*
   == FDC_CMD_SUB format ==
@@ -344,10 +359,6 @@ static void sysPrintBin(int x) {
   This cmd is used as the second byte of almost all command.
 */
 #define CMD_SUB 0x00 //HD=0, US1 & US0 = 0
-
-
-typedef unsigned char  u_int8_t;
-typedef unsigned int   u_int32_t;
 
 static u_int8_t dma_databuf[DMA_DATABUF];
 
@@ -404,6 +415,23 @@ static void init_dma_r() {
   fdc_dma_start();
 }
 
+static void init_dma_w() {
+  fdc_dma_stop();
+
+  out8(DMA_MSR_CLR_SEC, 0x00);
+  out8(DMA_CLR_FLP_SEC, 0);
+
+  out8(DMA_MOD_SEC, 0x4a);  // memory >> I/O
+  disableInterrupt();
+  out8(DMA_ADD_SEC, dma_trans.addr >> 0);
+  out8(DMA_ADD_SEC, dma_trans.addr >> 8);
+  out8(DMA_TOP, dma_trans.addr >> 16);
+  out8(DMA_CNT_SEC, dma_trans.count >> 0);
+  out8(DMA_CNT_SEC, dma_trans.count >> 8);
+  enableInterrupt();
+  fdc_dma_start();
+}
+
 // @return < 0 : Retry fault.
 static int fdc_wait_msrStatus(u_int8_t mask, u_int8_t expected) {
   for (int count = 0; count < FDC_RESULT_MAXCOUNT; ++count) {
@@ -414,11 +442,66 @@ static int fdc_wait_msrStatus(u_int8_t mask, u_int8_t expected) {
   return -1;
 }
 
-static void fdc_cmd(const u_int8_t* cmd, const int length) {
+static int fdc_cmd(const u_int8_t* cmd, const int length) {
+  //sysPrints("[FDC] cmd busy check.\n");
+  if (!fdc_wait_msrStatus(MSR_BUSY, MSR_READY)) {
+    sysPrints("[FDC] cmd busy check error.\n");
+    return FALSE;
+  }
+  //sysPrints("[FDC] cmd busy check [OK]\n");
+
+  //sysPrints("[FDC] cmd out and msr check.\n");
   for (int i = 0; i < length; ++i) {
-    fdc_wait_msrStatus(MSR_RQM | MSR_DIO, MSR_RQM);
+    if (!fdc_wait_msrStatus(MSR_RQM | MSR_DIO, MSR_RQM)) {
+      sysPrints("[FDC] msr RQM|DIO error\n");
+      return FALSE;
+    }
     out8(FDC_DAT, cmd[i]);
   }
+  //sysPrints("[FDC] cmd out and msr check [OK]\n");
+
+  return TRUE;
+}
+
+// FDC Read Result Phase
+static int fdc_read_results() {
+  fdc_results.status_count = 0;
+
+  if (fdc_wait_msrStatus(MSR_RQM | MSR_DIO, MSR_RQM | MSR_DIO) < 0) {
+    sysPrints("fdc result phase error 1\n");
+    return FALSE;
+  }
+
+  u_int8_t* msr = &fdc_results.status[0];
+  for (int i = 0; ; ++i) {
+    *msr++ = in8(FDC_DAT);
+    ++fdc_results.status_count;
+
+    int status = fdc_wait_msrStatus(MSR_RQM, MSR_RQM);
+    if (status < 0) {
+      sysPrints("fdc result phase error 2\n");
+      return FALSE;
+    }
+    if (!(status & MSR_DIO)) {
+      char s[30];
+      sprintf(s, "count: %d\n", i);
+CONSOLE* cons = task_now()->cons;
+      cons_putstr0(cons, s);
+      return TRUE;
+    }
+  }
+}
+
+static int fdc_sense_interrupt() {
+  static const u_int8_t cmd[] = { CMD_SENSE_INT_STS };
+
+  fdc_clear_interrupt();
+  if (fdc_cmd(cmd, sizeof(cmd)) != TRUE) {
+    sysPrints("[FDC] sense interrupt status cmd error\n");
+    return FALSE;
+  }
+  fdc_read_results();
+  return TRUE;
 }
 
 static void fdc_motor_on() {
@@ -431,21 +514,27 @@ static void fdc_motor_off() {
 
 static int fdc_recalibrate() {
   static const u_int8_t cmd[] = { CMD_RECALIBRATE, CMD_SUB };
-  static const u_int8_t cmd_sis[] = { CMD_SIS };
-  u_int8_t result[FDC_RESULT_MAXCOUNT];
-  (void)result;
 
-  fdc_cmd(cmd, sizeof(cmd));
+  fdc_clear_interrupt();
 
-  // get result
-  fdc_cmd(cmd_sis, sizeof(cmd_sis));
-  for (int i = 0; i < FDC_RESULT_MAXCOUNT; ++i) {
-    u_int8_t status = in8(FDC_MSR);
-    if ((status & MSR_DIO) == 0)
-      break;
-    result[i] = in8(FDC_DAT);
+  //sysPrints("[FDC] Recalibrate Cmd.\n");
+  if (!fdc_cmd(cmd, sizeof(cmd))) {
+    sysPrints("[FDC] Recalibrate Cmd error\n");
+    return FALSE;
   }
-  return fdc_wait_msrStatus(0x10, 0x00) >= 0;
+  //sysPrints("[FDC] Recalibrate Cmd [OK]\n");
+
+  if (!fdc_wait_interrupt())
+    sysPrints("[FDC] wait interrupt error\n");
+
+  /* get result */
+  fdc_sense_interrupt();
+
+  if (!fdc_wait_msrStatus(MSR_BUSY, MSR_READY)) {
+    sysPrints("[FDC] Recalibrate  wait fail\n");
+    return FALSE;
+  }
+  return TRUE;
 }
 
 static void fdc_specify() {
@@ -456,6 +545,7 @@ static void fdc_specify() {
     0xc1,  // ?
     0x10   // ?
   };
+  fdc_clear_interrupt();
   fdc_cmd(specify_cmd, sizeof(specify_cmd));
 
   fdc_motor_off();
@@ -476,47 +566,58 @@ void init_fdc() {
   fdc_specify();
 }
 
-// FDC Read Result Phase
-static int fdc_read_results() {
-  if (fdc_wait_msrStatus(MSR_RQM | MSR_DIO, MSR_RQM | MSR_DIO) < 0) {
-    sysPrints("fdc result phase error 1\n");
+static int fdc_seek(u_int8_t track) {
+  u_int8_t cmd[] = {
+    CMD_SEEK,       // 0x0f
+    0,
+    track
+  };
+
+  fdc_clear_interrupt();
+
+  //sysPrints("[FDC] seek cmd check.\n");
+  if (!fdc_cmd(cmd, sizeof(cmd))) {
+    sysPrints("[FDC] seek cmd error\n");
+    return FALSE;
+  }
+  //sysPrints("[FDC] seek cmd check [OK]\n");
+
+  if (!fdc_wait_interrupt()) {
+    sysPrints("[FDC][SEEK] wait interrupt error\n");
     return FALSE;
   }
 
-  u_int8_t* msr = &fdc_results.status[0];
-  for (int i = 0; ; ++i) {
-    *msr++ = in8(FDC_DAT);
-    int status = fdc_wait_msrStatus(MSR_RQM, MSR_RQM);
-    if (status < 0) {
-      sysPrints("fdc result phase error 2\n");
-      return FALSE;
-    }
-    if (!(status & MSR_DIO)) {
-      char s[30];
-      sprintf(s, "count: %d\n", i);
-CONSOLE* cons = task_now()->cons;
-      cons_putstr0(cons, s);
-      return TRUE;
-    }
+  /* get result */
+  if (!fdc_sense_interrupt()) {
+    sysPrints("[FDC][SEEK] SIS error\n");
+    return FALSE;
   }
+
+  return TRUE;
 }
 
-char* fdc_read(int head, int track, int sector, int length) {
-
+void* fdc_read(int head, int track, int sector) {
 CONSOLE* cons = task_now()->cons;
-cons_putstr0(cons, "motor_on\n");
-  fdc_motor_on();
-
 cons_putstr0(cons, "recalibrate\n");
-  fdc_recalibrate();
+  if (!fdc_recalibrate()) {
+    sysPrints("[FDC][READ] recalibrate error\n");
+    return NULL;
+  }
+  if (!fdc_seek(track)) {
+    sysPrints("[FDC][READ] seek error\n");
+    return NULL;
+  }
+
+  init_dma_r();
+
   u_int8_t cmd[] = {
-    0x6 | 0x40,  // CMD_READ | MODE_MFM
+    CMD_READ,
     head << 2,   // head
     track,       // track
     head,        // head
     sector,      // sector
-    length,      // length
-    sector,      // end of sector
+    0x2,         // sector length (0x2 = 512byte)
+    0x12,        // end of track (EOT)
     0x1b,        // dummy GSR
     0            // dummy STP
   };
@@ -524,10 +625,8 @@ cons_putstr0(cons, "recalibrate\n");
 cons_putstr0(cons, "move\n");
   fdc_cmd(cmd, sizeof(cmd));
   fdc_dma_stop();
-cons_putstr0(cons, "read_result\n");
   fdc_read_results();
 
-cons_putstr0(cons, "motor_off\n");
   fdc_motor_off();
 
   // write the binary which we get from DMA
@@ -541,4 +640,57 @@ cons_putstr0(cons, "motor_off\n");
   }
 
   return NULL;
+}
+
+int fdc_write(void* buf, int head, int track, int sector) {
+  sysPrints("FDC_WRITE\n");
+  if (!fdc_recalibrate()) {
+    sysPrints("[FDC][WRITE] recalibrate error\n");
+    return FALSE;
+  }
+
+  sysPrints("SEEK\n");
+  if (!fdc_seek(track)) {
+    sysPrints("[FDC][WRITE] seek error\n");
+    return FALSE;
+  }
+
+  //for (int i = 0; buf[i] != '\0' || i < 512; ++i)
+  //  dma_databuf[i] = buf[i];
+  memcpy(dma_databuf, buf, 512);
+
+  init_dma_w();
+
+  u_int8_t cmd[] = {
+    CMD_WRITE,
+    head << 2,      // head
+    track,          // track
+    head,           // head
+    sector,         // sector
+    0x2,            // sector length (0x2 = 512byte)
+    0x12,           // end of track (EOT)
+    0x1b,           // dummy GSR
+    0               // dummy STP
+  };
+
+  fdc_clear_interrupt();
+
+  sysPrints("WRITE\n");
+  if (!fdc_cmd(cmd, sizeof(cmd))) {
+    sysPrints("[FDC][WRITE] cmd error\n");
+    return FALSE;
+  }
+
+  if (!fdc_wait_interrupt()) {
+    sysPrints("[FDC][WRITE] wait interrupt error\n");
+    return FALSE;
+  }
+
+  if (!fdc_read_results()) {
+    sysPrints("[FDC][WRITE] read result error\n");
+    return FALSE;
+  }
+  sysPrints("WRITE OK\n");
+
+  return TRUE;
 }

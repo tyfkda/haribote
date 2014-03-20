@@ -27,6 +27,7 @@ int fd_delete(const char* filename);
 short get_next_cluster(short cluster);
 
 void init_fdc();
-char* fdc_read(int head, int track, int sector, int length);
+void* fdc_read(int head, int track, int sector);
+int fdc_write(void* buf, int head, int track, int sector);
 
 #endif
