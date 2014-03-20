@@ -272,8 +272,7 @@ static void fdc_clear_interrupt() {
 }
 
 // IRQ-06 : FDC
-int* inthandler26(int *esp) {
-  (void)esp;
+int* inthandler26() {
   ++fdc_interrupt;
   io_out8(PIC0_OCW2, 0x66);  // Notify IRQ-06 recv finish to PIC0
   return 0;
@@ -482,13 +481,8 @@ static int fdc_read_results() {
       sysPrints("fdc result phase error 2\n");
       return FALSE;
     }
-    if (!(status & MSR_DIO)) {
-      char s[30];
-      sprintf(s, "count: %d\n", i);
-CONSOLE* cons = task_now()->cons;
-      cons_putstr0(cons, s);
+    if (!(status & MSR_DIO))
       return TRUE;
-    }
   }
 }
 
@@ -555,13 +549,10 @@ void init_fdc() {
   init_dma();
   dma_trans.addr = (u_int32_t)&dma_databuf[0];
   dma_trans.count = 512;
-  init_dma_r();
 
   out8(FDC_DOR, 0x0);
   out8(FDC_CCR, 0x0);
   out8(FDC_DOR, 0xc);
-
-  fdc_motor_on();
 
   fdc_specify();
 }
@@ -597,18 +588,19 @@ static int fdc_seek(u_int8_t track) {
 }
 
 void* fdc_read(int head, int track, int sector) {
-CONSOLE* cons = task_now()->cons;
-cons_putstr0(cons, "recalibrate\n");
+  init_dma_r();
+
+  fdc_motor_on();
+
   if (!fdc_recalibrate()) {
     sysPrints("[FDC][READ] recalibrate error\n");
     return NULL;
   }
+
   if (!fdc_seek(track)) {
     sysPrints("[FDC][READ] seek error\n");
     return NULL;
   }
-
-  init_dma_r();
 
   u_int8_t cmd[] = {
     CMD_READ,
@@ -622,7 +614,6 @@ cons_putstr0(cons, "recalibrate\n");
     0            // dummy STP
   };
 
-cons_putstr0(cons, "move\n");
   fdc_cmd(cmd, sizeof(cmd));
   fdc_dma_stop();
   fdc_read_results();
@@ -643,6 +634,9 @@ cons_putstr0(cons, "move\n");
 }
 
 int fdc_write(void* buf, int head, int track, int sector) {
+  init_dma_w();
+  fdc_motor_on();
+
   sysPrints("FDC_WRITE\n");
   if (!fdc_recalibrate()) {
     sysPrints("[FDC][WRITE] recalibrate error\n");
@@ -658,8 +652,6 @@ int fdc_write(void* buf, int head, int track, int sector) {
   //for (int i = 0; buf[i] != '\0' || i < 512; ++i)
   //  dma_databuf[i] = buf[i];
   memcpy(dma_databuf, buf, 512);
-
-  init_dma_w();
 
   u_int8_t cmd[] = {
     CMD_WRITE,
@@ -692,5 +684,6 @@ int fdc_write(void* buf, int head, int track, int sector) {
   }
   sysPrints("WRITE OK\n");
 
+  fdc_motor_off();
   return TRUE;
 }
