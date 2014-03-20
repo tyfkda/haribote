@@ -283,7 +283,7 @@ void HariMain(void) {
   init_keyboard(&fifo, 256);
   MOUSE_DEC mdec;
   enable_mouse(&fifo, 512, &mdec);
-  io_out8(PIC0_IMR, 0xf8);  // Enable PIT, PIC1 and keyboard.
+  io_out8(PIC0_IMR, 0xb8);  // Enable PIT, PIC1, keyboard and FDC.
   io_out8(PIC1_IMR, 0xef);  // Enable mouse.
 
   osinfo->memtotal = memtest(0x00400000, 0xbfffffff);

@@ -24,6 +24,7 @@ void asm_inthandler0c(void);
 void asm_inthandler0d(void);
 void asm_inthandler20(void);
 void asm_inthandler21(void);
+void asm_inthandler26(void);
 void asm_inthandler2c(void);
 void asm_hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax);
 void asm_end_app();
