@@ -4,8 +4,6 @@
 
 extern int main(int argc, char* argv[]);
 
-typedef void (*InitFunc)(void);
-
 /* These magic symbols are provided by the linker.  */
 extern void (*__preinit_array_start []) (void) __attribute__((weak));
 extern void (*__preinit_array_end []) (void) __attribute__((weak));
@@ -47,10 +45,10 @@ void HariMain(void) {
     *p++ = '\0';
   }
 
-  for (InitFunc* pp = __preinit_array_start; pp < __preinit_array_end; ++pp)
+  for (void (**pp)() = __preinit_array_start; pp < __preinit_array_end; ++pp)
     (**pp)();
   // TODO: Init.
-  for (InitFunc* pp = __init_array_start; pp < __init_array_end; ++pp)
+  for (void (**pp)() = __init_array_start; pp < __init_array_end; ++pp)
     (**pp)();
 
   int result = main(argc, argv);
