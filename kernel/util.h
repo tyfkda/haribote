@@ -15,4 +15,7 @@ void cmd_start(const char* cmdline);
 void cmd_ncst(const char* cmdline);
 char cmd_app(struct CONSOLE* cons, const char* cmdline);
 
+void cmd_fat(struct CONSOLE* cons);
+void cmd_dir2(struct CONSOLE* cons);
+
 #endif

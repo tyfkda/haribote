@@ -24,4 +24,6 @@ void fd_seek(FDHANDLE* fh, int offset, int origin);
 void fd_close(FDHANDLE* fh);
 int fd_delete(const char* filename);
 
+short get_next_cluster(short cluster);
+
 #endif

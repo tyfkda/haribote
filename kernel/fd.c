@@ -13,7 +13,7 @@
 #define DISK_FAT           ((unsigned char*)(ADR_DISKIMG + 0x000200))
 #define DISK_CLUSTER_DATA  ((unsigned char*)(ADR_DISKIMG + 0x003e00))
 
-static short get_next_cluster(short cluster) {
+short get_next_cluster(short cluster) {
   const unsigned char* p = DISK_FAT + (cluster >> 1) * 3;
   if ((cluster & 1) == 0) {
     return (p[0] | p[1] << 8) & 0xfff;
@@ -33,10 +33,20 @@ static void set_next_cluster(short cluster, short next) {
   }
 }
 
+static void deleteFatClusters(short startCluster) {
+  for (short cluster = startCluster; cluster < 0xff0; ) {
+    short next = get_next_cluster(cluster);
+    set_next_cluster(cluster, 0x000);  // Free
+    cluster = next;
+  }
+}
+
 void fd_close(FDHANDLE* fh) {
   if (fh->modified) {
-    if (fh->cluster > 0)
+    if (fh->cluster > 0) {
+      deleteFatClusters(fh->cluster);
       set_next_cluster(fh->cluster, 0xfff);  // End mark.
+    }
     fh->finfo->size = fh->pos;
 
     // Update timestamp.
@@ -110,11 +120,7 @@ int fd_delete(const char* filename) {
     return FALSE;
 
   finfo->name[0] = 0xe5;  // Delete mark.
-  for (short cluster = finfo->clustno; cluster < 0xff0; ) {
-    short next = get_next_cluster(cluster);
-    set_next_cluster(cluster, 0x000);  // Free
-    cluster = next;
-  }
+  deleteFatClusters(finfo->clustno);
   return TRUE;
 }
 

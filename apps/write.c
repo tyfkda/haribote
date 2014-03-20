@@ -1,31 +1,31 @@
 #include "stdio.h"
+#include "stdlib.h"
 
-char buf[256];
-
-void write1() {
-  int i;
-  for (i = 0; i <= 'z' - '@'; ++i)
-    buf[i] = i + '@';
-  FILE* fp = fopen("test.txt", "w");
-  if (fp == NULL) {
-    printf("Cannot open file\n");
-    return;
+int main(int argc, char* argv[]) {
+  const char* fn = "foo";
+  int len = 256;
+  if (argc >= 2) {
+    fn = argv[1];
+    if (argc >= 3) {
+      len = atoi(argv[2]);
+    }
   }
 
-  printf("FilePointer: %p\n", fp);
-  fwrite(buf, 1, i, fp);
+  FILE* fp = fopen(fn, "wb");
+  if (fp == NULL) {
+    fprintf(stderr, "Cannot open file: %s\n", fn);
+    return 1;
+  }
 
-  fprintf(fp, "\nhoge:%d\n", 123);
+  char buf[256];
+  for (int i = 0; i < 256; ++i)
+    buf[i] = i;
+
+  for (; len >= 256; len -= 256)
+    fwrite(buf, 1, 256, fp);
+  if (len > 0)
+    fwrite(buf, 1, len, fp);
 
   fclose(fp);
-}
-
-void write2() {
-  fprintf(stdout, "fuga:%d\n", 456);
-}
-
-int main() {
-  write1();
-  write2();
   return 0;
 }

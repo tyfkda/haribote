@@ -135,6 +135,40 @@ void cmd_ncst(const char* cmdline) {
   fifo_put(fifo, 10 + 256);  // Enter.
 }
 
+void cmd_fat(struct CONSOLE* cons) {
+  char s[10];
+  for (int j = 0; j < 16; ++j) {
+    sprintf(s, "%04x:", j * 8);
+    cons_putstr0(cons, s);
+    for (int i = 0; i < 8; ++i) {
+      short c = get_next_cluster(j * 8 + i);
+      sprintf(s, " %03x", c);
+      cons_putstr0(cons, s);
+    }
+    cons_putstr0(cons, "\n");
+  }
+}
+
+void cmd_dir2(CONSOLE* cons) {
+  FDINFO *finfo = (FDINFO*)(ADR_DISKIMG + 0x002600);
+  for (int i = 0; i < 224; ++i) {
+    FDINFO* p = &finfo[i];
+    if (p->name[0] == 0x00)  // End of table.
+      break;
+    if (p->name[0] == 0xe5)  // Deleted file.
+      continue;
+    if ((p->type & 0x18) == 0) {
+      char s[30];
+      sprintf(s, "filename.ext   %3x\n", p->clustno);
+      memcpy(&s[0], p->name, 8);
+      memcpy(&s[9], p->ext, 3);
+      if (p->ext[0] == ' ')  // No file extension: remove dot.
+        s[8] = ' ';
+      cons_putstr0(cons, s);
+    }
+  }
+}
+
 char cmd_app(CONSOLE* cons, const char* cmdline) {
   char name[13];
   int i;

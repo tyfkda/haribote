@@ -110,6 +110,10 @@ static void cons_runcmd(const char* cmdline, CONSOLE* cons) {
     cmd_start(cmdline);
   } else if (strncmp(cmdline, "ncst ", 5) == 0) {
     cmd_ncst(cmdline);
+  } else if (strcmp(cmdline, "fat") == 0) {
+    cmd_fat(cons);
+  } else if (strcmp(cmdline, "dir2") == 0) {
+    cmd_dir2(cons);
   } else if (cmdline[0] != '\0') {
     if (!cmd_app(cons, cmdline))
       cons_putstr0(cons, "Bad command.\n");
