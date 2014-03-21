@@ -35,6 +35,7 @@ int fprintf(FILE* stream, const char* format, ...);
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int fgetc(FILE *stream);
+char *fgets(char *s, int size, FILE *stream);
 
 //int putc(int c, FILE *stream);
 #define putc(c, stream)  fputc(c, stream)
