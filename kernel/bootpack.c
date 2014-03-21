@@ -2,6 +2,7 @@
 #include "bootpack.h"
 #include "console.h"
 #include "dsctbl.h"
+#include "fd.h"
 #include "fifo.h"
 #include "graphics.h"
 #include "int.h"
@@ -296,6 +297,8 @@ void HariMain(void) {
 
   osinfo->binfo = (BOOTINFO*)ADR_BOOTINFO;
   osinfo->shtctl = shtctl_init(memman, osinfo->binfo->vram, osinfo->binfo->scrnx, osinfo->binfo->scrny);
+
+  init_fdc();
 
   TASK* task_a = task_init(memman);
   fifo.task = task_a;

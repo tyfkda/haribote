@@ -116,8 +116,6 @@ static void cons_runcmd(const char* cmdline, CONSOLE* cons) {
     cmd_dir2(cons);
   } else if (strcmp(cmdline, "fdread") == 0) {
     // FDC Test
-    cons_putstr0(cons, "init_fdc\n");
-    init_fdc();
     cons_putstr0(cons, "fdc_read\n");
     fdc_read(0, 0, 1);
   } else if (strcmp(cmdline, "fdwrite") == 0) {
