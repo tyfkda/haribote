@@ -542,16 +542,38 @@ static void set_next_cluster(short cluster, short next) {
   }
 }
 
-static void deleteFatClusters(short startCluster) {
+// Returns updated clusters (represented in 9 bits, 9 comes from (0x1200 - 0x200) / 512)
+static int deleteFatClusters(short startCluster) {
+  int updatedClusterBits = 0;
   for (short cluster = startCluster; cluster < 0xff0; ) {
     short next = get_next_cluster(cluster);
     set_next_cluster(cluster, 0x000);  // Free
+    updatedClusterBits |= 1 << (cluster / CLUSTER_SIZE);
     cluster = next;
   }
+  return updatedClusterBits;
+}
+
+static int writeDirTable(FDINFO* finfo) {
+  int filePos = finfo - FINFO_TOP;  // File position in the directory table.
+  int offset = filePos * sizeof(FDINFO) / CLUSTER_SIZE;
+  return writeSector(offset + CLUSTNO_ROOTDIR);
+}
+
+static int writeFat(int fatBits) {
+  const int FAT_CLUSTERS = 9;
+  // Write FAT.
+  for (int i = 0; i < FAT_CLUSTERS; ++i) {
+    if (!(fatBits & (1 << i)))
+      continue;
+    if (!writeSector(i + CLUSTNO_FAT1))
+      return FALSE;
+  }
+  return TRUE;
 }
 
 // Write back file entry from memory to floppy disk.
-static int writeBack(FDHANDLE* fh) {
+static int writeBack(FDHANDLE* fh, int fatBits) {
   // Write file body.
   for (short cluster = fh->finfo->clustno; ;) {
     if (!writeSector(cluster + CLUSTNO_ENTITY))
@@ -562,31 +584,19 @@ static int writeBack(FDHANDLE* fh) {
   }
 
   // Write directory entry.
-  {
-    int filePos = fh->finfo - FINFO_TOP;  // File position in the directory table.
-    int offset = filePos * sizeof(FDINFO) / CLUSTER_SIZE;
-    if (!writeSector(offset + CLUSTNO_ROOTDIR))
-      return FALSE;
-  }
+  writeDirTable(fh->finfo);
 
   // Detect which area in the FAT is updated.
-  const int FAT_CLUSTERS = 9;
-  short fatWritten = 0;  // 9 bit: sizeof(FAT) = 0x1200 = 9 clusters.
   for (short cluster = fh->finfo->clustno; ; cluster = get_next_cluster(cluster)) {
     int p = cluster / 2 * 3 + (cluster & 1);
-    fatWritten |= (1 << (p / CLUSTER_SIZE));
-    fatWritten |= (1 << ((p + 1) / CLUSTER_SIZE));
+    fatBits |= (1 << (p / CLUSTER_SIZE));
+    fatBits |= (1 << ((p + 1) / CLUSTER_SIZE));
     if (cluster >= 0xff0)
       break;
   }
 
-  // Write FAT.
-  for (int i = 0; i < FAT_CLUSTERS; ++i) {
-    if (!(fatWritten & (1 << i)))
-      continue;
-    if (!writeSector(i + CLUSTNO_FAT1))
-      return FALSE;
-  }
+  if (!writeFat(fatBits))
+    return FALSE;
 
   sysPrints("WriteBack succeeded\n");
   return TRUE;
@@ -594,9 +604,10 @@ static int writeBack(FDHANDLE* fh) {
 
 void fd_close(FDHANDLE* fh) {
   if (fh->modified) {
+    int fatBits = 0;
     fh->modified = FALSE;
     if (fh->cluster > 0) {
-      deleteFatClusters(fh->cluster);
+      fatBits = deleteFatClusters(fh->cluster);
       set_next_cluster(fh->cluster, 0xfff);  // End mark.
     }
     fh->finfo->size = fh->pos;
@@ -616,7 +627,7 @@ void fd_close(FDHANDLE* fh) {
       if (!fdc_recalibrate()) {
         sysPrints("[FDC][WRITE] recalibrate error\n");
       } else {
-        if (!writeBack(fh)) {
+        if (!writeBack(fh, fatBits)) {
           sysPrints("WRITE_BACK failed\n");
         }
       }
@@ -689,7 +700,12 @@ int fd_delete(const char* filename) {
     return FALSE;
 
   finfo->name[0] = 0xe5;  // Delete mark.
-  deleteFatClusters(finfo->clustno);
+  int deletedClusterBits = deleteFatClusters(finfo->clustno);
+
+  // Write to FD.
+  writeDirTable(finfo);
+  writeFat(deletedClusterBits);
+
   return TRUE;
 }
 
