@@ -16,6 +16,7 @@ FAT1_ADDRESS = 0x0200
 FAT_BYTES = 0x1200
 FAT2_ADDRESS = 0x1400
 DIR_ADDRESS = 0x2600
+ENTITY_ADDRESS = 0x3e00
 FILEINFO_BYTES = 32
 FILE_COUNT = 224
 CLUSTER_BYTES = 512
@@ -111,8 +112,12 @@ class Fat
     return false
   end
 
-  def put(cluster, value)
+  def put_next(cluster, value)
     @fat[cluster] = value
+  end
+
+  def get_next(cluster)
+    @fat[cluster]
   end
 
   def del(cluster, size)
@@ -214,19 +219,12 @@ class DirInfo
   end
 
   def find(filename)
-    (0...@fileinfos.size).each do |i|
-      fileinfo = @fileinfos[i]
-      break if fileinfo === nil
-      next unless fileinfo
-      if filename == fileinfo.filename
-        return i
-      end
-    end
-    return false
+    index = find_index(filename)
+    return index ? get(index) : false
   end
 
   def del(filename)
-    index = find(filename)
+    index = find_index(filename)
     unless index
       return nil, nil
     end
@@ -249,6 +247,18 @@ class DirInfo
       end
     end
   end
+
+  def find_index(filename)
+    (0...@fileinfos.size).each do |i|
+      fileinfo = @fileinfos[i]
+      break if fileinfo === nil
+      next unless fileinfo
+      if filename == fileinfo.filename
+        return i
+      end
+    end
+    return false
+  end
 end
 
 def format(filename)
@@ -262,7 +272,7 @@ def format(filename)
 end
 
 def write_cluster(f, cluster_no, data)
-  f.seek(0x003e00 + cluster_no * CLUSTER_BYTES)
+  f.seek(ENTITY_ADDRESS + cluster_no * CLUSTER_BYTES)
   f.write(data[0...CLUSTER_BYTES])
 end
 
@@ -286,10 +296,10 @@ def save(filename, target_fn, fat, dirinfo)
     loop do
       cluster_no = fat.find_free_cluster(prev_cluster_no + 1)
       if prev_cluster_no >= 0
-        fat.put(prev_cluster_no, cluster_no)
+        fat.put_next(prev_cluster_no, cluster_no)
       end
       if size <= CLUSTER_BYTES  # Last cluster.
-        fat.put(cluster_no, 0xfff)  # End mark.
+        fat.put_next(cluster_no, 0xfff)  # End mark.
         write_cluster(f, cluster_no, data)
         break
       end
@@ -313,6 +323,28 @@ def delete(image_fn, target_fn)
 
   dirinfo.write
   fat.write
+  return true
+end
+
+def load(image_fn, target_fn, fat)
+  fn = filename83(target_fn)
+  dirinfo = DirInfo.new(image_fn, DIR_ADDRESS, FILE_COUNT)
+  finfo = dirinfo.find(fn)
+  return false unless finfo
+
+  open(image_fn, 'rb') do |f|
+    cluster = finfo.cluster
+    sizeLeft = finfo.size
+    while sizeLeft > 0
+      f.seek(ENTITY_ADDRESS + cluster * CLUSTER_BYTES)
+      size = [sizeLeft, CLUSTER_BYTES].min
+      dat = f.read(size)
+      print dat
+
+      sizeLeft -= size
+      cluster = fat.get_next(cluster)
+    end
+  end
   return true
 end
 
@@ -345,6 +377,13 @@ def main
 
     dirinfo.write
     fat.write
+  when 'load'  # Load file from FD image.
+    target_fn = ARGV.shift
+    fat = Fat.new(image_fn)
+    unless load(image_fn, target_fn, fat)
+      $stderr.puts "Loading '#{target_fn}' failed."
+      exit(1)
+    end
   when 'del'  # Delete file from FD image.
     target_fn = ARGV.shift
     unless delete(image_fn, target_fn)
