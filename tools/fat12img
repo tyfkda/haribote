@@ -320,9 +320,9 @@ def main
   image_fn = ARGV.shift
   command = ARGV.shift
   case command
-  when 'format'
+  when 'format'  # Format.
     format(image_fn)
-  when 'dir'
+  when 'dir'  # Print directry entries.
     dirinfo = DirInfo.new(image_fn, DIR_ADDRESS, FILE_COUNT)
     dirinfo.size.times do |i|
       m = dirinfo.get(i)
@@ -333,7 +333,7 @@ def main
         puts(sprintf("%-8s.%-3s %7d %04d/%02d/%02d %02d:%02d:%02d", m.filename[0...8], m.filename[8...11], m.size, year, mon, day, hour, min, sec))
       end
     end
-  when 'save'
+  when 'save'  # Save file into FD image.
     target_fn = ARGV.shift
     delete(image_fn, target_fn)
     dirinfo = DirInfo.new(image_fn, DIR_ADDRESS, FILE_COUNT)
@@ -345,13 +345,13 @@ def main
 
     dirinfo.write
     fat.write
-  when 'del'
+  when 'del'  # Delete file from FD image.
     target_fn = ARGV.shift
     unless delete(image_fn, target_fn)
       $stderr.puts "Not found #{target_fn}"
       exit(1)
     end
-  when 'write'
+  when 'write'  # Write file into the cluster directly, without directory table.
     target_fn = ARGV.shift
     cluster = ARGV.shift.to_i
     unless File.exists?(target_fn)
