@@ -362,7 +362,9 @@ def main
       if m
         year, mon, day = m.get_date
         hour, min, sec = m.get_time
-        puts(sprintf("%-8s.%-3s %7d %04d/%02d/%02d %02d:%02d:%02d", m.filename[0...8], m.filename[8...11], m.size, year, mon, day, hour, min, sec))
+        ext = m.filename[8...11]
+        dot = ext != '   ' ? '.' : ' '
+        puts(sprintf("%-8s%s%-3s %7d %04d/%02d/%02d %02d:%02d:%02d", m.filename[0...8], dot, ext, m.size, year, mon, day, hour, min, sec))
       end
     end
   when 'save'  # Save file into FD image.
