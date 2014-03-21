@@ -29,8 +29,8 @@ But I changed to use Linux, and simplify required tools using Ruby.
 
 ## How to build
 * Type `make` in the root directory
-* `haribote.img` is created
-* Burn image into floppy disk, or run disk image using PC emulator (e.g. VirtualBox)
+* `haribote.iso` is created
+* Burn image into CD, or run disk image using PC emulator (e.g. VirtualBox)
 
 ### Directory structure
 | Name    | Entry                              |

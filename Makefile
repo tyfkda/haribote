@@ -1,4 +1,4 @@
-TARGET=haribote.img
+TARGET=haribote.iso
 
 OBJDIR=obj
 LIBDIR=lib
@@ -32,7 +32,10 @@ all:	$(TARGET)
 
 .PHONY:	os lib apps
 
-$(TARGET):	os lib apps
+haribote.iso:	haribote.img
+	mkisofs -b $< -o $@ -input-charset utf8 $<
+
+haribote.img:	os lib apps
 	$(FAT12IMG) $@ format
 	$(FAT12IMG) $@ write obj/ipl.bin 0
 	for filename in $(DISK_FILES); do \
@@ -49,7 +52,8 @@ apps:
 
 clean:
 	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.bin $(OBJDIR)/*.sys $(OBJDIR)/*.hrb \
-	  $(OBJDIR)/*.map $(TARGET) $(LIBDIR)/*.a $(LIBDIR)/*.o
+	  $(OBJDIR)/*.map $(LIBDIR)/*.a $(LIBDIR)/*.o \
+	  haribote.img haribote.iso
 
 font:
 	ruby tools/makefont.rb < tools/biosfont.txt > kernel/fontdata.c

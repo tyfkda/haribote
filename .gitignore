@@ -4,4 +4,6 @@
 *.sys
 *.hrb
 *.map
-*.img
+
+/haribote.img
+/haribote.iso
