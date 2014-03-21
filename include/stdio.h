@@ -10,6 +10,11 @@ extern "C" {
 
 #define EOF  (-1)
 
+// mode for fseek
+#define SEEK_TOP  (0)
+#define SEEK_CUR  (1)
+#define SEEK_END  (2)
+
 typedef struct FILE FILE;
 
 extern FILE *stdin, *stdout, *stderr;
@@ -22,6 +27,8 @@ int snprintf(char *str, size_t size, const char *format, ...);
 
 FILE* fopen(const char* filename, const char* mode);
 void fclose(FILE* fp);
+int fseek(FILE *stream, long offset, int whence);
+long ftell(FILE *stream);
 int fputc(int c, FILE *stream);
 int fputs(const char *s, FILE *stream);
 int fprintf(FILE* stream, const char* format, ...);
