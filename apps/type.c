@@ -14,6 +14,7 @@ int main(int argc, char* argv[]) {
         break;
       putchar(c);
     }
+    fclose(fp);
   }
   return 0;
 }
