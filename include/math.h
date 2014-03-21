@@ -17,6 +17,8 @@ double acos(double x);
 double atan(double x);
 double sqrt(double x);
 double fabs(double x);
+double floor(double x);
+double ceil(double x);
 double round(double x);
 long lround(double x);
 double pow(double x, double y);
