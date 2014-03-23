@@ -9,6 +9,7 @@ DISK_FILES=\
 	$(OBJDIR)/haribote.sys \
 	$(OBJDIR)/type.hrb \
 	$(OBJDIR)/del.hrb \
+	$(OBJDIR)/echo.hrb \
 	$(OBJDIR)/now.hrb \
 	kernel/ipl.s \
 	$(OBJDIR)/color2.hrb \
