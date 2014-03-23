@@ -7,7 +7,7 @@ pow:
 	push	%ebx
 
 	fstcw	-2(%ebp)
-	orw	$0b110000000000, -2(%ebp)
+	orw	$0b110000000000, -2(%ebp)	# Round mode: Round toward zero (truncate)
 	fldcw	-2(%ebp)
 
 	fldl	16(%ebp)	# b

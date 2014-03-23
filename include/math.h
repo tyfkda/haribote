@@ -23,6 +23,7 @@ double round(double x);
 long lround(double x);
 double pow(double x, double y);
 double exp(double x);
+double log(double x);
 
 int isinf(double x);  // TODO: Impliement
 int isnan(double x);
