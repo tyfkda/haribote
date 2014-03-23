@@ -62,11 +62,9 @@ int read_rtc(unsigned char tt[5]) {
 void cmd_mem(CONSOLE* cons) {
   unsigned int memtotal = getOsInfo()->memtotal;
   MEMMAN* memman = (MEMMAN*)MEMMAN_ADDR;
-  char s[60];
-  sprintf(s, "total %4udMB\nfree %5dKB\n",
-          memtotal / (1024 * 1024),
-          memman_total(memman) / 1024);
-  cons_putstr0(cons, s);
+  cons_printf(cons, "total %4udMB\nfree %5dKB\n",
+              memtotal / (1024 * 1024),
+              memman_total(memman) / 1024);
 }
 
 void cmd_dir(CONSOLE* cons) {
@@ -78,19 +76,17 @@ void cmd_dir(CONSOLE* cons) {
     if (p->name[0] == 0xe5)  // Deleted file.
       continue;
     if ((p->type & 0x18) == 0) {
+      char name[8 + 1], ext[3 + 1];
+      memcpy(name, p->name, 8); name[8] = '\0';
+      memcpy(ext, p->ext, 3); ext[3] = '\0';
+      int dot = (p->ext[0] != ' ') ? '.' : ' ';  // No file extension: remove dot.
       int year = ((p->date >> 9) & 0x7f) + 1980;
       int month = ((p->date >> 5) & 0x0f) + 1;
       int day = (p->date & 0x1f) + 1;
       int hour = (p->time >> 11) & 0x1f;
       int minute = (p->time >> 5) & 0x3f;
-      char s[30];
-      sprintf(s, "filename.ext   %7d '%02d/%02d/%02d %02d:%02d\n",
-              p->size, year % 100, month, day, hour, minute);
-      memcpy(&s[0], p->name, 8);
-      memcpy(&s[9], p->ext, 3);
-      if (p->ext[0] == ' ')  // No file extension: remove dot.
-        s[8] = ' ';
-      cons_putstr0(cons, s);
+      cons_printf(cons, "%8s%c%3s   %7d '%02d/%02d/%02d %02d:%02d\n",
+                  name, dot, ext, p->size, year % 100, month, day, hour, minute);
     }
   }
 }
@@ -136,14 +132,11 @@ void cmd_ncst(const char* cmdline) {
 }
 
 void cmd_fat(struct CONSOLE* cons) {
-  char s[10];
   for (int j = 0; j < 16; ++j) {
-    sprintf(s, "%04x:", j * 8);
-    cons_putstr0(cons, s);
+    cons_printf(cons, "%04x:", j * 8);
     for (int i = 0; i < 8; ++i) {
       short c = get_next_cluster(j * 8 + i);
-      sprintf(s, " %03x", c);
-      cons_putstr0(cons, s);
+      cons_printf(cons, " %03x", c);
     }
     cons_putstr0(cons, "\n");
   }
@@ -158,13 +151,11 @@ void cmd_dir2(CONSOLE* cons) {
     if (p->name[0] == 0xe5)  // Deleted file.
       continue;
     if ((p->type & 0x18) == 0) {
-      char s[30];
-      sprintf(s, "filename.ext   %3x\n", p->clustno);
-      memcpy(&s[0], p->name, 8);
-      memcpy(&s[9], p->ext, 3);
-      if (p->ext[0] == ' ')  // No file extension: remove dot.
-        s[8] = ' ';
-      cons_putstr0(cons, s);
+      char name[8 + 1], ext[3 + 1];
+      memcpy(name, p->name, 8); name[8] = '\0';
+      memcpy(ext, p->ext, 3); ext[3] = '\0';
+      int dot = (p->ext[0] != ' ') ? '.' : ' ';  // No file extension: remove dot.
+      cons_printf(cons, "%8s%c%3s   %3x\n", name, dot, ext, p->clustno);
     }
   }
 }

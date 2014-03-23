@@ -46,10 +46,10 @@ int* inthandler0c(int* esp) {
   // esp[15] = ss   : ss for application
   TASK* task = task_now();
   CONSOLE* cons = task->cons;
-  cons_putstr0(cons, "\nINT 0C :\n Stack Exception.\n");
-  char s[30];
-  sprintf(s, "EIP = %08x\n", esp[11]);
-  cons_putstr0(cons, s);
+  cons_printf(cons,
+              "\nINT 0C :\n Stack Exception.\n"
+              "EIP = %08x\n",
+              esp[11]);
   return &task->tss.esp0;  // Abort
 }
 
@@ -57,9 +57,9 @@ int* inthandler0c(int* esp) {
 int* inthandler0d(int* esp) {
   TASK* task = task_now();
   CONSOLE* cons = task->cons;
-  cons_putstr0(cons, "\nINT 0D :\n General Protected Exception.\n");
-  char s[30];
-  sprintf(s, "EIP = %08x\n", esp[11]);
-  cons_putstr0(cons, s);
+  cons_printf(cons,
+              "\nINT 0D :\n General Protected Exception.\n"
+              "EIP = %08x\n",
+              esp[11]);
   return &task->tss.esp0;  // Abort
 }

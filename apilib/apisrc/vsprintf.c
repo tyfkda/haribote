@@ -91,6 +91,14 @@ int vsprintf(char *str, const char *fmt, va_list ap) {
       goto again;
     case '.': goto again;  // TODO: Handle fraction specifier.
     case 'u': sign = FALSE; goto again;
+    case 'c':
+      {
+        int c = va_arg(ap, int);
+        *dst++ = c;
+        ++fmt;
+        continue;
+      }
+      break;
     case 'd':
       if (sign)
         q = int2num(&buf[sizeof(buf)], va_arg(ap, int), 10, hextableLower, padding, keta);

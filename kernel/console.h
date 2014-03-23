@@ -22,6 +22,7 @@ struct TASK* open_constask(struct SHTCTL* shtctl, struct SHEET* sheet);
 void cons_putchar(CONSOLE* cons, int chr, char move, char neg);
 void cons_putstr0(CONSOLE* cons, const char* s);
 void cons_putstr1(CONSOLE* cons, const char* s, int l);
+void cons_printf(CONSOLE* cons, const char* format, ...);
 
 #endif
 

@@ -57,8 +57,7 @@ static void enableInterrupt()  { io_sti(); }
 
 static void sysPrintc(int c) {
   CONSOLE* cons = task_now()->cons;
-  char s[] = { c, '\0' };
-  cons_putstr0(cons, s);
+  cons_printf(cons, "%c", c);
 }
 
 static void sysPrints(const char* str) {
@@ -68,9 +67,7 @@ static void sysPrints(const char* str) {
 
 static void sysPrintBin(int x) {
   CONSOLE* cons = task_now()->cons;
-  char s[30];
-  sprintf(s, "%02x", x);
-  cons_putstr0(cons, s);
+  cons_printf(cons, "%02x", x);
 }
 
 #define DMA_DATABUF     1024

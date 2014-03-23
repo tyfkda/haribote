@@ -5,6 +5,7 @@
 #include "graphics.h"
 #include "mtask.h"
 #include "sheet.h"
+#include "stdarg.h"  // vsnprintf
 #include "stdio.h"
 #include "string.h"
 #include "timer.h"
@@ -97,6 +98,15 @@ void cons_putstr0(CONSOLE* cons, const char* s) {
 void cons_putstr1(CONSOLE* cons, const char* s, int l) {
   for (int i = 0; i < l; ++i)
     cons_putchar(cons, *s++, TRUE, FALSE);
+}
+
+void cons_printf(CONSOLE* cons, const char* format, ...) {
+  char buf[256];
+  va_list ap;
+  va_start(ap, format);
+  vsnprintf(buf, sizeof(buf), format, ap);
+  va_end(ap);
+  cons_putstr0(cons, buf);
 }
 
 static void cons_runcmd(const char* cmdline, CONSOLE* cons) {
