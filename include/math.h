@@ -24,6 +24,9 @@ long lround(double x);
 double pow(double x, double y);
 double exp(double x);
 
+int isinf(double x);  // TODO: Impliement
+int isnan(double x);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

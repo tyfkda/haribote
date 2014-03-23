@@ -1,5 +1,10 @@
+#include "math.h"
 #include "stdarg.h"
 #include "stdio.h"  // FALSE, TRUE
+#include "string.h"
+
+static const char hextableLower[] = "0123456789abcdef";
+static const char hextableUpper[] = "0123456789ABCDEF";
 
 static char* uint2num(char *s, unsigned int x, int base, const char* table,
                       char padding, int keta) {
@@ -28,9 +33,38 @@ static char* int2num(char *s, int x, int base, const char* table,
   return p;
 }
 
+char* putDouble(char* dst, double x, int keta, char padding) {
+  if (isinf(x)) {
+    if (x < 0)
+      *dst++ = '-';
+    strcpy(dst, "inf");
+    return dst + 3;
+  }
+  if (isnan(x)) {
+    strcpy(dst, "nan");
+    return dst + 3;
+  }
+
+  char buf[sizeof(int) * 3 + 3];
+
+  if (x < 0) {
+    *dst++ = '-';
+    x = -x;
+  }
+  int i = (int)x;
+  char* q = int2num(&buf[sizeof(buf)], i, 10, hextableLower, padding, keta);
+  while (*q != '\0')
+    *dst++ = *q++;
+  *dst++ = '.';
+  double y = (x - i) * 1000000;
+  int j = (int)(y + 0.5);
+  q = int2num(&buf[sizeof(buf)], j, 10, hextableLower, '0', 6);
+  while (*q != '\0')
+    *dst++ = *q++;
+  return dst;
+}
+
 int vsprintf(char *str, const char *fmt, va_list ap) {
-  static const char hextableLower[] = "0123456789abcdef";
-  static const char hextableUpper[] = "0123456789ABCDEF";
   char* dst = str;
   while (*fmt != '\0') {
     if (*fmt != '%') {
@@ -76,18 +110,9 @@ int vsprintf(char *str, const char *fmt, va_list ap) {
     case 'f':
       {
         double x = va_arg(ap, double);
-        if (x < 0) {
-          *dst++ = '-';
-          x = -x;
-        }
-        int i = (int)x;
-        q = int2num(&buf[sizeof(buf)], i, 10, hextableLower, padding, keta);
-        while (*q != '\0')
-          *dst++ = *q++;
-        *dst++ = '.';
-        double y = (x - i) * 1000000;
-        int j = (int)(y + 0.5);
-        q = int2num(&buf[sizeof(buf)], j, 10, hextableLower, '0', 6);
+        dst = putDouble(dst, x, keta, padding);
+        ++fmt;
+        continue;
       }
       break;
     }
