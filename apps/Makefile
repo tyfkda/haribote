@@ -11,15 +11,16 @@ APPS=$(OBJS:%.o=%.hrb)
 
 APILIB=$(LIBDIR)/libhrb.a
 
-CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror -nostdinc $(INC)
+ASFLAGS=--32
+CFLAGS=-m32 -O2 --std=c99 -Wall -Wextra -Werror -nostdinc $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
-CXXFLAGS=-O2 --std=c++11 -Wall -Wextra -Werror $(INC)
+CXXFLAGS=-m32 -O2 --std=c++11 -Wall -Wextra -Werror -nostdinc $(INC)
 CXXFLAGS+=-fno-rtti -fno-exceptions
 CXXFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
 CRT0=$(LIBDIR)/crt0.o
 LKSCRIPT=$(LIBDIR)/hrbapp.ls
-LKOPT=-s -L $(LIBDIR)
+LKOPT=-m elf_i386 -s -L $(LIBDIR)
 LKAPP=ld -T $(LKSCRIPT) $(LKOPT) $(CRT0)
 APPLIBS=-lhrb
 
@@ -30,17 +31,17 @@ all:	$(APPS)
 .PRECIOUS:	$(OBJS)
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.s
-	as $< -o $@
+	as -o $@ $(ASFLAGS) $<
 $(OBJDIR)/%.o:	$(SRCDIR)/%.c
 	gcc -c -o $@ $(CFLAGS) $<
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cc
 	g++ -c -o $@ $(CXXFLAGS) $<
 $(OBJDIR)/%.hrb:	$(OBJDIR)/%.o $(APILIB) $(CRT0)
-	$(LKAPP) -o $@ $< $(APPLIBS)
+	$(LKAPP) -o $@ $< $(APILIB)
 
 $(OBJDIR)/gview.o:	$(SRCDIR)/gview.c $(SRCDIR)/jpeg.ccc
 $(OBJDIR)/gview.hrb:	$(OBJDIR)/gview.o bmp.obj $(APILIB) $(CRT0)
-	$(LKAPP) -o $@ $< bmp.obj $(APPLIBS)
+	$(LKAPP) -o $@ $< bmp.obj $(APILIB)
 #$(OBJDIR)/bmp.o:	$(SRCDIR)/bmp.nasm
 #	as $< -o $@
 

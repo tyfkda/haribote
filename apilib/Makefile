@@ -10,16 +10,17 @@ OBJS=$(subst $(SRCDIR)/,$(OBJDIR)/,$(subst .s,.o,$(subst .cc,.o,$(SRCS:%.c=%.o))
 APILIB=$(LIBDIR)/libhrb.a
 CRT0=$(LIBDIR)/crt0.o
 
-CFLAGS=-O2 --std=c99 -Wall -Wextra -Werror $(INC)
+ASFLAGS=--32
+CFLAGS=-m32 -O2 --std=c99 -Wall -Wextra -Werror -nostdinc $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
-CXXFLAGS=-O2 --std=c++11 -Wall -Wextra -Werror $(INC)
+CXXFLAGS=-m32 -O2 --std=c++11 -Wall -Wextra -Werror -nostdinc $(INC)
 
 all:	$(APILIB) $(CRT0)
 
 .SUFFIXS:	.o .c .cc .s
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.s
-	as $< -o $@
+	as -o $@ $(ASFLAGS) $<
 $(OBJDIR)/%.o:	$(SRCDIR)/%.c
 	gcc -c -o $@ $(CFLAGS) $<
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cc
