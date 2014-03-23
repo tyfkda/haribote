@@ -1,6 +1,7 @@
 #include "console.h"
 #include "apilib.h"  // KEY
 #include "bootpack.h"
+#include "ctype.h"
 #include "fd.h"
 #include "graphics.h"
 #include "mtask.h"
@@ -109,7 +110,64 @@ void cons_printf(CONSOLE* cons, const char* format, ...) {
   cons_putstr0(cons, buf);
 }
 
-static void cons_runcmd(const char* cmdline, CONSOLE* cons) {
+static unsigned char* quote(unsigned char qq, unsigned char* src, unsigned char** pdst) {
+  unsigned char* dst = *pdst;
+  while (*src != '\0') {
+    unsigned char c = *src++;
+    if (c == qq)
+      break;
+
+    if (c == '\\') {  // Escape
+      c = *src++;
+      if (c == '\0')
+        break;
+      switch (c) {
+      case 'n':  c = '\n'; break;
+      case 't':  c = '\t'; break;
+      default: break;
+      }
+    }
+    *dst++ = c;
+  }
+  *pdst = dst;
+  return src;
+}
+
+static int parseCmdline(char* cmdline, char** argv) {
+  unsigned char* dst = (unsigned char*)cmdline;
+  unsigned char* src = (unsigned char*)cmdline;
+  int n = 0;
+  for (; *src != '\0'; ) {
+    while (isspace(*src))
+      ++src;
+    if (*src == '\0')
+      break;
+
+    if (n > 0)
+      *dst++ = '\0';
+    argv[n++] = (char*)dst;
+    if (*src == '"') {
+      src = quote('"', src + 1, &dst);
+      continue;
+    }
+
+    while (!isspace(*src) && *src != '\0')
+      *dst++ = *src++;
+  }
+  *dst++ = '\0';
+  *dst++ = '\0';
+  return n;
+}
+
+static void cons_runcmd(char* cmdline, CONSOLE* cons) {
+  char* argv[16];
+  int n = parseCmdline(cmdline, argv);
+  cons_printf(cons, "#%d\n", n);
+  for (int i = 0; i < n; ++i) {
+    cons_printf(cons, "%3d: %s\n", i, argv[i]);
+  }
+
+#if 0
   if (strcmp(cmdline, "mem") == 0 && cons->sheet != NULL) {
     cmd_mem(cons);
   } else if (strcmp(cmdline, "dir") == 0 && cons->sheet != NULL) {
@@ -143,6 +201,7 @@ static void cons_runcmd(const char* cmdline, CONSOLE* cons) {
     if (!cmd_app(cons, cmdline))
       cons_putstr0(cons, "Bad command.\n");
   }
+#endif
 }
 
 static void cursor_left(CONSOLE* cons) {
