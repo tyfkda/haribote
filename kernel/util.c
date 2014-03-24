@@ -107,27 +107,8 @@ void cmd_exit(CONSOLE* cons) {
     task_sleep(task);
 }
 
-void cmd_start(char* argv[]) {
-  SHTCTL* shtctl = getOsInfo()->shtctl;
-  SHEET* sheet = open_console(shtctl);
-  sheet_slide(shtctl, sheet, 32, 4);
-  sheet_updown(shtctl, sheet, shtctl->top);
-
-  // Send key command.
-  FIFO* fifo = &sheet->task->fifo;
-  for (int i = 0; argv[i] != NULL; ++i) {
-    if (i > 0)
-      fifo_put(fifo, ' ' + 256);
-    for (char* p = argv[i]; *p != '\0'; ++p)
-      fifo_put(fifo, *p + 256);
-  }
-  fifo_put(fifo, 10 + 256);  // Enter.
-}
-
-// No console start.
-void cmd_ncst(char* argv[]) {
-  TASK* task = open_constask(NULL, NULL);
-
+static void sendArgv(TASK* task, char* argv[]) {
+  // TODO: Pass argv moresofisticated way.
   // Send key command.
   FIFO* fifo = &task->fifo;
   for (int i = 0; argv[i] != NULL; ++i) {
@@ -137,6 +118,20 @@ void cmd_ncst(char* argv[]) {
       fifo_put(fifo, *p + 256);
   }
   fifo_put(fifo, 10 + 256);  // Enter.
+}
+
+void cmd_start(char* argv[]) {
+  SHTCTL* shtctl = getOsInfo()->shtctl;
+  SHEET* sheet = open_console(shtctl);
+  sheet_slide(shtctl, sheet, 32, 4);
+  sheet_updown(shtctl, sheet, shtctl->top);
+  sendArgv(sheet->task, argv);
+}
+
+// No console start.
+void cmd_ncst(char* argv[]) {
+  TASK* task = open_constask(NULL, NULL);
+  sendArgv(task, argv);
 }
 
 void cmd_fat(struct CONSOLE* cons) {
