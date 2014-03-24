@@ -179,21 +179,6 @@ static void cons_runcmd(char* cmdline, CONSOLE* cons) {
     cmd_fat(cons);
   } else if (strcmp(argv[0], "dir2") == 0) {
     cmd_dir2(cons);
-  } else if (strcmp(argv[0], "fdread") == 0) {
-    // FDC Test
-    cons_putstr0(cons, "fdc_read\n");
-    fdc_read(0, 0, 1);
-  } else if (strcmp(argv[0], "fdwrite") == 0) {
-    // FDC Test
-    const int size = 1024;
-    MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
-    unsigned char* buf = (unsigned char*)memman_alloc_4k(memman, size);
-    for (int i = 0; i < size; ++i)
-      buf[i] = i;
-    fdc_write(buf, 0, 0, 1); // buf, head, track, sector
-
-    cons_putstr0(cons, "\nTry dump\n");
-    fdc_read(0, 0, 1);
   } else {
     if (!cmd_app(cons, argv))
       cons_putstr0(cons, "Bad command.\n");

@@ -16,6 +16,7 @@ typedef struct FDHANDLE {
   char modified;
 } FDHANDLE;
 
+void init_fdc();
 int fd_open(FDHANDLE* fh, const char* name);
 int fd_writeopen(FDHANDLE* fh, const char* filename);
 int fd_read(FDHANDLE* fh, void* dst, int requestSize);
@@ -25,9 +26,5 @@ void fd_close(FDHANDLE* fh);
 int fd_delete(const char* filename);
 
 short get_next_cluster(short cluster);
-
-void init_fdc();
-void* fdc_read(int head, int track, int sector);
-int fdc_write(void* buf, int head, int track, int sector);
 
 #endif
