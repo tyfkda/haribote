@@ -7,12 +7,14 @@
 #include "memory.h"
 #include "mtask.h"
 #include "sheet.h"
+#include "string.h"
 #include "timer.h"
 #include "util.h"
 #include "window.h"
 #include "../apilib/apisrc/stdio_def.h"
 
 #define SWAP(type, a, b)  do { type tmp = a; a = b; b = tmp; } while (0)
+#define MIN(x, y)  ((x) < (y) ? (x) : (y))
 
 static FDHANDLE* _api_fopen(TASK* task, const char* filename, int flag) {
   FDHANDLE* fh = task_get_free_fhandle(task);
@@ -300,16 +302,21 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   case API_CMDLINE:
     {
       char* buf = (char*)ecx + ds_base;
-#if 0
-      int maxsize = eax;
-      char* src = task->cmdline;
-      int i;
-      for (i = 0; i < maxsize && (*buf++ = *src++) != '\0'; ++i)
-        ;
-#else
-      buf[0] = '\0';
-#endif
-      reg[7] = 0;
+      size_t maxsize = eax;
+      size_t len = 0;
+      if (task->argv != NULL) {
+        int n;
+        for (n = 0; task->argv[n] != NULL; ++n);
+        if (n > 0) {
+          char* top = task->argv[0];
+          char* last = task->argv[n - 1] + strlen(task->argv[n - 1]);
+          len = last - top;
+          len = MIN(len, maxsize - 2);
+          memcpy(buf, top, len);
+        }
+      }
+      buf[len] = '\0';
+      buf[len + 1] = '\0';
     }
     break;
   case API_DELETE:

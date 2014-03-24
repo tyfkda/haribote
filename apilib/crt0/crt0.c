@@ -1,6 +1,7 @@
 #include "apilib.h"
 #include "stdio.h"
 #include "stdlib.h"
+#include "string.h"
 
 extern int main(int argc, char* argv[]);
 
@@ -11,16 +12,6 @@ extern void (*__init_array_start []) (void) __attribute__((weak));
 extern void (*__init_array_end []) (void) __attribute__((weak));
 extern void (*__fini_array_start []) (void) __attribute__((weak));
 extern void (*__fini_array_end []) (void) __attribute__((weak));
-
-static char* skipSpace(char* p) {
-  for (; *p == ' '; ++p);
-  return p;
-}
-
-static char* skipUntilSpace(char* p) {
-  for (; *p != ' ' && *p != '\0'; ++p);
-  return p;
-}
 
 void HariMain(void) {
   api_initmalloc();
@@ -33,17 +24,13 @@ void HariMain(void) {
 
   char* p = cmdline;
   // TODO: Check argument count not to overflow.
-  // TODO: Handle quotation.
   for (;;) {
-    p = skipSpace(p);
     if (*p == '\0')
       break;
     argv[argc++] = p;
-    p = skipUntilSpace(p);
-    if (*p == '\0')
-      break;
-    *p++ = '\0';
+    p = p + strlen(p) + 1;
   }
+  argv[argc] = NULL;
 
   for (void (**pp)() = __preinit_array_start; pp < __preinit_array_end; ++pp)
     (**pp)();

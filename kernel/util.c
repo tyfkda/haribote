@@ -216,6 +216,7 @@ char cmd_app(CONSOLE* cons, char* argv[]) {
 
   TASK* task = task_now();
   task->ds_base = (int)data;  // Store data segment address.
+  task->argv = argv;
 
   set_segmdesc(task->ldt + 0, codeBlockSize - 1, (int)code, AR_CODE32_ER + 0x60);
   set_segmdesc(task->ldt + 1, header.segSize - 1, (int)data, AR_DATA32_RW + 0x60);
