@@ -31,7 +31,8 @@ typedef struct TASK {
   void* cons_stack;
   struct FDHANDLE* fhandle;
   int fhandleCount;
-  char* cmdline;
+  //char* cmdline;
+  char** argv;
 } TASK;
 
 typedef struct {

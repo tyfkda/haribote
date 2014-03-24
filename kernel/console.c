@@ -155,38 +155,35 @@ static int parseCmdline(char* cmdline, char** argv) {
       *dst++ = *src++;
   }
   *dst++ = '\0';
-  *dst++ = '\0';
+  argv[n] = NULL;
   return n;
 }
 
 static void cons_runcmd(char* cmdline, CONSOLE* cons) {
   char* argv[16];
   int n = parseCmdline(cmdline, argv);
-  cons_printf(cons, "#%d\n", n);
-  for (int i = 0; i < n; ++i) {
-    cons_printf(cons, "%3d: %s\n", i, argv[i]);
-  }
+  if (n == 0)
+    return;
 
-#if 0
-  if (strcmp(cmdline, "mem") == 0 && cons->sheet != NULL) {
+  if (strcmp(argv[0], "mem") == 0 && cons->sheet != NULL) {
     cmd_mem(cons);
-  } else if (strcmp(cmdline, "dir") == 0 && cons->sheet != NULL) {
+  } else if (strcmp(argv[0], "dir") == 0 && cons->sheet != NULL) {
     cmd_dir(cons);
-  } else if (strcmp(cmdline, "exit") == 0) {
+  } else if (strcmp(argv[0], "exit") == 0) {
     cmd_exit(cons);
-  } else if (strncmp(cmdline, "start ", 6) == 0) {
-    cmd_start(cmdline);
-  } else if (strncmp(cmdline, "ncst ", 5) == 0) {
-    cmd_ncst(cmdline);
-  } else if (strcmp(cmdline, "fat") == 0) {
+  } else if (strcmp(argv[0], "start") == 0) {
+    cmd_start(argv + 1);
+  } else if (strcmp(argv[0], "ncst") == 0) {
+    cmd_ncst(argv + 1);
+  } else if (strcmp(argv[0], "fat") == 0) {
     cmd_fat(cons);
-  } else if (strcmp(cmdline, "dir2") == 0) {
+  } else if (strcmp(argv[0], "dir2") == 0) {
     cmd_dir2(cons);
-  } else if (strcmp(cmdline, "fdread") == 0) {
+  } else if (strcmp(argv[0], "fdread") == 0) {
     // FDC Test
     cons_putstr0(cons, "fdc_read\n");
     fdc_read(0, 0, 1);
-  } else if (strcmp(cmdline, "fdwrite") == 0) {
+  } else if (strcmp(argv[0], "fdwrite") == 0) {
     // FDC Test
     const int size = 1024;
     MEMMAN *memman = (MEMMAN*)MEMMAN_ADDR;
@@ -197,11 +194,10 @@ static void cons_runcmd(char* cmdline, CONSOLE* cons) {
 
     cons_putstr0(cons, "\nTry dump\n");
     fdc_read(0, 0, 1);
-  } else if (cmdline[0] != '\0') {
-    if (!cmd_app(cons, cmdline))
+  } else {
+    if (!cmd_app(cons, argv))
       cons_putstr0(cons, "Bad command.\n");
   }
-#endif
 }
 
 static void cursor_left(CONSOLE* cons) {
@@ -360,7 +356,7 @@ static void console_task(SHTCTL* shtctl, SHEET* sheet) {
   cons.fontColor = COL8_WHITE;
   cons.bgColor = COL8_BLACK;
   task->cons = &cons;
-  task->cmdline = cmdline;
+  //task->cmdline = cmdline;
   cmdline[0] = ' ';
 
   if (cons.sheet != NULL) {

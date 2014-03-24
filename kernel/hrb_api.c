@@ -300,12 +300,16 @@ int* hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
   case API_CMDLINE:
     {
       char* buf = (char*)ecx + ds_base;
+#if 0
       int maxsize = eax;
       char* src = task->cmdline;
       int i;
       for (i = 0; i < maxsize && (*buf++ = *src++) != '\0'; ++i)
         ;
-      reg[7] = i;
+#else
+      buf[0] = '\0';
+#endif
+      reg[7] = 0;
     }
     break;
   case API_DELETE:

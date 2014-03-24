@@ -107,7 +107,7 @@ void cmd_exit(CONSOLE* cons) {
     task_sleep(task);
 }
 
-void cmd_start(const char* cmdline) {
+void cmd_start(char* argv[]) {
   SHTCTL* shtctl = getOsInfo()->shtctl;
   SHEET* sheet = open_console(shtctl);
   sheet_slide(shtctl, sheet, 32, 4);
@@ -115,19 +115,27 @@ void cmd_start(const char* cmdline) {
 
   // Send key command.
   FIFO* fifo = &sheet->task->fifo;
-  for (int i = 6; cmdline[i] != 0; ++i)
-    fifo_put(fifo, cmdline[i] + 256);
+  for (int i = 0; argv[i] != NULL; ++i) {
+    if (i > 0)
+      fifo_put(fifo, ' ' + 256);
+    for (char* p = argv[i]; *p != '\0'; ++p)
+      fifo_put(fifo, *p + 256);
+  }
   fifo_put(fifo, 10 + 256);  // Enter.
 }
 
 // No console start.
-void cmd_ncst(const char* cmdline) {
+void cmd_ncst(char* argv[]) {
   TASK* task = open_constask(NULL, NULL);
 
   // Send key command.
   FIFO* fifo = &task->fifo;
-  for (int i = 5; cmdline[i] != 0; ++i)
-    fifo_put(fifo, cmdline[i] + 256);
+  for (int i = 0; argv[i] != NULL; ++i) {
+    if (i > 0)
+      fifo_put(fifo, ' ' + 256);
+    for (char* p = argv[i]; *p != '\0'; ++p)
+      fifo_put(fifo, *p + 256);
+  }
   fifo_put(fifo, 10 + 256);  // Enter.
 }
 
@@ -160,13 +168,13 @@ void cmd_dir2(CONSOLE* cons) {
   }
 }
 
-char cmd_app(CONSOLE* cons, const char* cmdline) {
+char cmd_app(CONSOLE* cons, char* argv[]) {
   char name[13];
   int i;
   for (i = 0; i < 8; ++i) {
-    if (cmdline[i] <= ' ')
+    if (argv[0][i] <= ' ')
       break;
-    name[i] = cmdline[i];
+    name[i] = argv[0][i];
   }
   name[i] = '\0';
 

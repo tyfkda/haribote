@@ -11,9 +11,9 @@ void cmd_mem(struct CONSOLE* cons);
 void cmd_cls(struct CONSOLE* cons);
 void cmd_dir(struct CONSOLE* cons);
 void cmd_exit(struct CONSOLE* cons);
-void cmd_start(const char* cmdline);
-void cmd_ncst(const char* cmdline);
-char cmd_app(struct CONSOLE* cons, const char* cmdline);
+void cmd_start(char* argv[]);
+void cmd_ncst(char* argv[]);
+char cmd_app(struct CONSOLE* cons, char* argv[]);
 
 void cmd_fat(struct CONSOLE* cons);
 void cmd_dir2(struct CONSOLE* cons);
