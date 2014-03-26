@@ -1,6 +1,7 @@
 #include "apilib.h"
 #include "bootpack.h"
 #include "console.h"
+#include "ctype.h"
 #include "dsctbl.h"
 #include "fd.h"
 #include "fifo.h"
@@ -28,18 +29,6 @@
 
 static OsInfo s_osinfo;
 const OsInfo* getOsInfo(void)  { return &s_osinfo; }
-
-int toupper(int c) {
-  if ('a' <= c && c <= 'z')
-    return c + ('A' - 'a');
-  return c;
-}
-
-int tolower(int c) {
-  if ('A' <= c && c <= 'Z')
-    return c + ('a' - 'A');
-  return c;
-}
 
 static void keywin_off(SHTCTL* shtctl, SHEET* key_win) {
   change_wtitle8(shtctl, key_win, FALSE);
