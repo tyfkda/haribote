@@ -1,9 +1,9 @@
 // Keyboard
 
 #include "keyboard.h"
-#include "bootpack.h"
 #include "fifo.h"
 #include "int.h"
+#include "naskfunc.h"
 
 #define PORT_KEYSTA  (0x0064)
 #define KEYSTA_SEND_NOTREADY  (0x02)

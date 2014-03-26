@@ -1,5 +1,5 @@
 #include "memory.h"
-#include "bootpack.h"
+#include "naskfunc.h"
 
 #define CR0_CACHE_DISABLE  0x60000000
 #define EFLAGS_AC_BIT      0x00040000

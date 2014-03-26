@@ -1,10 +1,10 @@
 // Mouse
 
 #include "mouse.h"
-#include "bootpack.h"
 #include "fifo.h"
 #include "int.h"
 #include "keyboard.h"
+#include "naskfunc.h"
 
 #define KEYCMD_SENDTO_MOUSE  (0xd4)
 #define MOUSECMD_ENABLE  (0xf4)

@@ -1,9 +1,9 @@
 #include "mtask.h"
-#include "bootpack.h"
 #include "dsctbl.h"
 #include "fd.h"
 #include "memory.h"
-#include "stdio.h"  // NULL
+#include "naskfunc.h"
+#include "stddef.h"  // NULL
 #include "timer.h"
 
 enum TaskFlag {

@@ -1,6 +1,7 @@
 #include "fd.h"
 #include "bootpack.h"
-#include "stdio.h"  // NULL
+#include "naskfunc.h"
+#include "stddef.h"  // NULL
 #include "string.h"  // memcpy, strncmp
 #include "util.h"
 
@@ -96,7 +97,7 @@ static void sysPrintBin(int x) {
 
 
 #define FDC_SRA  0x3f0// FDC status registerA (R)
-#define FDC_SRB  0x3f1// FDC status registerB (R) 
+#define FDC_SRB  0x3f1// FDC status registerB (R)
 #define FDC_DOR  0x3f2// FDC Control register (R/W)
 #define FDC_MSR  0x3f4// FDC Status register (R)
 #define FDC_DSR  0x3f4// FDC data rate select register (W)
@@ -463,10 +464,6 @@ static int writeSector(int sector) {
   int head = (sector / SECTOR_COUNT) & 1;
   int sec = (sector % SECTOR_COUNT) + 1;
 
-char s[40];
-sprintf(s, "sector:%d, tr:%d, hd:%d, sec:%d\n", sector, cyl, head, sec);
-sysPrints(s);
-
 #if 0
   sysPrints("SEEK\n");
   if (!fdc_seek(cyl)) {
@@ -511,8 +508,6 @@ sysPrints(s);
   return TRUE;
 #else
   unsigned char* buf = (unsigned char*)(ADR_DISKIMG + sector * CLUSTER_SIZE);
-sprintf(s, "%p: %02x %02x %02x %02x\n", buf, buf[0], buf[1], buf[2], buf[3]);
-sysPrints(s);
   return fdc_write(buf, head, cyl, sec);
 #endif
 }
@@ -619,7 +614,7 @@ void fd_close(FDHANDLE* fh) {
     {
       init_dma_w();
       fdc_motor_on();
-      
+
       sysPrints("FDC_WRITE\n");
       if (!fdc_recalibrate()) {
         sysPrints("[FDC][WRITE] recalibrate error\n");

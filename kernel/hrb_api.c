@@ -6,6 +6,7 @@
 #include "graphics.h"
 #include "memory.h"
 #include "mtask.h"
+#include "naskfunc.h"
 #include "sheet.h"
 #include "string.h"
 #include "timer.h"

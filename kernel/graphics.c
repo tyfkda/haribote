@@ -1,5 +1,5 @@
 #include "graphics.h"
-#include "bootpack.h"
+#include "naskfunc.h"
 #include "string.h"
 
 extern const unsigned char fontdata[];

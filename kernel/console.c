@@ -1,10 +1,10 @@
 #include "console.h"
 #include "apilib.h"  // KEY
-#include "bootpack.h"
 #include "ctype.h"
 #include "fd.h"
 #include "graphics.h"
 #include "mtask.h"
+#include "naskfunc.h"
 #include "sheet.h"
 #include "stdarg.h"  // vsnprintf
 #include "stdio.h"

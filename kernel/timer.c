@@ -1,8 +1,8 @@
 #include "timer.h"
-#include "bootpack.h"
 #include "int.h"
 #include "mtask.h"
-#include "stdio.h"  // NULL
+#include "naskfunc.h"
+#include "stddef.h"  // NULL
 
 #define PIT_CTRL  (0x0043)
 #define PIT_CNT0  (0x0040)

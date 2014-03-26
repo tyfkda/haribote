@@ -1,7 +1,7 @@
 // Interrupt
 
 #include "int.h"
-#include "bootpack.h"
+#include "naskfunc.h"
 
 void init_pic(void) {
   io_out8(PIC0_IMR, 0xff);     // Prevent all interrupt.

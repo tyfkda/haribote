@@ -11,6 +11,7 @@
 #include "memory.h"
 #include "mouse.h"
 #include "mtask.h"
+#include "naskfunc.h"
 #include "sheet.h"
 #include "stdio.h"
 #include "stdlib.h"

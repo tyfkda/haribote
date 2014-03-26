@@ -1,8 +1,8 @@
 // GDT and IDT descriptor table
 
 #include "dsctbl.h"
-#include "bootpack.h"
 #include "int.h"
+#include "naskfunc.h"
 
 void set_segmdesc(SEGMENT_DESCRIPTOR* sd, unsigned int limit, int base, int ar) {
   if (limit > 0xfffff) {

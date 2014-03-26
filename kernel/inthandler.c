@@ -1,6 +1,12 @@
-#include "bootpack.h"
+// Interrupt handler.
+
+// These functions are called from asm_inthandlerXX, defined in naskfunc.s
+// There are other `inthandler` functions in other source files, which are
+// related to their own components (keyboard, mouse, timer).
+
 #include "console.h"
 #include "mtask.h"
+#include "naskfunc.h"
 #include "stdio.h"
 
 // Interrupt 00 : Division by zero.

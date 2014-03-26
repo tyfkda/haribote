@@ -3,6 +3,7 @@
 #include "console.h"
 #include "fd.h"
 #include "mtask.h"
+#include "naskfunc.h"
 #include "sheet.h"
 #include "stdio.h"
 #include "string.h"
