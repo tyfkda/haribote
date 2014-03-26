@@ -8,10 +8,11 @@
 .globl	load_tr
 .globl	farjmp, farcall, start_app
 .globl	asm_cons_putchar, asm_hrb_api, asm_end_app
-.globl	asm_inthandler00, asm_inthandler07, asm_inthandler0c, asm_inthandler0d, asm_inthandler20, asm_inthandler21, asm_inthandler26, asm_inthandler2c
-.extern inthander00, inthander07, inthandler0c, inthandler0d, inthandler20, inthandler21, inthander26, inthandler2c
 
-.macro asm_inthandler	c_inthandler
+.macro DEF_INTHANDLER	int_no
+.globl	asm_inthandler\int_no
+.extern	inthandler\int_no
+asm_inthandler\int_no:
 	push	%es
 	push	%ds
 	pushal
@@ -20,14 +21,17 @@
 	mov	%ss, %ax
 	mov	%ax, %ds
 	mov	%ax, %es
-	call	\c_inthandler
+	call	inthandler\int_no
 	pop	%eax
 	popal
 	pop	%ds
 	pop	%es
 .endm
 
-.macro asm_inthandler_with_exit	c_inthandler
+.macro DEF_INTHANDLER_WITH_EXIT	int_no
+.globl	asm_inthandler\int_no
+.extern	inthandler\int_no
+asm_inthandler\int_no:
 	sti
 	push	%es
 	push	%ds
@@ -37,7 +41,7 @@
 	mov	%ss, %ax
 	mov	%ax, %ds
 	mov	%ax, %es
-	call	\c_inthandler
+	call	inthandler\int_no
 	cmp	$0, %eax
 	jne	asm_end_app
 	pop	%eax
@@ -168,38 +172,30 @@ load_tr:
 	LTR	4(%esp)		# tr
 	ret
 
-asm_inthandler00:
-	asm_inthandler_with_exit inthandler00
+DEF_INTHANDLER 00
 	iret
 
-asm_inthandler07:
-	asm_inthandler_with_exit inthandler07
+DEF_INTHANDLER 07
 	iret
 
-asm_inthandler0c:
-	asm_inthandler_with_exit inthandler0c
+DEF_INTHANDLER_WITH_EXIT 0c
 	add	$4, %esp	# Needed for int $0x0c
 	iret
 
-asm_inthandler0d:
-	asm_inthandler_with_exit inthandler0d
+DEF_INTHANDLER_WITH_EXIT 0d
 	add	$4, %esp	# Needed for int $0x0d
 	iret
 
-asm_inthandler20:
-	asm_inthandler inthandler20
+DEF_INTHANDLER 20
 	iretl
 
-asm_inthandler21:
-	asm_inthandler inthandler21
+DEF_INTHANDLER 21
 	iretl
 
-asm_inthandler26:
-	asm_inthandler inthandler26
+DEF_INTHANDLER 26
 	iret
 
-asm_inthandler2c:
-	asm_inthandler inthandler2c
+DEF_INTHANDLER 2c
 	iretl
 
 # void farjmp(int eip, int cs)
