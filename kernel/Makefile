@@ -14,7 +14,6 @@ CFLAGS=-m32 -O2 --std=c99 -Wall -Wextra -Werror -nostdinc $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
 
 APILIB=$(LIBDIR)/libhrb.a
-LIBS=-L $(LIBDIR) -lhrb
 
 all:	$(OBJDIR)/ipl.bin $(OBJDIR)/haribote.sys
 
