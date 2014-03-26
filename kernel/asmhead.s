@@ -109,8 +109,8 @@ keystatus:
 	# Transit to protect mode
 	lgdt	(GDTR0)
 	mov	%CR0, %eax
-	and	$0x7fffffff, %eax
-	or	$0x00000001, %eax
+	and	$0x7fffffff, %eax	# Disable paging
+	or	$0x00000001, %eax	# Go to protect mode
 	mov	%eax, %CR0
 	jmp	pipelineflash
 pipelineflash:
@@ -146,12 +146,13 @@ pipelineflash:
 	mov	16(%ebx), %ecx
 	add	$3, %ecx	# ECX += 3
 	shr	$2, %ecx	# ECX /= 4
-	jz	skip
+	jz	.skip
+	# Move OS data into appropriate address.
 	mov	20(%ebx), %esi	# source
 	add	%ebx, %esi
 	mov	12(%ebx), %edi	# destination
 	call	memcpy4
-skip:
+.skip:
 	mov	12(%ebx), %esp
 	ljmp	$2*8, $0x0000001b
 
