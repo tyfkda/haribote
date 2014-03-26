@@ -65,19 +65,26 @@ These sequence is done in $/Makefile.
 ## Memo
 ### Floppy disk
 * 2HD : 1.4MB = 1,474,560 bytes (= 512 bytes x 18 sectors x 2 heads x 80 cylinders)
-* 0x000000 - 0x0001ff : Boot sector
-* 0x000200 - 0x0013ff : FAT
-* 0x001400 - 0x0025ff : FAT (back up)
-* 0x002600 - 0x0041ff : Root directory table
-* 0x004200 - 0x167fff : Cluster data
+
+| Offset              | Entity               |
+|---------------------|----------------------|
+| 0x000000 - 0x0001ff | Boot sector          |
+| 0x000200 - 0x0013ff | FAT                  |
+| 0x001400 - 0x0025ff | FAT (back up)        |
+| 0x002600 - 0x0041ff | Root directory table |
+| 0x004200 - 0x167fff | Cluster data         |
 
 ### Haribote OS Memory layout
-* 0x00007c00 - 0x00007dff : Boot sector is loaded (512 bytes)
-* 0x00100000 - 0x00267fff : Floppy disk image (1440KB)
-* 0x0026f800 - 0x0026ffff : IDT (2KB)
-* 0x00270000 - 0x0027ffff : GDT (64KB)
-* 0x00280000 - 0x002fffff : bootpack.hrb (512KB)
-* 0x00300000 - 0x003fffff : Stack etc. (1MB)
+| Address                 | Entity                               |
+|-------------------------|--------------------------------------|
+| 0x00007c00 - 0x00007dff | Boot sector is loaded (512 bytes)    |
+| 0x00100000 - 0x00267fff | Floppy disk image (1440KB)           |
+| 0x0026f800 - 0x0026ffff | IDT (2KB)                            |
+| 0x00270000 - 0x0027ffff | GDT (64KB)                           |
+| 0x00280000 - 0x002effff | Kernel program (bootpack.hrb, 512KB) |
+| 0x002f0000 - 0x002fffff |   .data, .rodata                     |
+| 0x00300000 - 0x003fffff | Stack etc. (1MB)                     |
+| 0x00400000 -            | Free (application area)              |
 
 ### Calling convension
 * For 32bit x86 CPU, eax, ecx, and edx registers don't need to be saved
