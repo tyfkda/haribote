@@ -37,6 +37,7 @@ entry:
 	call	putmsg
 
 	# Read disk
+	# %dl is boot drive, already set by BIOS.
 	movw	$0x0820, %ax
 	movw	%ax, %es
 	movb	$0, %ch		# Cylinder 0
@@ -47,12 +48,14 @@ entry:
 
 	# Jump to loaded program
 	movb	$CYLS, (0x0ff0)
+	movb	%dl, (0x0ff1)
 	jmp	0xc200
 
 # Read from disk in batch as much as possible.
 # %es : Read address
 # %ch : Cylinder
 # %dh : Head
+# %dl : Drive
 # %cl : Sector
 # %bx : Number of read sector
 readfast:
@@ -82,7 +85,6 @@ readfast:
 retry:
 	movb	$0x02, %ah	# Read disk
 	movw	$0, %bx
-	movb	$0x00, %dl	# A drive
 	push	%es
 	push	%dx
 	push	%cx
@@ -93,7 +95,6 @@ retry:
 	cmp	$5, %si
 	jae	error
 	mov	$0x00, %ah
-	mov	$0x00, %dl
 	int	$0x13
 	pop	%ax
 	pop	%cx

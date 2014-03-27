@@ -7,9 +7,9 @@ struct SHTCTL;
 
 typedef struct {
   char cyls;
+  char bootDrive;
   char leds;  // Keyboard LED status
   char vmode;  // Video mode
-  char reserve;
   short scrnx, scrny;  // Screen resolution
   unsigned char* vram;
 } BOOTINFO;

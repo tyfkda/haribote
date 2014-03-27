@@ -8,8 +8,9 @@
 	.equ	DSKCAC0, 0x00008000	# Address for disk cache (real mode)
 
 	.equ	CYLS, 0x0ff0	# Set by boot sector
-	.equ	LEDS, 0x0ff1
-	.equ	VMODE, 0x0ff2	# Depth of colors
+	.equ	BOOTDRIVE, 0x0ff1	# Boot drive, set by boot sector
+	.equ	LEDS, 0x0ff2
+	.equ	VMODE, 0x0ff3	# Depth of colors
 	.equ	SCRNX, 0x0ff4	# Resolution x (screen x)
 	.equ	SCRNY, 0x0ff6	# Resolution y (screen y)
 	.equ	VRAM, 0x0ff8	# Graphics buffer
