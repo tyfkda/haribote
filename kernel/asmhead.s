@@ -121,12 +121,6 @@ pipelineflash:
 	mov	%ax, %gs
 	mov	%ax, %ss
 
-	# Copy bootpack
-	mov	$bootpack, %esi	# source
-	mov	$BOTPAK, %edi	# destination
-	mov	$512*1024/4, %ecx
-	call	memcpy4
-
 	# Copy disk data
 	mov	$0x7c00, %esi
 	mov	$DSKCAC, %edi
@@ -141,18 +135,23 @@ pipelineflash:
 	sub	$512/4, %ecx
 	call	memcpy4
 
-	# boot bootpack
+	# Copy OS code to BOTPAK
+	mov	$bootpack, %esi	# source
+	mov	$BOTPAK, %edi	# destination
+	mov	$512*1024/4, %ecx
+	call	memcpy4
+
+	# Move OS data into appropriate address.
 	mov	$BOTPAK, %ebx
 	mov	16(%ebx), %ecx
 	add	$3, %ecx	# ECX += 3
 	shr	$2, %ecx	# ECX /= 4
-	jz	.skip
-	# Move OS data into appropriate address.
 	mov	20(%ebx), %esi	# source
 	add	%ebx, %esi
 	mov	12(%ebx), %edi	# destination
 	call	memcpy4
-.skip:
+
+	# Boot OS
 	mov	12(%ebx), %esp
 	ljmp	$2*8, $0x0000001b
 
