@@ -6,7 +6,7 @@ OBJDIR=../obj
 LIBDIR=../lib
 
 SRCS=$(wildcard $(SRCDIR)/*.c)
-SRCS+=$(SRCDIR)/asmhead.s $(SRCDIR)/naskfunc.s
+SRCS+=$(SRCDIR)/naskfunc.s
 OBJS=$(subst $(SRCDIR)/,$(OBJDIR)/,$(subst .s,.o,$(SRCS:%.c=%.o)))
 
 ASFLAGS=--32
