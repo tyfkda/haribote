@@ -13,7 +13,9 @@ CRT0=$(LIBDIR)/crt0.o
 ASFLAGS=--32
 CFLAGS=-m32 -O2 --std=c99 -Wall -Wextra -Werror -nostdinc $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
+CFLAGS+=-fno-pie
 CXXFLAGS=-m32 -O2 --std=c++11 -Wall -Wextra -Werror -nostdinc $(INC)
+CXXFLAGS+=-fno-pie
 
 all:	$(APILIB) $(CRT0)
 

@@ -12,6 +12,7 @@ OBJS=$(subst $(SRCDIR)/,$(OBJDIR)/,$(subst .s,.o,$(SRCS:%.c=%.o)))
 ASFLAGS=--32
 CFLAGS=-m32 -O2 --std=c99 -Wall -Wextra -Werror -nostdinc $(INC)
 CFLAGS+=-fno-stack-protector  # Avoid reference for __stack_chk_fail
+CFLAGS+=-fno-pie -Wno-error=shift-negative-value
 
 APILIB=$(LIBDIR)/libhrb.a
 

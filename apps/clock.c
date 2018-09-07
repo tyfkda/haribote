@@ -38,7 +38,7 @@ int main() {
     int minute = now[5];
     int second = now[6];
 
-    char s[24];
+    char s[32];
     sprintf(s, "%d/%02d/%02d %02d:%02d:%02d", year, month, day, hour, minute, second);
     api_boxfilwin(win | 1, 8, 20 + 8, W - 8, H - 8, COL8_DARK_GRAY);
     draw_poly_circle(win | 1, 160 / 2 + 8, 160 / 2 + 8 + 20, 78, 12, COL8_BLACK);
