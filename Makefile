@@ -58,3 +58,25 @@ clean:
 
 font:
 	ruby tools/makefont.rb < tools/biosfont.txt > kernel/fontdata.c
+
+
+################################################
+# Docker
+
+docker_image ?= haribote
+tag ?= dev
+
+docker_args ?= -v $(shell pwd):$(shell pwd) -w $(shell pwd) \
+	-v /etc/localtime:/etc/localtime:ro \
+
+docker-build:
+	docker build docker/ -t $(docker_image):$(tag)
+
+docker-make:
+	@docker run -it --rm $(docker_args) $(docker_image):$(tag) make
+
+docker-make-clean:
+	@docker run -it --rm $(docker_args) $(docker_image):$(tag) make clean
+
+docker-interactive:
+	@docker run -it --rm $(docker_args) $(docker_image):$(tag)
