@@ -59,6 +59,8 @@ clean:
 font:
 	ruby tools/makefont.rb < tools/biosfont.txt > kernel/fontdata.c
 
+qemu:
+	qemu-system-i386 -boot d -cdrom $(TARGET) -m 512
 
 ################################################
 # Docker
