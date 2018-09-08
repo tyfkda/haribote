@@ -42,22 +42,29 @@ But I changed to use Linux, and simplify required tools using Ruby.
 | tools   | Tools for building OS, disk image  |
 | apps    | applications (not OS itself)       |
 
+### Docker
+You can run a build process in a docker container:
+
+* First time: Run `make docker-build` to create `haribote:dev` docker image.
+* `make docker-make` to run a build procss in the container.
+
 
 ## How to make your own .hrb application
 ### Create executable for Haribote OS
-1. Create object files using gcc, or any
-  1. `int main(int argc, char* argv[])` function is the entry point.
+
+1. Create object files using gcc
+    1. `int main(int argc, char* argv[])` function is the entry point.
 2. Use linker script [hrbapp.ls](https://github.com/tyfkda/haribote/blob/master/lib/hrbapp.ls) to make .hrb file
-  * `$ ld -T hrbapp.ls lib/crt0.o -o <executable file name> <object files...> lib/libhrb.a`
-  * You have to link lib/crt0.o and lib/libhrb.a
+    * `$ ld -T hrbapp.ls lib/crt0.o -o <executable file name> <object files...> lib/libhrb.a`
+    * You have to link lib/crt0.o and lib/libhrb.a
 
 ### Put executable onto floopy disk image
 1. Prepare disk image
-  1. Format: `$ tools/fat12img <image file name> format`
-  2. Write boot sector: `$ tools/fat12img <image file name> write obj/ipl.bin 0`
-  3. Write OS first: `$ tools/fat12img <image file name> save obj/haribote.sys`
+    1. Format: `$ tools/fat12img <image file name> format`
+    2. Write boot sector: `$ tools/fat12img <image file name> write obj/ipl.bin 0`
+    3. Write OS first: `$ tools/fat12img <image file name> save obj/haribote.sys`
 2. Put executable file
-  1. `$ tools/fat12img <image file name> save <.hrb file>`
+    1. `$ tools/fat12img <image file name> save <.hrb file>`
 
 These sequence is done in $/Makefile.
 
