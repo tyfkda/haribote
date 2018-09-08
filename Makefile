@@ -68,7 +68,8 @@ qemu:
 docker_image ?= haribote
 tag ?= dev
 
-docker_args ?= -v $(shell pwd):$(shell pwd) -w $(shell pwd) \
+docker_args ?= -u $(shell id -u):$(shell id -g)\
+	-v $(shell pwd):$(shell pwd) -w $(shell pwd) \
 	-v /etc/localtime:/etc/localtime:ro \
 
 docker-build:
