@@ -69,6 +69,13 @@ You can run a build process in a docker container:
 These sequence is done in $/Makefile.
 
 
+## Execution
+### QEMU
+```sh
+$ make qemu  # qemu-system-i386 -boot d -cdrom haribote.iso -m 512
+```
+
+
 ## Memo
 ### Floppy disk
 * 2HD : 1.4MB = 1,474,560 bytes (= 512 bytes x 18 sectors x 2 heads x 80 cylinders)
