@@ -13,7 +13,7 @@ void* memmove(void* dst, const void* src, size_t size);
 int memcmp(const void *s1, const void *s2, size_t n);
 void *memchr(const void *s, int c, size_t n);
 
-int strlen(const char* str);
+size_t strlen(const char* str);
 char* strcpy(char* dst, const char* src);
 char* strncpy(char* dst, const char* src, size_t n);
 char *strcat(char *dest, const char *src);

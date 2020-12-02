@@ -1,4 +1,4 @@
-FROM gliderlabs/alpine:latest
+FROM alpine:latest
 
 MAINTAINER tyfkda
 

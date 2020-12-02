@@ -76,10 +76,10 @@ docker-build:
 	docker build docker/ -t $(docker_image):$(tag)
 
 docker-make:
-	@docker run -it --rm $(docker_args) $(docker_image):$(tag) make
+	@docker run -it --rm $(docker_args) $(docker_image):$(tag) make $(MAKE_TARGET)
 
 docker-make-clean:
-	@docker run -it --rm $(docker_args) $(docker_image):$(tag) make clean
+	MAKE_TARGET=clean make docker-make
 
 docker-interactive:
 	@docker run -it --rm $(docker_args) $(docker_image):$(tag)

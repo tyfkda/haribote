@@ -8,7 +8,7 @@ int main() {
   api_inittimer(timer, 128);
   int sec = 0, min = 0, hou = 0;
   for (;;) {
-    char s[20];
+    char s[35];
     snprintf(s, sizeof(s), "%5d:%02d:%02d", hou, min, sec);
     api_boxfilwin(win, 28, 27, 115, 41, COL8_WHITE);
     api_putstrwin(win, 28, 27, COL8_BLACK, 11, s);

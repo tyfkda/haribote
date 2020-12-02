@@ -1,7 +1,7 @@
 #include "stdio.h"
 
-int strlen(const char* str) {
-  int len = 0;
+size_t strlen(const char* str) {
+  size_t len = 0;
   for (; *str != '\0'; ++str, ++len);
   return len;
 }

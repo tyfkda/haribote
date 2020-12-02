@@ -14,7 +14,7 @@ SECTIONS {
     }
 
     .text : {
-        *(.text)
+        *(.text*)
     }
 
     .data 0x2f0000 : AT(ADDR(.text) + SIZEOF(.text)) SUBALIGN(4) {

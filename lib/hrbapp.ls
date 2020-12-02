@@ -28,11 +28,11 @@ SECTIONS {
 
     .text : {
         *(.text.startup.*)
-        *(.text)
+        *(.text*)
     } > rom
 
     .data : {
-        *(.data)
+        *(.data*)
         *(.rodata*)
 
         . = ALIGN(4);

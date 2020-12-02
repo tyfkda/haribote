@@ -126,7 +126,7 @@ void putfonts8_asc(unsigned char* vram, int xsize, int ysize, int x, int y, unsi
   if (y <= -FONTH || y >= ysize)
     return;
   if (x < 0) {
-    int n = -x / FONTW;
+    unsigned int n = -x / FONTW;
     if (strlen(s) <= n)
       return;
     x += n * FONTW;
